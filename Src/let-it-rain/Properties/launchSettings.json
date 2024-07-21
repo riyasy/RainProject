@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "let-it-rain (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "let-it-rain (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

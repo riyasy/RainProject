@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="let_it_rain.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:let_it_rain"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    xmlns:winuiex="using:WinUIEx"
+    mc:Ignorable="d">
+    <Window.SystemBackdrop>
+        <winuiex:TransparentTintBackdrop TintColor="Transparent" />
+    </Window.SystemBackdrop>
+    <Grid
+        x:Name="MainLayout"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch">
+        <Grid
+            x:Name="AppTitlebar"
+            Height="28"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            Background="Transparent">
+            <Rectangle
+                x:Name="TitlebarBackground"
+                Fill="{ThemeResource SystemControlBackgroundAltHighBrush}"
+                Opacity="0" />
+        </Grid>
+        <win2d:CanvasControl x:Name="D2dCanvas" />
+    </Grid>
+</Window>
