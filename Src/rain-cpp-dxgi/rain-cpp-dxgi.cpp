@@ -24,11 +24,14 @@ using namespace Microsoft::WRL;
 struct ComException
 {
 	HRESULT result;
-	ComException(HRESULT const value) :
+
+	ComException(const HRESULT value) :
 		result(value)
-	{}
+	{
+	}
 };
-void HR(HRESULT const result)
+
+void HR(const HRESULT result)
 {
 	if (S_OK != result)
 	{
@@ -59,15 +62,15 @@ int task_bar_height = 0;
 
 void InitDirect2D(HWND window)
 {
-	HR(D3D11CreateDevice(nullptr,    // Adapter
-		D3D_DRIVER_TYPE_HARDWARE,
-		nullptr,    // Module
-		D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-		nullptr, 0, // Highest available feature level
-		D3D11_SDK_VERSION,
-		&direct3dDevice,
-		nullptr,    // Actual feature level
-		nullptr));  // Device context
+	HR(D3D11CreateDevice(nullptr, // Adapter
+	                     D3D_DRIVER_TYPE_HARDWARE,
+	                     nullptr, // Module
+	                     D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+	                     nullptr, 0, // Highest available feature level
+	                     D3D11_SDK_VERSION,
+	                     &direct3dDevice,
+	                     nullptr, // Actual feature level
+	                     nullptr)); // Device context
 
 	HR(direct3dDevice.As(&dxgiDevice));
 
@@ -90,22 +93,22 @@ void InitDirect2D(HWND window)
 	description.Height = rect.bottom - rect.top;
 
 	HR(dxFactory->CreateSwapChainForComposition(dxgiDevice.Get(),
-		&description,
-		nullptr, // Don’t restrict
-		swapChain.GetAddressOf()));
+	                                            &description,
+	                                            nullptr, // Don’t restrict
+	                                            swapChain.GetAddressOf()));
 
 	// Create a single-threaded Direct2D factory with debugging information
-	D2D1_FACTORY_OPTIONS const options = { D2D1_DEBUG_LEVEL_INFORMATION };
+	constexpr D2D1_FACTORY_OPTIONS options = {D2D1_DEBUG_LEVEL_INFORMATION};
 	HR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED,
-		options,
-		d2Factory.GetAddressOf()));
+	                     options,
+	                     d2Factory.GetAddressOf()));
 	// Create the Direct2D device that links back to the Direct3D device
 	HR(d2Factory->CreateDevice(dxgiDevice.Get(),
-		d2Device.GetAddressOf()));
+	                           d2Device.GetAddressOf()));
 	// Create the Direct2D device context that is the actual render target
 	// and exposes drawing commands
 	HR(d2Device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
-		dc.GetAddressOf()));
+	                                 dc.GetAddressOf()));
 	// Retrieve the swap chain's back buffer
 	HR(swapChain->GetBuffer(
 		0, // index
@@ -118,8 +121,8 @@ void InitDirect2D(HWND window)
 	properties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET |
 		D2D1_BITMAP_OPTIONS_CANNOT_DRAW;
 	HR(dc->CreateBitmapFromDxgiSurface(surface.Get(),
-		properties,
-		bitmap.GetAddressOf()));
+	                                   properties,
+	                                   bitmap.GetAddressOf()));
 	// Point the device context to the bitmap for rendering
 	dc->SetTarget(bitmap.Get());
 
@@ -130,8 +133,8 @@ void InitDirect2D(HWND window)
 
 
 	HR(dcompDevice->CreateTargetForHwnd(window,
-		true, // Top most
-		target.GetAddressOf()));
+	                                    true, // Top most
+	                                    target.GetAddressOf()));
 
 	HR(dcompDevice->CreateVisual(visual.GetAddressOf()));
 	HR(visual->SetContent(swapChain.Get()));
@@ -150,14 +153,14 @@ void InitDirect2D(HWND window)
 		D2D1::ColorF(D2D1::ColorF::LightGray),
 		brush.GetAddressOf()
 	);
-
 }
 
 int getTaskBarHeight()
 {
 	RECT rect;
-	HWND taskBar = FindWindow(L"Shell_traywnd", NULL);
-	if (taskBar && GetWindowRect(taskBar, &rect)) {
+	HWND taskBar = FindWindow(L"Shell_traywnd", nullptr);
+	if (taskBar && GetWindowRect(taskBar, &rect))
+	{
 		return rect.bottom - rect.top;
 	}
 	return 0;
@@ -192,40 +195,41 @@ int __stdcall wWinMain(HINSTANCE module, HINSTANCE, PWSTR, int)
 			switch (message)
 			{
 			case WM_NCHITTEST:
-			{
-				LRESULT hit = DefWindowProc(window, message, wparam, lparam);
-				if (hit == HTCLIENT) hit = HTCAPTION;
-				return hit;
-			}
+				{
+					LRESULT hit = DefWindowProc(window, message, wparam, lparam);
+					if (hit == HTCLIENT) hit = HTCAPTION;
+					return hit;
+				}
 			case WM_KEYDOWN: // Pressing any key will trigger a redraw 
-			{
-				::InvalidateRect(window, nullptr, false);
-				break;
-			}
+				{
+					InvalidateRect(window, nullptr, false);
+					break;
+				}
 			case WM_PAINT:
-			{
-				//Paint();
-				break;
-			}
+				{
+					//Paint();
+					break;
+				}
 			case WM_DESTROY:
-			{
-				PostQuitMessage(0);
-				return 0;
-			}
+				{
+					PostQuitMessage(0);
+					return 0;
+				}
 			}
 			return DefWindowProc(window, message, wparam, lparam);
 		};
 	RegisterClass(&wc);
 
-	DWORD overlay_style = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST; // Using WS_EX_LAYERED loses the GPU-friendliness
+	DWORD overlay_style = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST;
+	// Using WS_EX_LAYERED loses the GPU-friendliness
 	DWORD normal_style = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
 
-	HWND const window = CreateWindowEx(overlay_style,
-		wc.lpszClassName, L"Sample",
-		WS_POPUP | WS_VISIBLE,
-		300, 200,
-		600, 400,
-		nullptr, nullptr, module, nullptr);
+	const HWND window = CreateWindowEx(overlay_style,
+	                                   wc.lpszClassName, L"Sample",
+	                                   WS_POPUP | WS_VISIBLE,
+	                                   300, 200,
+	                                   600, 400,
+	                                   nullptr, nullptr, module, nullptr);
 
 	ShowWindow(window, SW_MAXIMIZE);
 
@@ -239,12 +243,15 @@ int __stdcall wWinMain(HINSTANCE module, HINSTANCE, PWSTR, int)
 
 	MSG msg = {};
 
-	while (msg.message != WM_QUIT) {
-		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+	while (msg.message != WM_QUIT)
+	{
+		if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
+		{
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		else {
+		else
+		{
 			paint();
 			Sleep(10);
 		}
@@ -252,37 +259,46 @@ int __stdcall wWinMain(HINSTANCE module, HINSTANCE, PWSTR, int)
 	return 0;
 }
 
-void draw_rain_drops() {
+void draw_rain_drops()
+{
 	check_and_generate_rain_drops();
-	for (auto drop : rain_drops) {
+	for (auto drop : rain_drops)
+	{
 		drop->draw(dc.Get(), brush.Get());
 	}
-	for (auto drop : rain_drops) {
+	for (auto drop : rain_drops)
+	{
 		drop->move_to_new_position();
 	}
 }
 
-void check_and_generate_rain_drops() {
+void check_and_generate_rain_drops()
+{
 	// Move each raindrop to the next point
-	for (auto drop : rain_drops) {
+	for (auto drop : rain_drops)
+	{
 		drop->move_to_new_position();
 	}
 
 	// Remove all raindrops that have expired
 
-	for (std::vector<rain_drop*>::iterator it = rain_drops.begin(); it != rain_drops.end(); ) {
-		if ((*it)->should_be_erased_and_deleted()) {
-			delete* it;
+	for (auto it = rain_drops.begin(); it != rain_drops.end();)
+	{
+		if ((*it)->should_be_erased_and_deleted())
+		{
+			delete*it;
 			it = rain_drops.erase(it);
 		}
-		else {
+		else
+		{
 			++it;
 		}
 	}
 
 	// Calculate the number of raindrops to generate
 	int countOfFallingDrops = 0;
-	for (auto drop : rain_drops) {
+	for (auto drop : rain_drops)
+	{
 		if (!drop->did_drop_land())
 		{
 			countOfFallingDrops++;
@@ -291,8 +307,9 @@ void check_and_generate_rain_drops() {
 	int noOfDropsToGenerate = 10 - countOfFallingDrops;
 
 	// Generate new raindrops
-	for (int i = 0; i < noOfDropsToGenerate; ++i) {
-		rain_drop* k = new rain_drop(window_width, window_height - task_bar_height, rain_drop_type::main_drop);
+	for (int i = 0; i < noOfDropsToGenerate; ++i)
+	{
+		auto k = new rain_drop(window_width, window_height - task_bar_height, rain_drop_type::main_drop);
 		rain_drops.push_back(k);
 	}
 }

@@ -1,6 +1,7 @@
 #include "RainDrop.h"
 
-rain_drop::rain_drop(float windowWidth, float windowHeight, rain_drop_type type): window_width_(windowWidth), window_height_(windowHeight), type_(type)
+rain_drop::rain_drop(float windowWidth, float windowHeight, rain_drop_type type): window_width_(windowWidth),
+	window_height_(windowHeight), type_(type)
 {
 	initialize();
 }
@@ -42,7 +43,7 @@ void rain_drop::move_to_new_position()
 			landed_drop_ = true;
 			for (int i = 0; i < 4; i++)
 			{
-				rain_drop* splatter = new rain_drop(window_width_, window_height_, rain_drop_type::splatter);
+				auto splatter = new rain_drop(window_width_, window_height_, rain_drop_type::splatter);
 				float xSpeed = get_random_number(-1, 3);
 				xSpeed = xSpeed == 0 ? 0.75f : xSpeed;
 				float ySpeed = 10 / (xSpeed * 3.0f);
@@ -54,18 +55,22 @@ void rain_drop::move_to_new_position()
 	}
 
 	// Bounce off the edges for Splatter type
-	if (type_ == rain_drop_type::splatter) {
-		if (ellipse_.point.x + ellipse_.radiusX > window_width_ || ellipse_.point.x - ellipse_.radiusX < 0) {
+	if (type_ == rain_drop_type::splatter)
+	{
+		if (ellipse_.point.x + ellipse_.radiusX > window_width_ || ellipse_.point.x - ellipse_.radiusX < 0)
+		{
 			velocity_x_ = -velocity_x_;
 		}
 
-		if (ellipse_.point.y + ellipse_.radiusY > window_height_) {
+		if (ellipse_.point.y + ellipse_.radiusY > window_height_)
+		{
 			ellipse_.point.y = window_height_ - ellipse_.radiusY; // Keep the ellipse within bounds
 			velocity_y_ = -velocity_y_ * bounce_damping_; // Bounce with damping
 			splash_count_++;
 		}
 
-		if (ellipse_.point.y - ellipse_.radiusY < 0) {
+		if (ellipse_.point.y - ellipse_.radiusY < 0)
+		{
 			ellipse_.point.y = ellipse_.radiusY; // Keep the ellipse within bounds
 			velocity_y_ = -velocity_y_; // Reverse the direction if it hits the top edge
 		}
@@ -105,16 +110,14 @@ void rain_drop::draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush)
 			{
 				dc->FillEllipse(ellipse_, pBrush);
 			}
-
 		}
-
-
 	}
 	if (!splatters_.empty())
 	{
 		frames_for_splatter_++;
 	}
-	for (const auto drop : splatters_) {
+	for (const auto drop : splatters_)
+	{
 		drop->draw(dc, pBrush);
 		drop->move_to_new_position();
 	}
@@ -122,7 +125,8 @@ void rain_drop::draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush)
 
 rain_drop::~rain_drop()
 {
-	for (const auto drop : splatters_) {
+	for (const auto drop : splatters_)
+	{
 		delete drop;
 	}
 }
@@ -130,7 +134,8 @@ rain_drop::~rain_drop()
 int rain_drop::get_random_number(int x, int y)
 {
 	// Ensure that x is less than or equal to y
-	if (x > y) {
+	if (x > y)
+	{
 		std::swap(x, y);
 	}
 	return std::rand() % (y - x + 1) + x;
@@ -145,11 +150,13 @@ void rain_drop::initialize()
 	//ellipse.point.y = 0;
 
 
-	if (type_ == rain_drop_type::main_drop) {
+	if (type_ == rain_drop_type::main_drop)
+	{
 		ellipse_.radiusX = 1;
 		ellipse_.radiusY = 1;
 	}
-	else {
+	else
+	{
 		ellipse_.radiusX = 2.0f;
 		ellipse_.radiusY = 2.0f;
 	}

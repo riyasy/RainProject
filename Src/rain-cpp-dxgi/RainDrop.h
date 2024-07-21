@@ -9,13 +9,15 @@
 
 
 // Enum for RainDrop types
-enum class rain_drop_type {
+enum class rain_drop_type
+{
 	main_drop,
 	splatter
 };
 
 // RainDrop Class
-class rain_drop {
+class rain_drop
+{
 public:
 	rain_drop(float windowWidth, float windowHeight, rain_drop_type type);
 
