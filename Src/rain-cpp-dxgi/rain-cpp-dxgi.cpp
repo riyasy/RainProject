@@ -6,7 +6,6 @@
 #include <dxgi1_3.h>
 #include <d3d11_2.h>
 #include <d2d1_2.h>
-#include <d2d1_2helper.h>
 #include <dcomp.h>
 #include <vector>
 #include "RainDrop.h"
@@ -52,10 +51,11 @@ ComPtr<IDCompositionVisual> visual;
 ComPtr<ID2D1SolidColorBrush> brush;
 
 // Global Variables
-std::vector<RainDrop*> rainDrops;
+std::vector<rain_drop*> rain_drops;
 // Constants
-float windowWidth = 100;
-float windowHeight = 100;
+float window_width = 100;
+float window_height = 100;
+int task_bar_height = 0;
 
 void InitDirect2D(HWND window)
 {
@@ -153,16 +153,26 @@ void InitDirect2D(HWND window)
 
 }
 
-void UpdateRainDrops();
-void DrawRainDrops();
-void CheckAndGenerateRainDrops();
-void Paint();
+int getTaskBarHeight()
+{
+	RECT rect;
+	HWND taskBar = FindWindow(L"Shell_traywnd", NULL);
+	if (taskBar && GetWindowRect(taskBar, &rect)) {
+		return rect.bottom - rect.top;
+	}
+	return 0;
+}
 
-void Paint()
+void update_rain_drops();
+void draw_rain_drops();
+void check_and_generate_rain_drops();
+void paint();
+
+void paint()
 {
 	dc->BeginDraw();
 	dc->Clear();
-	DrawRainDrops();
+	draw_rain_drops();
 	HR(dc->EndDraw());
 	// Make the swap chain available to the composition engine
 	HR(swapChain->Present(1, 0));
@@ -176,8 +186,8 @@ int __stdcall wWinMain(HINSTANCE module, HINSTANCE, PWSTR, int)
 	wc.lpszClassName = L"window";
 	wc.style = CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc =
-		[](HWND window, UINT message, WPARAM wparam,
-			LPARAM lparam) -> LRESULT
+		[](HWND window, UINT message, const WPARAM wparam,
+		   const LPARAM lparam) -> LRESULT
 		{
 			switch (message)
 			{
@@ -223,8 +233,9 @@ int __stdcall wWinMain(HINSTANCE module, HINSTANCE, PWSTR, int)
 
 	RECT rc;
 	GetClientRect(window, &rc);
-	windowWidth = static_cast<float>(rc.right - rc.left);
-	windowHeight = static_cast<float>(rc.bottom - rc.top);
+	window_width = static_cast<float>(rc.right - rc.left);
+	window_height = static_cast<float>(rc.bottom - rc.top);
+	task_bar_height = getTaskBarHeight();
 
 	MSG msg = {};
 
@@ -234,36 +245,35 @@ int __stdcall wWinMain(HINSTANCE module, HINSTANCE, PWSTR, int)
 			DispatchMessage(&msg);
 		}
 		else {
-			Paint();
-			Sleep(16);
+			paint();
+			Sleep(10);
 		}
 	}
 	return 0;
 }
 
-void DrawRainDrops() {
-	CheckAndGenerateRainDrops();
-	for (auto drop : rainDrops) {
-		drop->Draw(dc.Get(), brush.Get());
+void draw_rain_drops() {
+	check_and_generate_rain_drops();
+	for (auto drop : rain_drops) {
+		drop->draw(dc.Get(), brush.Get());
 	}
-	for (auto drop : rainDrops) {
-		drop->MoveToNewPosition();
+	for (auto drop : rain_drops) {
+		drop->move_to_new_position();
 	}
 }
 
-void CheckAndGenerateRainDrops() {
+void check_and_generate_rain_drops() {
 	// Move each raindrop to the next point
-	for (auto drop : rainDrops) {
-		drop->MoveToNewPosition();
+	for (auto drop : rain_drops) {
+		drop->move_to_new_position();
 	}
 
 	// Remove all raindrops that have expired
-	std::vector<RainDrop*>::iterator it;
 
-	for (it = rainDrops.begin(); it != rainDrops.end(); ) {
-		if ((*it)->ShouldBeErasedAndDeleted()) {
+	for (std::vector<rain_drop*>::iterator it = rain_drops.begin(); it != rain_drops.end(); ) {
+		if ((*it)->should_be_erased_and_deleted()) {
 			delete* it;
-			it = rainDrops.erase(it);
+			it = rain_drops.erase(it);
 		}
 		else {
 			++it;
@@ -272,17 +282,17 @@ void CheckAndGenerateRainDrops() {
 
 	// Calculate the number of raindrops to generate
 	int countOfFallingDrops = 0;
-	for (auto drop : rainDrops) {
-		if (!drop->DidDropLand())
+	for (auto drop : rain_drops) {
+		if (!drop->did_drop_land())
 		{
 			countOfFallingDrops++;
 		}
 	}
-	int noOfDropsToGenerate = 200 - countOfFallingDrops;
+	int noOfDropsToGenerate = 10 - countOfFallingDrops;
 
 	// Generate new raindrops
 	for (int i = 0; i < noOfDropsToGenerate; ++i) {
-		RainDrop* k = new RainDrop(windowWidth, windowHeight, RainDropType::MainDrop);
-		rainDrops.push_back(k);
+		rain_drop* k = new rain_drop(window_width, window_height - task_bar_height, rain_drop_type::main_drop);
+		rain_drops.push_back(k);
 	}
 }
