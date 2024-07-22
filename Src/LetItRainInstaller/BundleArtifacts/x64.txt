@@ -1,0 +1,2 @@
+MainPackage=C:\Users\Riyas\Documents\GitHub\RainProject\Src\LetItRainInstaller\bin\x64\Release\LetItRainInstaller_1.0.0.0_x64.msix
+SymbolPackage=C:\Users\Riyas\Documents\GitHub\RainProject\Src\LetItRainInstaller\obj\x64\Release\Symbols\LetItRainInstaller_1.0.0.0_x64.appxsym
