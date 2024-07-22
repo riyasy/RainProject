@@ -5,6 +5,7 @@
 #pragma comment(lib, "user32.lib")
 #include <dcomp.h>
 #include <vector>
+#include <wrl/client.h>
 #pragma comment(lib, "d2d1")
 
 
@@ -47,7 +48,11 @@ private:
 	int frames_for_splatter_ = 0;
 
 	std::vector<rain_drop*> splatters_;
-
+	
+	static constexpr int max_splutter_frame_count_ = 50;
 	static int get_random_number(int x, int y);
 	void initialize();
+
+	static std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> opacity_brushes_;
+	static D2D1_COLOR_F get_opacity_brush_as_per_frame_count(int frame_count);
 };

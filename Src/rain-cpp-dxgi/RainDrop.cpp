@@ -1,5 +1,7 @@
 #include "RainDrop.h"
 
+#include <wrl/client.h>
+
 rain_drop::rain_drop(float windowWidth, float windowHeight, rain_drop_type type): window_width_(windowWidth),
 	window_height_(windowHeight), type_(type)
 {
@@ -13,7 +15,7 @@ bool rain_drop::did_drop_land() const
 
 bool rain_drop::should_be_erased_and_deleted() const
 {
-	return frames_for_splatter_ > 50;
+	return frames_for_splatter_ >= max_splutter_frame_count_;
 }
 
 void rain_drop::move_to_new_position()
@@ -90,9 +92,20 @@ void rain_drop::draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush)
 	//D2D1_RECT_F rect;
 	//rect.top = 0;
 	//rect.left = 0;
-	//rect.right = windowWidth;
-	//rect.bottom = windowHeight;
+	//rect.right = window_width_;
+	//rect.bottom = window_height_;
 	//dc->DrawRectangle(&rect, pBrush);
+
+	if (opacity_brushes_.empty())
+	{
+		for(int i =0; i < max_splutter_frame_count_; i++)
+		{
+			auto splatterColor = get_opacity_brush_as_per_frame_count(i);
+			Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> splatterColorBrush;
+			dc->CreateSolidColorBrush(splatterColor, splatterColorBrush.GetAddressOf());
+			opacity_brushes_.push_back(splatterColorBrush);
+		}
+	}
 
 	if (!landed_drop_ && ellipse_.point.y >= 0 && ellipse_.point.x >= 0)
 	{
@@ -112,16 +125,21 @@ void rain_drop::draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush)
 			}
 		}
 	}
+
+
 	if (!splatters_.empty())
 	{
+		for (const auto drop : splatters_)
+		{
+			drop->draw(dc, opacity_brushes_[frames_for_splatter_].Get());
+			drop->move_to_new_position();
+		}
+
 		frames_for_splatter_++;
 	}
-	for (const auto drop : splatters_)
-	{
-		drop->draw(dc, pBrush);
-		drop->move_to_new_position();
-	}
 }
+
+std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> rain_drop::opacity_brushes_;
 
 rain_drop::~rain_drop()
 {
@@ -146,9 +164,6 @@ void rain_drop::initialize()
 	// Initialize position and size
 	ellipse_.point.x = static_cast<float>(get_random_number(-window_width_, window_width_));
 	ellipse_.point.y = static_cast<float>((get_random_number(-window_height_, 0) / 10) * 10);
-	//ellipse.point.x = 0;
-	//ellipse.point.y = 0;
-
 
 	if (type_ == rain_drop_type::main_drop)
 	{
@@ -166,4 +181,11 @@ void rain_drop::initialize()
 	velocity_y_ = 15.0f;
 	gravity_ = 0.4f;
 	bounce_damping_ = 1.0f;
+}
+
+D2D1_COLOR_F rain_drop::get_opacity_brush_as_per_frame_count(int frame_count)
+{
+	float alpha = 1.0f - static_cast<float>(frame_count) / static_cast<float>(max_splutter_frame_count_);
+	const D2D1_COLOR_F brushColor = D2D1::ColorF(0.83f, 0.83f, 0.83f, alpha);
+	return brushColor;
 }

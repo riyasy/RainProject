@@ -1,5 +1,3 @@
-#pragma once
-
 #include <windows.h>
 #pragma comment(lib, "user32.lib")
 #include <wrl.h>
@@ -94,7 +92,7 @@ void InitDirect2D(HWND window)
 
 	HR(dxFactory->CreateSwapChainForComposition(dxgiDevice.Get(),
 	                                            &description,
-	                                            nullptr, // Don’t restrict
+	                                            nullptr, 
 	                                            swapChain.GetAddressOf()));
 
 	// Create a single-threaded Direct2D factory with debugging information
