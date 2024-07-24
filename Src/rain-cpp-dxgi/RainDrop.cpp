@@ -43,11 +43,11 @@ void rain_drop::move_to_new_position()
 		{
 			ellipse_.point.y = window_height_;
 			landed_drop_ = true;
-			for (int i = 0; i < 4; i++)
+			for (int i = 0; i < 3; i++)
 			{
-				auto splatter = new rain_drop(window_width_, window_height_, rain_drop_type::splatter);
+				auto splatter = new rain_drop(window_width_, window_height_, rain_drop_type::splatter);				
 				float xSpeed = get_random_number(-1, 3);
-				xSpeed = xSpeed == 0 ? 0.75f : xSpeed;
+				xSpeed = xSpeed == 0 ? 0.75f : xSpeed;				
 				float ySpeed = 10 / (xSpeed * 3.0f);
 
 				splatter->update_position_and_speed(ellipse_.point.x, ellipse_.point.y, xSpeed, ySpeed);

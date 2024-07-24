@@ -223,7 +223,7 @@ int __stdcall wWinMain(HINSTANCE module, HINSTANCE, PWSTR, int)
 	DWORD normal_style = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
 
 	const HWND window = CreateWindowEx(overlay_style,
-	                                   wc.lpszClassName, L"Sample",
+	                                   wc.lpszClassName, L"let it rain",
 	                                   WS_POPUP | WS_VISIBLE,
 	                                   300, 200,
 	                                   600, 400,

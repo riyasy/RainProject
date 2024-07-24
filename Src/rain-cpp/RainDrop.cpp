@@ -6,7 +6,7 @@ rain_drop::rain_drop(float windowWidth, float windowHeight, rain_drop_type type)
 	initialize();
 }
 
-bool rain_drop::DidDropLand() const
+bool rain_drop::did_drop_land() const
 {
 	return landed_drop_;
 }

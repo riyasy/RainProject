@@ -11,6 +11,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rain-cpp-dxgi", "rain-cpp-d
 EndProject
 Project("{C7167F0D-BC9F-4E6E-AFE1-012C56B48DB5}") = "LetItRainInstaller", "LetItRainInstaller\LetItRainInstaller.wapproj", "{7D75C864-B43A-4B70-92D0-B776A62D5123}"
 EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "LetItRainInstaller2", "LetItRainInstaller2\LetItRainInstaller2.vdproj", "{93A26B86-E9C6-4A8E-AC6E-78409F122535}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -125,6 +127,16 @@ Global
 		{7D75C864-B43A-4B70-92D0-B776A62D5123}.Release|x86.ActiveCfg = Release|x86
 		{7D75C864-B43A-4B70-92D0-B776A62D5123}.Release|x86.Build.0 = Release|x86
 		{7D75C864-B43A-4B70-92D0-B776A62D5123}.Release|x86.Deploy.0 = Release|x86
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Debug|Any CPU.ActiveCfg = Debug
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Debug|ARM.ActiveCfg = Debug
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Debug|ARM64.ActiveCfg = Debug
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Debug|x64.ActiveCfg = Debug
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Debug|x86.ActiveCfg = Debug
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Release|Any CPU.ActiveCfg = Release
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Release|ARM.ActiveCfg = Release
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Release|ARM64.ActiveCfg = Release
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Release|x64.ActiveCfg = Release
+		{93A26B86-E9C6-4A8E-AC6E-78409F122535}.Release|x86.ActiveCfg = Release
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
