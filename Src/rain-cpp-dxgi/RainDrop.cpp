@@ -45,9 +45,9 @@ void rain_drop::move_to_new_position()
 			landed_drop_ = true;
 			for (int i = 0; i < 3; i++)
 			{
-				auto splatter = new rain_drop(window_width_, window_height_, rain_drop_type::splatter);				
-				float xSpeed = get_random_number(-1, 3);
-				xSpeed = xSpeed == 0 ? 0.75f : xSpeed;				
+				auto splatter = new rain_drop(window_width_, window_height_, rain_drop_type::splatter);
+				float xSpeed = static_cast<float>(get_random_number(-1, 3));
+				xSpeed = xSpeed == 0 ? 0.75f : xSpeed;
 				float ySpeed = 10 / (xSpeed * 3.0f);
 
 				splatter->update_position_and_speed(ellipse_.point.x, ellipse_.point.y, xSpeed, ySpeed);
@@ -98,7 +98,7 @@ void rain_drop::draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush)
 
 	if (opacity_brushes_.empty())
 	{
-		for(int i =0; i < max_splutter_frame_count_; i++)
+		for (int i = 0; i < max_splutter_frame_count_; i++)
 		{
 			auto splatterColor = get_opacity_brush_as_per_frame_count(i);
 			Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> splatterColorBrush;
@@ -149,14 +149,14 @@ rain_drop::~rain_drop()
 	}
 }
 
-int rain_drop::get_random_number(int x, int y)
+int rain_drop::get_random_number(float x, float y)
 {
 	// Ensure that x is less than or equal to y
 	if (x > y)
 	{
 		std::swap(x, y);
 	}
-	return std::rand() % (y - x + 1) + x;
+	return std::rand() % (static_cast<int>(y) - static_cast<int>(x) + 1) + static_cast<int>(x);
 }
 
 void rain_drop::initialize()

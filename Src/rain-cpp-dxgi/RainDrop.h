@@ -1,12 +1,11 @@
 #pragma once
-#include <windows.h>
+
+
 #include <d2d1.h>
 #include <vector>
-#pragma comment(lib, "user32.lib")
 #include <dcomp.h>
 #include <vector>
 #include <wrl/client.h>
-#pragma comment(lib, "d2d1")
 
 
 // Enum for RainDrop types
@@ -48,9 +47,9 @@ private:
 	int frames_for_splatter_ = 0;
 
 	std::vector<rain_drop*> splatters_;
-	
+
 	static constexpr int max_splutter_frame_count_ = 50;
-	static int get_random_number(int x, int y);
+	static int get_random_number(float x, float y);
 	void initialize();
 
 	static std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> opacity_brushes_;
