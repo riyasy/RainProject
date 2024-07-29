@@ -4,7 +4,9 @@
 
 #pragma once
 
+#ifndef NTDDI_VERSION
 #define NTDDI_VERSION 0x07000000
+#endif
 
 // Modify the following defines if you have to target a platform prior to the ones specified below.
 // Refer to MSDN for the latest info on corresponding values for different platforms.
@@ -20,7 +22,10 @@
 #define UNICODE
 #endif
 
-#define WIN32_LEAN_AND_MEAN     // Exclude rarely-used stuff from Windows headers
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
+#endif
+
 
 // Windows Header Files
 #include <windows.h>
@@ -34,3 +39,8 @@
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "d2d1")
 #pragma comment(lib, "dcomp")
+#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#pragma comment(lib, "comctl32.lib")
+
+
+#define WM_TRAYICON (WM_USER + 1)
