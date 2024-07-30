@@ -77,6 +77,9 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 	WindowHeight = rc.bottom - rc.top;
 	TaskBarHeight = GetTaskBarHeight();
 
+	RainDrop::SetRainColor(Dc.Get(), RainColor);
+	RainDrop::SetWindowBounds(WindowWidth, WindowHeight - TaskBarHeight);
+
 	return 0;
 }
 
@@ -264,16 +267,6 @@ void RainWindow::InitDirect2D(HWND hWnd)
 	HR(Visual->SetContent(SwapChain.Get()));
 	HR(Target->SetRoot(Visual.Get()));
 	HR(DcompDevice->Commit());
-
-	//D2D1_COLOR_F const brushColor = D2D1::ColorF(0.18f,  // red
-	//	0.55f,  // green
-	//	0.34f,  // blue
-	//	0.75f); // alpha
-
-	//HR(dc->CreateSolidColorBrush(brushColor,
-	//	brush.GetAddressOf()));
-
-	RainDrop::SetRainColor(Dc.Get(), RainColor);
 }
 
 int RainWindow::GetTaskBarHeight()
@@ -344,8 +337,7 @@ void RainWindow::CheckAndGenerateRainDrops()
 	// Generate new raindrops
 	for (int i = 0; i < noOfDropsToGenerate; ++i)
 	{
-		auto k = new RainDrop(WindowWidth, WindowHeight - TaskBarHeight, RainDirection,
-		                      RainDropType::MainDrop);
+		auto k = new RainDrop(RainDirection, RainDropType::MainDrop);
 		RainDrops.push_back(k);
 	}
 }
