@@ -39,6 +39,7 @@ void RainWindow::LoadOptionValues()
 	RainColor = 0x00AAAAAA;
 }
 
+
 HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 {
 	pThis = this;
@@ -51,15 +52,12 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 	wc.lpfnWndProc = WndProc;
 	RegisterClass(&wc);
 
-	DWORD overlay_style = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST;
-	// Using WS_EX_LAYERED loses the GPU-friendliness
-	//DWORD normal_style = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
+	DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST;
+	//DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
+	DWORD style = WS_POPUP | WS_VISIBLE;
 
-	const HWND window = CreateWindowEx(overlay_style,
-	                                   wc.lpszClassName, L"let it rain",
-	                                   WS_POPUP | WS_VISIBLE,
-	                                   300, 200,
-	                                   600, 400,
+	const HWND window = CreateWindowEx(exstyle, wc.lpszClassName, L"let it rain", style,
+	                                   CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 	                                   nullptr, nullptr, HINST_THISCOMPONENT, nullptr);
 
 	ShowWindow(window, SW_MAXIMIZE);
@@ -71,17 +69,11 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 
 	InitDirect2D(window);
 
-	RECT rc;
-	GetClientRect(window, &rc);
-	WindowWidth = rc.right - rc.left;
-	WindowHeight = rc.bottom - rc.top;
-	TaskBarHeight = GetTaskBarHeight();
-
-	RainDrop::SetRainColor(Dc.Get(), RainColor);
-	RainDrop::SetWindowBounds(WindowWidth, WindowHeight - TaskBarHeight);
+	SetWindowBounds(window);
 
 	return 0;
 }
+
 
 LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -91,6 +83,11 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		{
 			InitNotifyIcon(hWnd);
 			break;
+		}
+	case WM_DISPLAYCHANGE:
+	case WM_DPICHANGED:
+		{
+			pThis->SetWindowBounds(hWnd);
 		}
 	case WM_TRAYICON:
 		if (lParam == WM_CONTEXTMENU)
@@ -195,7 +192,7 @@ void RainWindow::InitDirect2D(HWND hWnd)
 	                     D3D11_CREATE_DEVICE_BGRA_SUPPORT,
 	                     nullptr, 0, // Highest available feature level
 	                     D3D11_SDK_VERSION,
-	                     &Direct3dDevice,
+	                     Direct3dDevice.GetAddressOf(),
 	                     nullptr, // Actual feature level
 	                     nullptr)); // Device context
 
@@ -225,10 +222,15 @@ void RainWindow::InitDirect2D(HWND hWnd)
 	                                            SwapChain.GetAddressOf()));
 
 	// Create a single-threaded Direct2D factory with debugging information
-	constexpr D2D1_FACTORY_OPTIONS options = {D2D1_DEBUG_LEVEL_INFORMATION};
+	D2D1_FACTORY_OPTIONS options = {};
+#ifdef _DEBUG
+	options.debugLevel = D2D1_DEBUG_LEVEL_INFORMATION;
+#endif
+
 	HR(D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED,
 	                     options,
 	                     D2Factory.GetAddressOf()));
+
 	// Create the Direct2D device that links back to the Direct3D device
 	HR(D2Factory->CreateDevice(DxgiDevice.Get(),
 	                           D2Device.GetAddressOf()));
@@ -340,6 +342,23 @@ void RainWindow::CheckAndGenerateRainDrops()
 		auto k = new RainDrop(RainDirection, RainDropType::MainDrop);
 		RainDrops.push_back(k);
 	}
+}
+
+void RainWindow::SetWindowBounds(const HWND window)
+{
+	if (!RainDrops.empty())
+	{
+		RainDrops.clear();
+	}
+
+	RECT rc;
+	GetClientRect(window, &rc);
+	WindowWidth = rc.right - rc.left;
+	WindowHeight = rc.bottom - rc.top;
+	TaskBarHeight = GetTaskBarHeight();
+	RainDrop::SetRainColor(Dc.Get(), RainColor);
+	float scaleFactor = WindowHeight / 1080.0f;
+	RainDrop::SetWindowBounds(WindowWidth, WindowHeight - TaskBarHeight, scaleFactor);
 }
 
 void RainWindow::UpdateRainDropCount(int val)

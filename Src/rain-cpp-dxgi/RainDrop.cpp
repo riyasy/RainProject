@@ -5,16 +5,18 @@
 
 Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> RainDrop::DropColorBrush;
 std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> RainDrop::PrebuiltSplatterOpacityBrushes;
+//Microsoft::WRL::ComPtr < ID2D1StrokeStyle1> RainDrop::strokeStyleFixedThickness;
 
  float RainDrop::Gravity = 0.3f;
  float RainDrop::BounceDamping = 0.9f;
+ float RainDrop::ScaleFactor = 1.0f;
  int RainDrop::WindowWidth;
  int RainDrop::WindowHeight;
  RandomGenerator RainDrop::RandomGen;
 
 RainDrop::RainDrop(const int xVelocity,
                    const RainDropType type):
-	VelocityX(static_cast<float>(xVelocity)),
+	VelocityX(xVelocity * ScaleFactor),
 	Type(type)
 {
 	Initialize();
@@ -45,7 +47,7 @@ void RainDrop::MoveToNewPosition()
 	// Apply gravity
 	if (Type == RainDropType::Splatter)
 	{
-		VelocityY += Gravity;
+		VelocityY += (Gravity * ScaleFactor);
 	}
 
 
@@ -59,15 +61,15 @@ void RainDrop::MoveToNewPosition()
 			{
 				auto splatter = new RainDrop(0, RainDropType::Splatter);
 
-				int parentXSpeed = VelocityX;
-				int speed10x = RandomGen.GenerateInt(-15 + parentXSpeed, -6, 6, 15 + parentXSpeed);
-				float xSpeed = speed10x / 10.0f;
+				int parentXSpeedUnscaled = (VelocityX / ScaleFactor);
+				int speed10x = RandomGen.GenerateInt(-15 + parentXSpeedUnscaled, -6, 6, 15 + parentXSpeedUnscaled);
+				float xSpeed = ScaleFactor * (speed10x / 10.0f);
 
 				//wchar_t text_buffer[20] = { 0 }; //temporary buffer
 				//swprintf(text_buffer, _countof(text_buffer), L"%d\n", speed10x); // convert
 				//OutputDebugString(text_buffer); // print
 
-				float ySpeed = 3.0f / xSpeed;
+				float ySpeed = (3.0f * ScaleFactor * ScaleFactor) / xSpeed;
 
 				splatter->UpdatePositionAndSpeed(Ellipse.point.x, Ellipse.point.y, xSpeed, ySpeed);
 				Splatters.push_back(splatter);
@@ -181,7 +183,7 @@ void RainDrop::Initialize()
 	}
 
 	// Initialize velocity and physics parameters
-	VelocityY = 15.0f;
+	VelocityY = 15.0f * ScaleFactor;
 
 }
 
@@ -207,10 +209,29 @@ void RainDrop::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
 		dc->CreateSolidColorBrush(splatterColor, splatterColorBrush.GetAddressOf());
 		PrebuiltSplatterOpacityBrushes.push_back(splatterColorBrush);
 	}
+
+
 }
 
-void RainDrop::SetWindowBounds(int windowWidth, int windowHeight)
+//void RainDrop::SetRainColor(ID2D1Factory2* factory, ID2D1DeviceContext* dc, COLORREF color)
+//{
+//	SetRainColor(dc, color);
+//
+//	HRESULT hr = factory->CreateStrokeStyle(
+//		D2D1::StrokeStyleProperties1(
+//			D2D1_CAP_STYLE_FLAT,
+//			D2D1_CAP_STYLE_FLAT,
+//			D2D1_CAP_STYLE_FLAT,
+//			D2D1_LINE_JOIN_MITER,
+//			10.0f,
+//			D2D1_DASH_STYLE_SOLID,
+//			0.0f, D2D1_STROKE_TRANSFORM_TYPE_FIXED),
+//		nullptr, 0, strokeStyleFixedThickness.GetAddressOf());
+//}
+
+void RainDrop::SetWindowBounds(int windowWidth, int windowHeight, float scaleFactor)
 {
 	WindowWidth = windowWidth;
 	WindowHeight = windowHeight;
+	ScaleFactor = scaleFactor;
 }

@@ -2,6 +2,7 @@
 
 
 #include <d2d1.h>
+#include <d2d1_2.h>
 #include <vector>
 #include <dcomp.h>
 #include <vector>
@@ -27,7 +28,7 @@ public:
 	void UpdatePositionAndSpeed(float x, float y, float xSpeed, float ySpeed);
 	void Draw(ID2D1DeviceContext* dc);
 	static void SetRainColor(ID2D1DeviceContext* dc, COLORREF color);
-	static void SetWindowBounds(int windowWidth, int windowHeight);
+	static void SetWindowBounds(int windowWidth, int windowHeight, float scaleFactor);
 	~RainDrop();
 
 private:
@@ -39,6 +40,7 @@ private:
 	static float BounceDamping;
 	static int WindowWidth;
 	static int WindowHeight;
+	static float ScaleFactor;
 
 	RainDropType Type;
 	bool LandedDrop = false;
@@ -49,6 +51,7 @@ private:
 
 	static constexpr int MAX_SPLUTTER_FRAME_COUNT_ = 50;
 	static Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> DropColorBrush;
+	//static Microsoft::WRL::ComPtr < ID2D1StrokeStyle1> strokeStyleFixedThickness;
 	static std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> PrebuiltSplatterOpacityBrushes;
 	static RandomGenerator RandomGen;
 

@@ -25,6 +25,7 @@ class RainWindow final : CallBackWindow
 {
 public:
 	void LoadOptionValues();
+	void SetWindowBounds(HWND window);
 	HRESULT Initialize(HINSTANCE hInstance);
 	void RunMessageLoop();
 

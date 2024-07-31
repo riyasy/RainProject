@@ -23,6 +23,7 @@
     <ProjectGuid>{79f81733-c705-49ed-bbab-0bb5aecad550}</ProjectGuid>
     <RootNamespace>raincppdxgi</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <ProjectName>let-it-rain</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
