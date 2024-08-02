@@ -27,6 +27,7 @@ void HR(const HRESULT result)
 	}
 }
 
+#define TIMER_ID 1
 
 HINSTANCE RainWindow::AppInstance = nullptr;
 RainWindow* RainWindow::pThis;
@@ -77,6 +78,8 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 
 LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	static UINT_PTR timerId = 0;
+
 	switch (message)
 	{
 	case WM_CREATE:
@@ -87,8 +90,24 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	case WM_DISPLAYCHANGE:
 	case WM_DPICHANGED:
 		{
-			pThis->SetWindowBounds(hWnd);
+			// Kill any existing timer if present
+			if (timerId != 0) {
+				KillTimer(hWnd, timerId);
+			}
+			// Set a new timer to trigger after 500ms
+			timerId = SetTimer(hWnd, TIMER_ID, 500, NULL);
+			break;
+			
 		}
+	case WM_TIMER:
+		if (wParam == TIMER_ID) {
+			// Timer triggered, execute the function
+			pThis->SetWindowBounds(hWnd);
+			// Kill the timer after it has fired
+			KillTimer(hWnd, TIMER_ID);
+			timerId = 0;
+		}
+		break;
 	case WM_TRAYICON:
 		if (lParam == WM_CONTEXTMENU)
 		{
@@ -160,7 +179,7 @@ void RainWindow::InitNotifyIcon(HWND hWnd)
 	// add the icon, setting the icon, tooltip, and callback message.
 	// the icon will be identified with the GUID
 	nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
-	nid.guidItem = __uuidof(RainIcon);
+	//nid.guidItem = __uuidof(RainIcon);
 	nid.uCallbackMessage = WM_TRAYICON;
 	LoadIconMetric(AppInstance, MAKEINTRESOURCE(IDI_SMALL), LIM_SMALL, &nid.hIcon);
 
