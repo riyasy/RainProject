@@ -39,6 +39,9 @@
     <ClInclude Include="RandomGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CPUUsageTracker.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OptionDialog.cpp">

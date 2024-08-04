@@ -27,6 +27,7 @@ public:
 	void LoadOptionValues();
 	void SetWindowBounds(HWND window);
 	HRESULT Initialize(HINSTANCE hInstance);
+	static void ShowHideBasedOnCPULoad(HWND hWnd);
 	void RunMessageLoop();
 
 	void UpdateRainDropCount(int val) override;
@@ -46,6 +47,7 @@ private:
 	ComPtr<IDCompositionDevice> DcompDevice;
 	ComPtr<IDCompositionTarget> Target;
 	ComPtr<IDCompositionVisual> Visual;
+	bool cpuIsBusy = false;
 
 	static HINSTANCE AppInstance;
 	static RainWindow* pThis;

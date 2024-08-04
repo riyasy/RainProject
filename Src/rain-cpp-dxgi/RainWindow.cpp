@@ -2,6 +2,9 @@
 
 #include <shellapi.h>
 #include <commctrl.h>
+#include <sstream>
+
+#include "CPUUsageTracker.h"
 #include "Resource.h"
 
 #ifndef HINST_THISCOMPONENT
@@ -27,7 +30,8 @@ void HR(const HRESULT result)
 	}
 }
 
-#define TIMER_ID 1
+#define DELAY_TIMER_1 1947
+#define CPU_CHECK_TIMER 1948
 
 HINSTANCE RainWindow::AppInstance = nullptr;
 RainWindow* RainWindow::pThis;
@@ -53,7 +57,8 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 	wc.lpfnWndProc = WndProc;
 	RegisterClass(&wc);
 
-	DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST;
+	//WS_EX_TOOLWINDOW
+	DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
 	//DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
 	DWORD style = WS_POPUP | WS_VISIBLE;
 
@@ -76,6 +81,36 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 }
 
 
+void RainWindow::ShowHideBasedOnCPULoad(HWND hWnd)
+{
+	static int cpuFreeCycles = 1;
+	static bool windowHidden = false;
+	if (CPUUsageTracker::getInstance().GetCPUUsage() > 50)
+	{
+		if (!windowHidden)
+		{
+			cpuFreeCycles = 0;
+			pThis->cpuIsBusy = true;
+			ShowWindow(hWnd, SW_HIDE);
+			windowHidden = true;
+			if (!pThis->RainDrops.empty())
+			{
+				pThis->RainDrops.clear();
+			}
+		}
+	}
+	else
+	{
+		cpuFreeCycles++;
+		if (cpuFreeCycles > 3)
+		{
+			pThis->cpuIsBusy = false;
+			ShowWindow(hWnd, SW_SHOW);
+			windowHidden = false;
+		}
+	}
+}
+
 LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static UINT_PTR timerId = 0;
@@ -85,27 +120,28 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	case WM_CREATE:
 		{
 			InitNotifyIcon(hWnd);
+			SetTimer(hWnd, CPU_CHECK_TIMER, 500, NULL);
 			break;
 		}
 	case WM_DISPLAYCHANGE:
 	case WM_DPICHANGED:
 		{
-			// Kill any existing timer if present
 			if (timerId != 0) {
 				KillTimer(hWnd, timerId);
 			}
-			// Set a new timer to trigger after 500ms
-			timerId = SetTimer(hWnd, TIMER_ID, 500, NULL);
+			timerId = SetTimer(hWnd, DELAY_TIMER_1, 1000, NULL);
 			break;
 			
 		}
 	case WM_TIMER:
-		if (wParam == TIMER_ID) {
-			// Timer triggered, execute the function
+		if (wParam == DELAY_TIMER_1) {
 			pThis->SetWindowBounds(hWnd);
-			// Kill the timer after it has fired
-			KillTimer(hWnd, TIMER_ID);
+			KillTimer(hWnd, DELAY_TIMER_1);
 			timerId = 0;
+		}
+		if (wParam == CPU_CHECK_TIMER)
+		{
+			ShowHideBasedOnCPULoad(hWnd);			
 		}
 		break;
 	case WM_TRAYICON:
@@ -165,7 +201,10 @@ void RainWindow::RunMessageLoop()
 		}
 		else
 		{
-			Paint();
+			if (!cpuIsBusy)
+			{
+				Paint();
+			}		
 			Sleep(10);
 		}
 	}
@@ -179,7 +218,7 @@ void RainWindow::InitNotifyIcon(HWND hWnd)
 	// add the icon, setting the icon, tooltip, and callback message.
 	// the icon will be identified with the GUID
 	nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
-	//nid.guidItem = __uuidof(RainIcon);
+	nid.guidItem = __uuidof(RainIcon);
 	nid.uCallbackMessage = WM_TRAYICON;
 	LoadIconMetric(AppInstance, MAKEINTRESOURCE(IDI_SMALL), LIM_SMALL, &nid.hIcon);
 
@@ -378,6 +417,13 @@ void RainWindow::SetWindowBounds(const HWND window)
 	RainDrop::SetRainColor(Dc.Get(), RainColor);
 	float scaleFactor = WindowHeight / 1080.0f;
 	RainDrop::SetWindowBounds(WindowWidth, WindowHeight - TaskBarHeight, scaleFactor);
+
+
+	//std::wostringstream output;
+	//output << L"WindowWidth: " << WindowWidth << L"\n";
+	//output << L"WindowHeight: " << WindowHeight << L"\n";
+	//output << L"TaskBarHeight: " << TaskBarHeight << L"\n";
+	//OutputDebugString(output.str().c_str());
 }
 
 void RainWindow::UpdateRainDropCount(int val)
