@@ -2,7 +2,6 @@
 
 #include <windows.h>
 #include <pdh.h>
-#include <pdhmsg.h>
 #include <iostream>
 
 #pragma comment(lib, "pdh.lib")
@@ -121,4 +120,3 @@ private:
 //
 //	return 0;
 //}
-

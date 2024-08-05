@@ -1,18 +1,17 @@
 #include "RainDrop.h"
-
 #include <wrl/client.h>
+#include <algorithm>
 
 
 Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> RainDrop::DropColorBrush;
 std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> RainDrop::PrebuiltSplatterOpacityBrushes;
 //Microsoft::WRL::ComPtr < ID2D1StrokeStyle1> RainDrop::strokeStyleFixedThickness;
 
- float RainDrop::Gravity = 0.3f;
- float RainDrop::BounceDamping = 0.9f;
- float RainDrop::ScaleFactor = 1.0f;
- int RainDrop::WindowWidth;
- int RainDrop::WindowHeight;
- RandomGenerator RainDrop::RandomGen;
+float RainDrop::Gravity = 0.3f;
+float RainDrop::BounceDamping = 0.9f;
+float RainDrop::ScaleFactor = 1.0f;
+int RainDrop::WindowWidth;
+int RainDrop::WindowHeight;
 
 RainDrop::RainDrop(const int xVelocity,
                    const RainDropType type):
@@ -43,11 +42,19 @@ void RainDrop::MoveToNewPosition()
 	Ellipse.point.x += VelocityX;
 	Ellipse.point.y += VelocityY;
 
-
 	// Apply gravity
 	if (Type == RainDropType::Splatter)
 	{
 		VelocityY += (Gravity * ScaleFactor);
+		float velocityXdamp = 0.005f * ScaleFactor;
+		if (VelocityX > 0)
+		{
+			VelocityX = (std::max)(0.0f, VelocityX - velocityXdamp);
+		}
+		else if (VelocityX < 0)
+		{
+			VelocityX = (std::min)(0.0f, VelocityX + velocityXdamp);
+		}
 	}
 
 
@@ -62,7 +69,8 @@ void RainDrop::MoveToNewPosition()
 				auto splatter = new RainDrop(0, RainDropType::Splatter);
 
 				int parentXSpeedUnscaled = (VelocityX / ScaleFactor);
-				int speed10x = RandomGen.GenerateInt(-15 + parentXSpeedUnscaled, -6, 6, 15 + parentXSpeedUnscaled);
+				int speed10x = RandomGenerator::GetInstance().GenerateInt(
+					-15 + parentXSpeedUnscaled, -6, 6, 15 + parentXSpeedUnscaled);
 				float xSpeed = ScaleFactor * (speed10x / 10.0f);
 
 				//wchar_t text_buffer[20] = { 0 }; //temporary buffer
@@ -113,9 +121,9 @@ void RainDrop::Draw(ID2D1DeviceContext* dc)
 	//D2D1_RECT_F rect;
 	//rect.top = 0;
 	//rect.left = 0;
-	//rect.right = window_width_;
-	//rect.bottom = window_height_;
-	//dc->DrawRectangle(&rect, pBrush);
+	//rect.right = WindowWidth;
+	//rect.bottom = WindowHeight;
+	//dc->DrawRectangle(&rect, DropColorBrush.Get());
 
 
 	if (!LandedDrop && Ellipse.point.y >= 0 && Ellipse.point.x >= 0)
@@ -124,9 +132,9 @@ void RainDrop::Draw(ID2D1DeviceContext* dc)
 		{
 			//dc->FillEllipse(ellipse, pBrush);
 			D2D1_POINT_2F prevPoint;
-			prevPoint.x = Ellipse.point.x - 3 * VelocityX;
-			prevPoint.y = Ellipse.point.y - 3 * VelocityY;
-			dc->DrawLine(prevPoint, Ellipse.point, DropColorBrush.Get());
+			prevPoint.x = Ellipse.point.x - dropTrailFactor * VelocityX;
+			prevPoint.y = Ellipse.point.y - dropTrailFactor * VelocityY;
+			dc->DrawLine(prevPoint, Ellipse.point, DropColorBrush.Get(), Ellipse.radiusX);
 		}
 	}
 	if (!Splatters.empty())
@@ -166,25 +174,28 @@ RainDrop::~RainDrop()
 void RainDrop::Initialize()
 {
 	// Initialize position and size
-	Ellipse.point.x = static_cast<float>(RandomGen.GenerateInt(-WindowWidth, WindowWidth));
+	Ellipse.point.x = static_cast<float>(RandomGenerator::GetInstance().GenerateInt(-WindowWidth, WindowWidth));
 
-	const int y = (RandomGen.GenerateInt(-WindowHeight, 0) / 10) * 10;
+	const int y = (RandomGenerator::GetInstance().GenerateInt(-WindowHeight, 0) / 10) * 10;
 	Ellipse.point.y = static_cast<float>(y);
 
 	if (Type == RainDropType::MainDrop)
 	{
-		Ellipse.radiusX = 1;
-		Ellipse.radiusY = 1;
+		// Create splatters with radius ranging from 0.2 to 0.7 pixels
+		Ellipse.radiusX = (RandomGenerator::GetInstance().GenerateInt(2, 7) / 10.0f) * ScaleFactor;
+		Ellipse.radiusY = Ellipse.radiusX;
 	}
 	else
 	{
-		Ellipse.radiusX = 2.0f;
-		Ellipse.radiusY = 2.0f;
+		// Create splatters with radius ranging from 1.0 to 2.0 pixels
+		Ellipse.radiusX = (RandomGenerator::GetInstance().GenerateInt(10, 20) / 10.0f) * ScaleFactor;
+		Ellipse.radiusY = Ellipse.radiusX;
 	}
 
 	// Initialize velocity and physics parameters
 	VelocityY = 15.0f * ScaleFactor;
 
+	dropTrailFactor = RandomGenerator::GetInstance().GenerateInt(2, 6);
 }
 
 
@@ -209,8 +220,6 @@ void RainDrop::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
 		dc->CreateSolidColorBrush(splatterColor, splatterColorBrush.GetAddressOf());
 		PrebuiltSplatterOpacityBrushes.push_back(splatterColorBrush);
 	}
-
-
 }
 
 //void RainDrop::SetRainColor(ID2D1Factory2* factory, ID2D1DeviceContext* dc, COLORREF color)

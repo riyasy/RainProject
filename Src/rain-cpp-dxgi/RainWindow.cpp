@@ -58,7 +58,7 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 	RegisterClass(&wc);
 
 	//WS_EX_TOOLWINDOW
-	DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
+	DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST;
 	//DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
 	DWORD style = WS_POPUP | WS_VISIBLE;
 
@@ -74,18 +74,33 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 	pOptionsDlg->Create();
 
 	InitDirect2D(window);
-
-	SetWindowBounds(window);
+	RainDrop::SetRainColor(Dc.Get(), RainColor);
+	SetWindowBounds(window, false);
 
 	return 0;
 }
 
 
+void RainWindow::HandleTaskBarHeightChange(HWND hWnd)
+{
+	static int previousTaskBarHeight = -1;
+	int taskBarHeight = GetTaskBarHeight();
+	if (previousTaskBarHeight == -1)
+	{
+		previousTaskBarHeight = taskBarHeight;
+	}
+	else if (previousTaskBarHeight != taskBarHeight)
+	{
+		previousTaskBarHeight = taskBarHeight;
+		pThis->SetWindowBounds(hWnd, false);
+	}
+}
+
 void RainWindow::ShowHideBasedOnCPULoad(HWND hWnd)
 {
 	static int cpuFreeCycles = 1;
 	static bool windowHidden = false;
-	if (CPUUsageTracker::getInstance().GetCPUUsage() > 50)
+	if (CPUUsageTracker::getInstance().GetCPUUsage() > 80)
 	{
 		if (!windowHidden)
 		{
@@ -120,28 +135,30 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	case WM_CREATE:
 		{
 			InitNotifyIcon(hWnd);
-			SetTimer(hWnd, CPU_CHECK_TIMER, 500, NULL);
+			SetTimer(hWnd, CPU_CHECK_TIMER, 500, nullptr);
 			break;
 		}
 	case WM_DISPLAYCHANGE:
 	case WM_DPICHANGED:
 		{
-			if (timerId != 0) {
+			if (timerId != 0)
+			{
 				KillTimer(hWnd, timerId);
 			}
-			timerId = SetTimer(hWnd, DELAY_TIMER_1, 1000, NULL);
+			timerId = SetTimer(hWnd, DELAY_TIMER_1, 1000, nullptr);
 			break;
-			
 		}
 	case WM_TIMER:
-		if (wParam == DELAY_TIMER_1) {
-			pThis->SetWindowBounds(hWnd);
+		if (wParam == DELAY_TIMER_1)
+		{
+			pThis->SetWindowBounds(hWnd, true);
 			KillTimer(hWnd, DELAY_TIMER_1);
 			timerId = 0;
 		}
 		if (wParam == CPU_CHECK_TIMER)
 		{
-			ShowHideBasedOnCPULoad(hWnd);			
+			HandleTaskBarHeightChange(hWnd);
+			//ShowHideBasedOnCPULoad(hWnd);			
 		}
 		break;
 	case WM_TRAYICON:
@@ -204,7 +221,7 @@ void RainWindow::RunMessageLoop()
 			if (!cpuIsBusy)
 			{
 				Paint();
-			}		
+			}
 			Sleep(10);
 		}
 	}
@@ -329,11 +346,43 @@ void RainWindow::InitDirect2D(HWND hWnd)
 	HR(DcompDevice->Commit());
 }
 
+bool RainWindow::IsTaskBarVisible()
+{
+	//// Get the screen height
+	//int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+	//// Get the work area height
+	//RECT workAreaRect;
+	//SystemParametersInfo(SPI_GETWORKAREA, 0, &workAreaRect, 0);
+	//int workAreaHeight = workAreaRect.bottom - workAreaRect.top;
+
+	//// If there's a difference between screen height and work area height, the taskbar is visible
+	//return (screenHeight != workAreaHeight);
+
+
+	HWND hTaskbarWnd = FindWindow(L"Shell_traywnd", nullptr);
+	HMONITOR hMonitor = MonitorFromWindow(hTaskbarWnd, MONITOR_DEFAULTTONEAREST);
+	MONITORINFO info = {sizeof(MONITORINFO)};
+	if (GetMonitorInfo(hMonitor, &info))
+	{
+		RECT rect;
+		GetWindowRect(hTaskbarWnd, &rect);
+		if ((rect.top >= info.rcMonitor.bottom - 4) ||
+			(rect.right <= 2) ||
+			(rect.bottom <= 4) ||
+			(rect.left >= info.rcMonitor.right - 2))
+			return false;
+
+		return true;
+	}
+	return false;
+}
+
 int RainWindow::GetTaskBarHeight()
 {
 	RECT rect;
 	HWND taskBar = FindWindow(L"Shell_traywnd", nullptr);
-	if (taskBar && GetWindowRect(taskBar, &rect))
+	if (taskBar && GetWindowRect(taskBar, &rect) && IsTaskBarVisible())
 	{
 		return rect.bottom - rect.top;
 	}
@@ -402,9 +451,9 @@ void RainWindow::CheckAndGenerateRainDrops()
 	}
 }
 
-void RainWindow::SetWindowBounds(const HWND window)
+void RainWindow::SetWindowBounds(const HWND window, bool clearDrops)
 {
-	if (!RainDrops.empty())
+	if (!RainDrops.empty() && clearDrops)
 	{
 		RainDrops.clear();
 	}
@@ -414,7 +463,6 @@ void RainWindow::SetWindowBounds(const HWND window)
 	WindowWidth = rc.right - rc.left;
 	WindowHeight = rc.bottom - rc.top;
 	TaskBarHeight = GetTaskBarHeight();
-	RainDrop::SetRainColor(Dc.Get(), RainColor);
 	float scaleFactor = WindowHeight / 1080.0f;
 	RainDrop::SetWindowBounds(WindowWidth, WindowHeight - TaskBarHeight, scaleFactor);
 
@@ -438,5 +486,6 @@ void RainWindow::UpdateRainDirection(int val)
 
 void RainWindow::UpdateRainColor(COLORREF color)
 {
+	RainColor = color;
 	RainDrop::SetRainColor(Dc.Get(), color);
 }

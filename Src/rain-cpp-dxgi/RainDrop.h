@@ -2,7 +2,6 @@
 
 
 #include <d2d1.h>
-#include <d2d1_2.h>
 #include <vector>
 #include <dcomp.h>
 #include <vector>
@@ -35,6 +34,8 @@ private:
 	D2D1_ELLIPSE Ellipse;
 	float VelocityX;
 	float VelocityY;
+	int dropTrailFactor;
+	RainDropType Type;
 
 	static float Gravity;
 	static float BounceDamping;
@@ -42,7 +43,7 @@ private:
 	static int WindowHeight;
 	static float ScaleFactor;
 
-	RainDropType Type;
+
 	bool LandedDrop = false;
 	int SplashCount = 0;
 	int CurrentFrameCountForSplatter = 0;
@@ -50,12 +51,11 @@ private:
 	std::vector<RainDrop*> Splatters;
 
 	static constexpr int MAX_SPLUTTER_FRAME_COUNT_ = 50;
+
 	static Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> DropColorBrush;
-	//static Microsoft::WRL::ComPtr < ID2D1StrokeStyle1> strokeStyleFixedThickness;
 	static std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> PrebuiltSplatterOpacityBrushes;
-	static RandomGenerator RandomGen;
+	//static Microsoft::WRL::ComPtr < ID2D1StrokeStyle1> strokeStyleFixedThickness;	
 
 	void Initialize();
 	void DrawSplatter(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const;
-	//static int GetRandomNumber(int min, int max);
 };

@@ -25,8 +25,9 @@ class RainWindow final : CallBackWindow
 {
 public:
 	void LoadOptionValues();
-	void SetWindowBounds(HWND window);
+	void SetWindowBounds(HWND window, bool clearDrops);
 	HRESULT Initialize(HINSTANCE hInstance);
+	static void HandleTaskBarHeightChange(HWND hWnd);
 	static void ShowHideBasedOnCPULoad(HWND hWnd);
 	void RunMessageLoop();
 
@@ -73,6 +74,7 @@ private:
 	static void InitNotifyIcon(HWND hWnd);
 	static void ShowContextMenu(HWND hWnd);
 	void InitDirect2D(HWND hWnd);
+	static bool IsTaskBarVisible();
 
 	static int GetTaskBarHeight();
 
