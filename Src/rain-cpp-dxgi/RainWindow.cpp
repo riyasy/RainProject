@@ -37,13 +37,6 @@ HINSTANCE RainWindow::AppInstance = nullptr;
 RainWindow* RainWindow::pThis;
 OptionsDialog* RainWindow::pOptionsDlg;
 
-void RainWindow::LoadOptionValues()
-{
-	MaxRainDrops = 10;
-	RainDirection = 3;
-	RainColor = 0x00AAAAAA;
-}
-
 
 HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 {
@@ -58,9 +51,9 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 	RegisterClass(&wc);
 
 	//WS_EX_TOOLWINDOW
-	DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST;
+	const DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST;
 	//DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
-	DWORD style = WS_POPUP | WS_VISIBLE;
+	const DWORD style = WS_POPUP | WS_VISIBLE;
 
 	const HWND window = CreateWindowEx(exstyle, wc.lpszClassName, L"let it rain", style,
 	                                   CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -75,56 +68,34 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 
 	InitDirect2D(window);
 	RainDrop::SetRainColor(Dc.Get(), RainColor);
-	SetWindowBounds(window, false);
+	HandleWindowBoundsChange(window, false);
 
 	return 0;
 }
 
-
-void RainWindow::HandleTaskBarHeightChange(HWND hWnd)
+void RainWindow::UpdateRainDropCount(int val)
 {
-	static int previousTaskBarHeight = -1;
-	int taskBarHeight = GetTaskBarHeight();
-	if (previousTaskBarHeight == -1)
-	{
-		previousTaskBarHeight = taskBarHeight;
-	}
-	else if (previousTaskBarHeight != taskBarHeight)
-	{
-		previousTaskBarHeight = taskBarHeight;
-		pThis->SetWindowBounds(hWnd, false);
-	}
+	MaxRainDrops = val;
 }
 
-void RainWindow::ShowHideBasedOnCPULoad(HWND hWnd)
+void RainWindow::UpdateRainDirection(int val)
 {
-	static int cpuFreeCycles = 1;
-	static bool windowHidden = false;
-	if (CPUUsageTracker::getInstance().GetCPUUsage() > 80)
-	{
-		if (!windowHidden)
-		{
-			cpuFreeCycles = 0;
-			pThis->cpuIsBusy = true;
-			ShowWindow(hWnd, SW_HIDE);
-			windowHidden = true;
-			if (!pThis->RainDrops.empty())
-			{
-				pThis->RainDrops.clear();
-			}
-		}
-	}
-	else
-	{
-		cpuFreeCycles++;
-		if (cpuFreeCycles > 3)
-		{
-			pThis->cpuIsBusy = false;
-			ShowWindow(hWnd, SW_SHOW);
-			windowHidden = false;
-		}
-	}
+	RainDirection = val;
 }
+
+void RainWindow::UpdateRainColor(COLORREF color)
+{
+	RainColor = color;
+	RainDrop::SetRainColor(Dc.Get(), color);
+}
+
+void RainWindow::LoadOptionValues()
+{
+	MaxRainDrops = 10;
+	RainDirection = 3;
+	RainColor = 0x00AAAAAA;
+}
+
 
 LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -151,14 +122,14 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	case WM_TIMER:
 		if (wParam == DELAY_TIMER_1)
 		{
-			pThis->SetWindowBounds(hWnd, true);
+			pThis->HandleWindowBoundsChange(hWnd, true);
 			KillTimer(hWnd, DELAY_TIMER_1);
 			timerId = 0;
 		}
 		if (wParam == CPU_CHECK_TIMER)
 		{
 			HandleTaskBarHeightChange(hWnd);
-			//ShowHideBasedOnCPULoad(hWnd);			
+			//HandleCPULoadChange(hWnd);			
 		}
 		break;
 	case WM_TRAYICON:
@@ -251,7 +222,7 @@ void RainWindow::ShowContextMenu(HWND hWnd)
 {
 	POINT pt;
 	GetCursorPos(&pt);
-	HMENU hMenu = CreatePopupMenu();
+	const HMENU hMenu = CreatePopupMenu();
 	AppendMenu(hMenu, MF_STRING, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, L"Configure");
 	AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, L"Exit");
 	SetForegroundWindow(hWnd);
@@ -346,22 +317,78 @@ void RainWindow::InitDirect2D(HWND hWnd)
 	HR(DcompDevice->Commit());
 }
 
+void RainWindow::HandleWindowBoundsChange(const HWND window, bool clearDrops)
+{
+	if (!RainDrops.empty() && clearDrops)
+	{
+		RainDrops.clear();
+	}
+
+	RECT rc;
+	GetClientRect(window, &rc);
+	WindowWidth = rc.right - rc.left;
+	WindowHeight = rc.bottom - rc.top;
+	TaskBarHeight = GetTaskBarHeight();
+	const float scaleFactor = WindowHeight / 1080.0f;
+	RainDrop::SetWindowBounds(WindowWidth, WindowHeight - TaskBarHeight, scaleFactor);
+
+
+	//std::wostringstream output;
+	//output << L"WindowWidth: " << WindowWidth << L"\n";
+	//output << L"WindowHeight: " << WindowHeight << L"\n";
+	//output << L"TaskBarHeight: " << TaskBarHeight << L"\n";
+	//OutputDebugString(output.str().c_str());
+}
+
+void RainWindow::HandleTaskBarHeightChange(HWND hWnd)
+{
+	static int previousTaskBarHeight = -1;
+	const int taskBarHeight = GetTaskBarHeight();
+	if (previousTaskBarHeight == -1)
+	{
+		previousTaskBarHeight = taskBarHeight;
+	}
+	else if (previousTaskBarHeight != taskBarHeight)
+	{
+		previousTaskBarHeight = taskBarHeight;
+		pThis->HandleWindowBoundsChange(hWnd, false);
+	}
+}
+
+void RainWindow::HandleCPULoadChange(HWND hWnd)
+{
+	static int cpuFreeCycles = 1;
+	static bool windowHidden = false;
+	if (CPUUsageTracker::getInstance().GetCPUUsage() > 80)
+	{
+		if (!windowHidden)
+		{
+			cpuFreeCycles = 0;
+			pThis->cpuIsBusy = true;
+			ShowWindow(hWnd, SW_HIDE);
+			windowHidden = true;
+			if (!pThis->RainDrops.empty())
+			{
+				pThis->RainDrops.clear();
+			}
+		}
+	}
+	else
+	{
+		cpuFreeCycles++;
+		if (cpuFreeCycles > 3)
+		{
+			pThis->cpuIsBusy = false;
+			ShowWindow(hWnd, SW_SHOW);
+			windowHidden = false;
+		}
+	}
+}
+
 bool RainWindow::IsTaskBarVisible()
 {
-	//// Get the screen height
-	//int screenHeight = GetSystemMetrics(SM_CYSCREEN);
-
-	//// Get the work area height
-	//RECT workAreaRect;
-	//SystemParametersInfo(SPI_GETWORKAREA, 0, &workAreaRect, 0);
-	//int workAreaHeight = workAreaRect.bottom - workAreaRect.top;
-
-	//// If there's a difference between screen height and work area height, the taskbar is visible
-	//return (screenHeight != workAreaHeight);
-
-
-	HWND hTaskbarWnd = FindWindow(L"Shell_traywnd", nullptr);
-	HMONITOR hMonitor = MonitorFromWindow(hTaskbarWnd, MONITOR_DEFAULTTONEAREST);
+	const HWND hTaskbarWnd = FindWindow(L"Shell_traywnd", nullptr);
+	const HMONITOR hMonitor = MonitorFromWindow(hTaskbarWnd, MONITOR_DEFAULTTONEAREST);
 	MONITORINFO info = {sizeof(MONITORINFO)};
 	if (GetMonitorInfo(hMonitor, &info))
 	{
@@ -381,7 +408,7 @@ bool RainWindow::IsTaskBarVisible()
 int RainWindow::GetTaskBarHeight()
 {
 	RECT rect;
-	HWND taskBar = FindWindow(L"Shell_traywnd", nullptr);
+	const HWND taskBar = FindWindow(L"Shell_traywnd", nullptr);
 	if (taskBar && GetWindowRect(taskBar, &rect) && IsTaskBarVisible())
 	{
 		return rect.bottom - rect.top;
@@ -403,7 +430,7 @@ void RainWindow::Paint()
 void RainWindow::DrawRainDrops()
 {
 	CheckAndGenerateRainDrops();
-	for (auto drop : RainDrops)
+	for (const auto drop : RainDrops)
 	{
 		drop->Draw(Dc.Get());
 		drop->MoveToNewPosition();
@@ -413,7 +440,7 @@ void RainWindow::DrawRainDrops()
 void RainWindow::CheckAndGenerateRainDrops()
 {
 	// Move each raindrop to the next point
-	for (auto drop : RainDrops)
+	for (const auto drop : RainDrops)
 	{
 		drop->MoveToNewPosition();
 	}
@@ -421,7 +448,7 @@ void RainWindow::CheckAndGenerateRainDrops()
 	// Remove all raindrops that have expired
 	for (auto it = RainDrops.begin(); it != RainDrops.end();)
 	{
-		if ((*it)->ShouldBeErasedAndDeleted())
+		if ((*it)->IsReadyForErase())
 		{
 			delete*it;
 			it = RainDrops.erase(it);
@@ -434,14 +461,14 @@ void RainWindow::CheckAndGenerateRainDrops()
 
 	// Calculate the number of raindrops to generate
 	int countOfFallingDrops = 0;
-	for (auto drop : RainDrops)
+	for (const auto drop : RainDrops)
 	{
-		if (!drop->DidDropLand())
+		if (!drop->DidTouchGround())
 		{
 			countOfFallingDrops++;
 		}
 	}
-	int noOfDropsToGenerate = MaxRainDrops - countOfFallingDrops;
+	const int noOfDropsToGenerate = MaxRainDrops - countOfFallingDrops;
 
 	// Generate new raindrops
 	for (int i = 0; i < noOfDropsToGenerate; ++i)
@@ -449,43 +476,4 @@ void RainWindow::CheckAndGenerateRainDrops()
 		auto k = new RainDrop(RainDirection, RainDropType::MainDrop);
 		RainDrops.push_back(k);
 	}
-}
-
-void RainWindow::SetWindowBounds(const HWND window, bool clearDrops)
-{
-	if (!RainDrops.empty() && clearDrops)
-	{
-		RainDrops.clear();
-	}
-
-	RECT rc;
-	GetClientRect(window, &rc);
-	WindowWidth = rc.right - rc.left;
-	WindowHeight = rc.bottom - rc.top;
-	TaskBarHeight = GetTaskBarHeight();
-	float scaleFactor = WindowHeight / 1080.0f;
-	RainDrop::SetWindowBounds(WindowWidth, WindowHeight - TaskBarHeight, scaleFactor);
-
-
-	//std::wostringstream output;
-	//output << L"WindowWidth: " << WindowWidth << L"\n";
-	//output << L"WindowHeight: " << WindowHeight << L"\n";
-	//output << L"TaskBarHeight: " << TaskBarHeight << L"\n";
-	//OutputDebugString(output.str().c_str());
-}
-
-void RainWindow::UpdateRainDropCount(int val)
-{
-	MaxRainDrops = val;
-}
-
-void RainWindow::UpdateRainDirection(int val)
-{
-	RainDirection = val;
-}
-
-void RainWindow::UpdateRainColor(COLORREF color)
-{
-	RainColor = color;
-	RainDrop::SetRainColor(Dc.Get(), color);
 }

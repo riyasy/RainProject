@@ -24,11 +24,7 @@ class __declspec(uuid("9D0B8B92-4E1C-488e-A1E1-2331AFCE2CB5")) RainIcon;
 class RainWindow final : CallBackWindow
 {
 public:
-	void LoadOptionValues();
-	void SetWindowBounds(HWND window, bool clearDrops);
 	HRESULT Initialize(HINSTANCE hInstance);
-	static void HandleTaskBarHeightChange(HWND hWnd);
-	static void ShowHideBasedOnCPULoad(HWND hWnd);
 	void RunMessageLoop();
 
 	void UpdateRainDropCount(int val) override;
@@ -71,12 +67,19 @@ private:
 		LPARAM lParam
 	);
 
+	void LoadOptionValues();
+
+	void HandleWindowBoundsChange(HWND window, bool clearDrops);
+	static void HandleTaskBarHeightChange(HWND hWnd);
+	static void HandleCPULoadChange(HWND hWnd);
+
 	static void InitNotifyIcon(HWND hWnd);
-	static void ShowContextMenu(HWND hWnd);
 	void InitDirect2D(HWND hWnd);
-	static bool IsTaskBarVisible();
+
+	static void ShowContextMenu(HWND hWnd);
 
 	static int GetTaskBarHeight();
+	static bool IsTaskBarVisible();
 
 	void DrawRainDrops();
 	void CheckAndGenerateRainDrops();
