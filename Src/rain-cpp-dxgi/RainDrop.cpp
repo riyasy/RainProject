@@ -22,10 +22,10 @@ RainDrop::RainDrop(const int xVelocity,
 
 void RainDrop::Initialize()
 {
-	// Initialize position and size
-	Ellipse.point.x = static_cast<float>(RandomGenerator::GetInstance().GenerateInt(-WindowWidth, WindowWidth));
+	int xWidenToAccountForSlant = WindowHeight / 3;
+	Ellipse.point.x = static_cast<float>(RandomGenerator::GetInstance().GenerateInt(- xWidenToAccountForSlant, WindowWidth + xWidenToAccountForSlant));
 
-	const int y = (RandomGenerator::GetInstance().GenerateInt(-WindowHeight, 0) / 10) * 10;
+	const int y = (RandomGenerator::GetInstance().GenerateInt(-WindowHeight / 2, 0) / 10) * 10;
 	Ellipse.point.y = static_cast<float>(y);
 
 	if (Type == RainDropType::MainDrop)
@@ -153,16 +153,17 @@ void RainDrop::Draw(ID2D1DeviceContext* dc)
 	//dc->DrawRectangle(&rect, DropColorBrush.Get());
 
 
-	if (!TouchedGround && Ellipse.point.y >= 0 && Ellipse.point.x >= 0)
+	if (Type == RainDropType::MainDrop && !TouchedGround &&
+		Ellipse.point.y >= 0 && 
+		Ellipse.point.y <= WindowHeight &&
+		Ellipse.point.x >= 0 && 
+		Ellipse.point.x <= WindowWidth)
 	{
-		if (Type == RainDropType::MainDrop)
-		{
-			//dc->FillEllipse(ellipse, pBrush);
-			D2D1_POINT_2F prevPoint;
-			prevPoint.x = Ellipse.point.x - dropTrailFactor * VelocityX;
-			prevPoint.y = Ellipse.point.y - dropTrailFactor * VelocityY;
-			dc->DrawLine(prevPoint, Ellipse.point, DropColorBrush.Get(), Ellipse.radiusX);
-		}
+		//dc->FillEllipse(ellipse, pBrush);
+		D2D1_POINT_2F prevPoint;
+		prevPoint.x = Ellipse.point.x - dropTrailFactor * VelocityX;
+		prevPoint.y = Ellipse.point.y - dropTrailFactor * VelocityY;
+		dc->DrawLine(prevPoint, Ellipse.point, DropColorBrush.Get(), Ellipse.radiusX);
 	}
 	if (!Splatters.empty())
 	{
@@ -177,15 +178,11 @@ void RainDrop::Draw(ID2D1DeviceContext* dc)
 
 void RainDrop::DrawSplatter(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const
 {
-	if (!TouchedGround && Ellipse.point.y >= 0 && Ellipse.point.x >= 0)
+	if (Type == RainDropType::Splatter && 
+		Ellipse.point.y >= 0 && Ellipse.point.x >= 0 &&		 
+		SplatterBounceCount < MAX_SPLATTER_BOUNCE_COUNT_)
 	{
-		if (Type == RainDropType::Splatter)
-		{
-			if (SplatterBounceCount < MAX_SPLATTER_BOUNCE_COUNT_)
-			{
-				dc->FillEllipse(Ellipse, pBrush);
-			}
-		}
+		dc->FillEllipse(Ellipse, pBrush);
 	}
 }
 

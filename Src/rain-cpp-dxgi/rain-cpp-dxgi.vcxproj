@@ -211,6 +211,7 @@
     <ClInclude Include="RainDrop.h" />
     <ClInclude Include="RandomGenerator.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SettingsManager.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
@@ -218,6 +219,7 @@
     <ClCompile Include="OptionDialog.cpp" />
     <ClCompile Include="RainWindow.cpp" />
     <ClCompile Include="RainDrop.cpp" />
+    <ClCompile Include="SettingsManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="rain-cpp-dxgi.rc" />

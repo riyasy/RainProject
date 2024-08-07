@@ -11,6 +11,7 @@
 #include "RainDrop.h"
 #include "CallBackWindow.h"
 #include "OptionDialog.h"
+#include "SettingsManager.h"
 
 
 // https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/june/windows-with-c-high-performance-window-layering-using-the-windows-composition-engine
@@ -56,9 +57,11 @@ private:
 	int WindowHeight = 100;
 	int TaskBarHeight = 0;
 
-	int MaxRainDrops = 10;
-	int RainDirection = 3;
-	COLORREF RainColor = 0x00AAAAAA;
+	Setting settings;
+
+	//int MaxRainDrops = 10;
+	//int RainDirection = 3;
+	//COLORREF RainColor = 0x00AAAAAA;
 
 	static LRESULT CALLBACK WndProc(
 		HWND hWnd,

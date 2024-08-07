@@ -6,6 +6,7 @@
 
 #include "CPUUsageTracker.h"
 #include "Resource.h"
+#include "SettingsManager.h"
 
 #ifndef HINST_THISCOMPONENT
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
@@ -63,11 +64,11 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 
 	LoadOptionValues();
 
-	pOptionsDlg = new OptionsDialog(AppInstance, this, MaxRainDrops, RainDirection, RainColor);
+	pOptionsDlg = new OptionsDialog(AppInstance, this, settings.MaxRainDrops, settings.RainDirection, settings.RainColor);
 	pOptionsDlg->Create();
 
 	InitDirect2D(window);
-	RainDrop::SetRainColor(Dc.Get(), RainColor);
+	RainDrop::SetRainColor(Dc.Get(), settings.RainColor);
 	HandleWindowBoundsChange(window, false);
 
 	return 0;
@@ -75,25 +76,24 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 
 void RainWindow::UpdateRainDropCount(int val)
 {
-	MaxRainDrops = val;
+	settings.MaxRainDrops = val;
 }
 
 void RainWindow::UpdateRainDirection(int val)
 {
-	RainDirection = val;
+	settings.RainDirection = val;
 }
 
 void RainWindow::UpdateRainColor(COLORREF color)
 {
-	RainColor = color;
+	settings.RainColor = color;
 	RainDrop::SetRainColor(Dc.Get(), color);
 }
 
 void RainWindow::LoadOptionValues()
 {
-	MaxRainDrops = 10;
-	RainDirection = 3;
-	RainColor = 0x00AAAAAA;
+	// Read settings (or create with default values)
+	SettingsManager::GetInstance()->ReadSettings(settings);
 }
 
 
@@ -168,6 +168,7 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		}
 	case WM_DESTROY:
 		{
+			SettingsManager::GetInstance()->WriteSettings(pThis->settings);
 			PostQuitMessage(0);
 			return 0;
 		}
@@ -468,12 +469,12 @@ void RainWindow::CheckAndGenerateRainDrops()
 			countOfFallingDrops++;
 		}
 	}
-	const int noOfDropsToGenerate = MaxRainDrops - countOfFallingDrops;
+	const int noOfDropsToGenerate = settings.MaxRainDrops - countOfFallingDrops;
 
 	// Generate new raindrops
 	for (int i = 0; i < noOfDropsToGenerate; ++i)
 	{
-		auto k = new RainDrop(RainDirection, RainDropType::MainDrop);
+		auto k = new RainDrop(settings.RainDirection, RainDropType::MainDrop);
 		RainDrops.push_back(k);
 	}
 }
