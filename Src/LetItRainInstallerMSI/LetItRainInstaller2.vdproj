@@ -3,7 +3,7 @@
 "VSVersion" = "3:800"
 "ProjectType" = "8:{978C614F-708E-4E1A-B201-565925725DBA}"
 "IsWebType" = "8:FALSE"
-"ProjectName" = "8:LetItRainInstaller2"
+"ProjectName" = "8:let-it-rain-msi"
 "LanguageId" = "3:1033"
 "CodePage" = "3:1252"
 "UILanguageId" = "3:1033"
@@ -15,38 +15,14 @@
     {
         "Entry"
         {
-        "MsmKey" = "8:_1C6A1DA449F874EFF39822F30BCE572D"
-        "OwnerKey" = "8:_934C30C35D0348E1B5B3CA2F0FBED2F0"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_27F04B592A7A4AE6BA7B94D0FA6FB341"
         "OwnerKey" = "8:_UNDEFINED"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
         {
-        "MsmKey" = "8:_54BA92AF4C9401CBF034A74A29FFCCF8"
-        "OwnerKey" = "8:_934C30C35D0348E1B5B3CA2F0FBED2F0"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_69F87A7CFD6C8AF370CB22721B992099"
-        "OwnerKey" = "8:_934C30C35D0348E1B5B3CA2F0FBED2F0"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
         "MsmKey" = "8:_934C30C35D0348E1B5B3CA2F0FBED2F0"
         "OwnerKey" = "8:_UNDEFINED"
-        "MsmSig" = "8:_UNDEFINED"
-        }
-        "Entry"
-        {
-        "MsmKey" = "8:_E32BEF6ECBF3CED7B64073C44E7A047B"
-        "OwnerKey" = "8:_934C30C35D0348E1B5B3CA2F0FBED2F0"
         "MsmSig" = "8:_UNDEFINED"
         }
     }
@@ -74,6 +50,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
         "Release"
@@ -128,26 +112,6 @@
         }
         "File"
         {
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_1C6A1DA449F874EFF39822F30BCE572D"
-            {
-            "SourcePath" = "8:dcomp.dll"
-            "TargetName" = "8:dcomp.dll"
-            "Tag" = "8:"
-            "Folder" = "8:_75E0EF229BF0412392BBE443AC098308"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_27F04B592A7A4AE6BA7B94D0FA6FB341"
             {
             "SourcePath" = "8:rain_icon.ico"
@@ -166,66 +130,6 @@
             "Register" = "3:1"
             "Exclude" = "11:FALSE"
             "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_54BA92AF4C9401CBF034A74A29FFCCF8"
-            {
-            "SourcePath" = "8:dxgi.dll"
-            "TargetName" = "8:dxgi.dll"
-            "Tag" = "8:"
-            "Folder" = "8:_75E0EF229BF0412392BBE443AC098308"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_69F87A7CFD6C8AF370CB22721B992099"
-            {
-            "SourcePath" = "8:d2d1.dll"
-            "TargetName" = "8:d2d1.dll"
-            "Tag" = "8:"
-            "Folder" = "8:_75E0EF229BF0412392BBE443AC098308"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
-            "IsolateTo" = "8:"
-            }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_E32BEF6ECBF3CED7B64073C44E7A047B"
-            {
-            "SourcePath" = "8:d3d11.dll"
-            "TargetName" = "8:d3d11.dll"
-            "Tag" = "8:"
-            "Folder" = "8:_75E0EF229BF0412392BBE443AC098308"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
         }
@@ -820,7 +724,7 @@
         {
             "{5259A561-127C-4D43-A0A1-72F10C7B3BF8}:_934C30C35D0348E1B5B3CA2F0FBED2F0"
             {
-            "SourcePath" = "8:..\\x64\\Release\\rain-cpp-dxgi.exe"
+            "SourcePath" = "8:..\\let-it-rain\\x64\\Release\\let-it-rain.exe"
             "TargetName" = "8:"
             "Tag" = "8:"
             "Folder" = "8:_75E0EF229BF0412392BBE443AC098308"
