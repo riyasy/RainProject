@@ -67,12 +67,12 @@
     <Image Include="small.ico">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="rain-cpp-dxgi.ico">
+    <Image Include="let-it-rain.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="rain-cpp-dxgi.rc">
+    <ResourceCompile Include="let-it-rain.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>

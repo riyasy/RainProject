@@ -222,10 +222,10 @@
     <ClCompile Include="SettingsManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="rain-cpp-dxgi.rc" />
+    <ResourceCompile Include="let-it-rain.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="rain-cpp-dxgi.ico" />
+    <Image Include="let-it-rain.ico" />
     <Image Include="small.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

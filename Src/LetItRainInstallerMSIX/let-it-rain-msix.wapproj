@@ -56,7 +56,7 @@
     <DefaultLanguage>en-US</DefaultLanguage>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
     <NoWarn>$(NoWarn);NU1702</NoWarn>
-    <EntryPointProjectUniqueName>..\rain-cpp-dxgi\rain-cpp-dxgi.vcxproj</EntryPointProjectUniqueName>
+    <EntryPointProjectUniqueName>..\let-it-rain\let-it-rain.vcxproj</EntryPointProjectUniqueName>
     <PackageCertificateThumbprint>896D4FFE3CD03AAFC7D25F9DD20D598FAF0CD30A</PackageCertificateThumbprint>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
@@ -114,6 +114,6 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.3233" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\rain-cpp-dxgi\rain-cpp-dxgi.vcxproj" />
+    <ProjectReference Include="..\let-it-rain\let-it-rain.vcxproj" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by rain-cpp-dxgi.rc
+// Used by let-it-rain.rc
 //
 #define IDC_MYICON                      2
 #define IDD_DIALOGB                     101
