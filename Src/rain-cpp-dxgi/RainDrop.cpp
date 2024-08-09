@@ -6,45 +6,54 @@
 Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> RainDrop::DropColorBrush;
 std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> RainDrop::PrebuiltSplatterOpacityBrushes;
 //Microsoft::WRL::ComPtr < ID2D1StrokeStyle1> RainDrop::strokeStyleFixedThickness;
-float RainDrop::Gravity = 0.3f;
-float RainDrop::BounceDamping = 0.9f;
 float RainDrop::ScaleFactor = 1.0f;
 int RainDrop::WindowWidth;
 int RainDrop::WindowHeight;
 
-RainDrop::RainDrop(const int xVelocity,
+RainDrop::RainDrop(const int windDirectionFactor,
                    const RainDropType type):
-	VelocityX(xVelocity * ScaleFactor),
-	Type(type)
+	Type(type),
+	WindDirectionFactor(windDirectionFactor)
+
 {
-	Initialize();
+	if (Type == RainDropType::MainDrop)
+	{
+		InitializeMainDrop();
+	}
+	else
+	{
+		InitializeSplatter();
+	}
 }
 
-void RainDrop::Initialize()
+
+void RainDrop::InitializeMainDrop()
 {
 	int xWidenToAccountForSlant = WindowHeight / 3;
-	Ellipse.point.x = static_cast<float>(RandomGenerator::GetInstance().GenerateInt(- xWidenToAccountForSlant, WindowWidth + xWidenToAccountForSlant));
+	Ellipse.point.x = static_cast<float>(RandomGenerator::GetInstance().GenerateInt(
+		-xWidenToAccountForSlant, WindowWidth + xWidenToAccountForSlant));
 
 	const int y = (RandomGenerator::GetInstance().GenerateInt(-WindowHeight / 2, 0) / 10) * 10;
 	Ellipse.point.y = static_cast<float>(y);
 
-	if (Type == RainDropType::MainDrop)
-	{
-		// Create splatters with radius ranging from 0.2 to 0.7 pixels
-		Ellipse.radiusX = (RandomGenerator::GetInstance().GenerateInt(2, 7) / 10.0f) * ScaleFactor;
-		Ellipse.radiusY = Ellipse.radiusX;
-	}
-	else
-	{
-		// Create splatters with radius ranging from 1.0 to 2.0 pixels
-		Ellipse.radiusX = (RandomGenerator::GetInstance().GenerateInt(10, 20) / 10.0f) * ScaleFactor;
-		Ellipse.radiusY = Ellipse.radiusX;
-	}
+
+	// Create splatters with radius ranging from 0.2 to 0.7 pixels
+	Ellipse.radiusX = (RandomGenerator::GetInstance().GenerateInt(2, 7) / 10.0f) * ScaleFactor;
+	Ellipse.radiusY = Ellipse.radiusX;
+
 
 	// Initialize velocity and physics parameters
-	VelocityY = 15.0f * ScaleFactor;
+	DeltaX_PerPhysicsFrame = HORIZONTAL_SPEED_OF_DROP_BASE * PHYSICS_FRAME_INTERVAL * ScaleFactor * WindDirectionFactor;
+	DeltaY_PerPhysicsFrame = VERTICAL_SPEED_OF_DROP * PHYSICS_FRAME_INTERVAL * ScaleFactor;
 
-	dropTrailFactor = RandomGenerator::GetInstance().GenerateInt(2, 6);
+	DropTrailLength = RandomGenerator::GetInstance().GenerateInt(2, 6);
+}
+
+void RainDrop::InitializeSplatter()
+{
+	// Create splatters with radius ranging from 1.0 to 2.0 pixels
+	Ellipse.radiusX = (RandomGenerator::GetInstance().GenerateInt(15, 25) / 10.0f) * ScaleFactor;
+	Ellipse.radiusY = Ellipse.radiusX;
 }
 
 RainDrop::~RainDrop()
@@ -67,83 +76,91 @@ bool RainDrop::IsReadyForErase() const
 
 void RainDrop::MoveToNewPosition()
 {
-	if (TouchedGround)
-	{
-		return;
-	}
-
 	// Update the position of the raindrop
-	Ellipse.point.x += VelocityX;
-	Ellipse.point.y += VelocityY;
+	Ellipse.point.x += DeltaX_PerPhysicsFrame;
+	Ellipse.point.y += DeltaY_PerPhysicsFrame;
 
-	// Apply gravity
+
 	if (Type == RainDropType::Splatter)
 	{
-		VelocityY += (Gravity * ScaleFactor);
-		float velocityXdamp = 0.005f * ScaleFactor;
-		if (VelocityX > 0)
+		// Adjust for Gravity and Air resistance for splatter
+		float deltaYAdjustmentDueToGravity = GRAVITY * PHYSICS_FRAME_INTERVAL * ScaleFactor;
+		DeltaY_PerPhysicsFrame += deltaYAdjustmentDueToGravity;
+
+		float deltaXAdjustmentDueToAirResistance = AIR_RESISTANCE * PHYSICS_FRAME_INTERVAL * ScaleFactor;
+		if (DeltaX_PerPhysicsFrame > 0)
 		{
-			VelocityX = (std::max)(0.0f, VelocityX - velocityXdamp);
+			DeltaX_PerPhysicsFrame = (std::max)(0.0f, DeltaX_PerPhysicsFrame - deltaXAdjustmentDueToAirResistance);
 		}
-		else if (VelocityX < 0)
+		else if (DeltaX_PerPhysicsFrame < 0)
 		{
-			VelocityX = (std::min)(0.0f, VelocityX + velocityXdamp);
+			DeltaX_PerPhysicsFrame = (std::min)(0.0f, DeltaX_PerPhysicsFrame + deltaXAdjustmentDueToAirResistance);
 		}
-	}
 
 
-	if (Type == RainDropType::MainDrop)
-	{
-		if (Ellipse.point.y + Ellipse.radiusY >= WindowHeight)
-		{
-			Ellipse.point.y = static_cast<float>(WindowHeight);
-			TouchedGround = true;
-			for (int i = 0; i < MAX_SPLATTER_PER_RAINDROP_; i++)
-			{
-				auto splatter = new RainDrop(0, RainDropType::Splatter);
-
-				int parentXSpeedUnscaled = (VelocityX / ScaleFactor);
-				int speed10x = RandomGenerator::GetInstance().GenerateInt(
-					-15 + parentXSpeedUnscaled, -6, 6, 15 + parentXSpeedUnscaled);
-				float xSpeed = ScaleFactor * (speed10x / 10.0f);
-
-				//wchar_t text_buffer[20] = { 0 }; //temporary buffer
-				//swprintf(text_buffer, _countof(text_buffer), L"%d\n", speed10x); // convert
-				//OutputDebugString(text_buffer); // print
-
-				float ySpeed = (3.0f * ScaleFactor * ScaleFactor) / xSpeed;
-
-				splatter->SetPositionAndSpeed(Ellipse.point.x, Ellipse.point.y, xSpeed, ySpeed);
-				Splatters.push_back(splatter);
-			}
-		}
-	}
-
-	// Bounce off the edges for Splatter type
-	if (Type == RainDropType::Splatter)
-	{
+		// Check for Bouncing against ground and window left/right
 		if (Ellipse.point.x + Ellipse.radiusX > WindowWidth || Ellipse.point.x - Ellipse.radiusX < 0)
 		{
-			VelocityX = -VelocityX;
+			DeltaX_PerPhysicsFrame = -DeltaX_PerPhysicsFrame;
 		}
 
 		if (Ellipse.point.y + Ellipse.radiusY > WindowHeight)
 		{
 			Ellipse.point.y = WindowHeight - Ellipse.radiusY; // Keep the ellipse within bounds
-			VelocityY = -VelocityY * BounceDamping; // Bounce with damping
+			DeltaY_PerPhysicsFrame = -DeltaY_PerPhysicsFrame * BOUNCE_DAMPING; // Bounce with damping
 			SplatterBounceCount++;
 		}
 
 		if (Ellipse.point.y - Ellipse.radiusY < 0)
 		{
 			Ellipse.point.y = Ellipse.radiusY; // Keep the ellipse within bounds
-			VelocityY = -VelocityY; // Reverse the direction if it hits the top edge
+			DeltaY_PerPhysicsFrame = -DeltaY_PerPhysicsFrame; // Reverse the direction if it hits the top edge
+		}
+	}
+
+
+	if (Type == RainDropType::MainDrop)
+	{
+		if (!TouchedGround)
+		{
+			if (Ellipse.point.y + Ellipse.radiusY >= WindowHeight)
+			{
+				Ellipse.point.y = static_cast<float>(WindowHeight);
+				TouchedGround = true;
+				for (int i = 0; i < MAX_SPLATTER_PER_RAINDROP_; i++)
+				{
+					auto splatter = new RainDrop(0, RainDropType::Splatter);
+
+					float randomizedAndBiasedWindDirectionForSplatter = RandomGenerator::GetInstance().GenerateInt(
+						-15 + WindDirectionFactor, -6, 6, 15 + WindDirectionFactor);
+
+					float xVelocityForSplatter = HORIZONTAL_SPEED_OF_DROP_BASE * PHYSICS_FRAME_INTERVAL *
+						randomizedAndBiasedWindDirectionForSplatter;
+					xVelocityForSplatter = xVelocityForSplatter / 10.0f;
+					float yVelocityForSplatter = -std::fabs(2.5f / xVelocityForSplatter);
+
+					xVelocityForSplatter *= ScaleFactor;
+					yVelocityForSplatter *= ScaleFactor;
+
+					splatter->SetPositionAndSpeed(Ellipse.point.x, Ellipse.point.y - splatter->Ellipse.radiusX,
+					                              xVelocityForSplatter, yVelocityForSplatter);
+					Splatters.push_back(splatter);
+				}
+			}
+		}
+		else
+		{
+			for (const auto drop : Splatters)
+			{
+				drop->MoveToNewPosition();
+			}
+			CurrentFrameCountForSplatter++;
 		}
 	}
 }
 
 
-void RainDrop::Draw(ID2D1DeviceContext* dc)
+void RainDrop::Draw(ID2D1DeviceContext* dc) const
 {
 	//D2D1_RECT_F rect;
 	//rect.top = 0;
@@ -154,15 +171,15 @@ void RainDrop::Draw(ID2D1DeviceContext* dc)
 
 
 	if (Type == RainDropType::MainDrop && !TouchedGround &&
-		Ellipse.point.y >= 0 && 
+		Ellipse.point.y >= 0 &&
 		Ellipse.point.y <= WindowHeight &&
-		Ellipse.point.x >= 0 && 
+		Ellipse.point.x >= 0 &&
 		Ellipse.point.x <= WindowWidth)
 	{
 		//dc->FillEllipse(ellipse, pBrush);
 		D2D1_POINT_2F prevPoint;
-		prevPoint.x = Ellipse.point.x - dropTrailFactor * VelocityX;
-		prevPoint.y = Ellipse.point.y - dropTrailFactor * VelocityY;
+		prevPoint.x = Ellipse.point.x - DropTrailLength * DeltaX_PerPhysicsFrame;
+		prevPoint.y = Ellipse.point.y - DropTrailLength * DeltaY_PerPhysicsFrame;
 		dc->DrawLine(prevPoint, Ellipse.point, DropColorBrush.Get(), Ellipse.radiusX);
 	}
 	if (!Splatters.empty())
@@ -170,16 +187,14 @@ void RainDrop::Draw(ID2D1DeviceContext* dc)
 		for (const auto drop : Splatters)
 		{
 			drop->DrawSplatter(dc, PrebuiltSplatterOpacityBrushes[CurrentFrameCountForSplatter].Get());
-			drop->MoveToNewPosition();
 		}
-		CurrentFrameCountForSplatter++;
 	}
 }
 
 void RainDrop::DrawSplatter(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const
 {
-	if (Type == RainDropType::Splatter && 
-		Ellipse.point.y >= 0 && Ellipse.point.x >= 0 &&		 
+	if (Type == RainDropType::Splatter &&
+		Ellipse.point.y >= 0 && Ellipse.point.x >= 0 &&
 		SplatterBounceCount < MAX_SPLATTER_BOUNCE_COUNT_)
 	{
 		dc->FillEllipse(Ellipse, pBrush);
@@ -191,8 +206,8 @@ void RainDrop::SetPositionAndSpeed(const FLOAT x, const FLOAT y, const float xSp
 {
 	Ellipse.point.x = x;
 	Ellipse.point.y = y;
-	VelocityX = xSpeed;
-	VelocityY = ySpeed;
+	DeltaX_PerPhysicsFrame = xSpeed;
+	DeltaY_PerPhysicsFrame = ySpeed;
 }
 
 void RainDrop::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
@@ -211,6 +226,7 @@ void RainDrop::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
 	for (int i = 0; i < MAX_SPLUTTER_FRAME_COUNT_; i++)
 	{
 		float alpha = 1.0f - static_cast<float>(i) / static_cast<float>(MAX_SPLUTTER_FRAME_COUNT_);
+		alpha *= 0.75f;
 		const D2D1_COLOR_F splatterColor = D2D1::ColorF(red, green, blue, alpha);
 		Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> splatterColorBrush;
 		dc->CreateSolidColorBrush(splatterColor, splatterColorBrush.GetAddressOf());

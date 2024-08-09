@@ -26,6 +26,7 @@ class RainWindow final : CallBackWindow
 {
 public:
 	HRESULT Initialize(HINSTANCE hInstance);
+	static double hires_time_in_seconds();
 	void RunMessageLoop();
 
 	void UpdateRainDropCount(int val) override;
@@ -84,7 +85,6 @@ private:
 	static int GetTaskBarHeight();
 	static bool IsTaskBarVisible();
 
-	void DrawRainDrops();
-	void CheckAndGenerateRainDrops();
-	void Paint();
+	void UpdateRainDrops();
+	void DrawRainDrops() const;
 };

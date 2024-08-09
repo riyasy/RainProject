@@ -20,12 +20,15 @@ enum class RainDropType
 class RainDrop
 {
 public:
-	RainDrop(int xVelocity, RainDropType type);
+	static constexpr float PHYSICS_FRAME_INTERVAL = 0.01f; // in second
+
+	RainDrop(int windDirectionFactor, RainDropType type);
+	void InitializeSplatter();
 
 	bool DidTouchGround() const;
 	bool IsReadyForErase() const;
 	void MoveToNewPosition();
-	void Draw(ID2D1DeviceContext* dc);
+	void Draw(ID2D1DeviceContext* dc) const;
 	void DrawSplatter(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const;
 
 	void SetPositionAndSpeed(float x, float y, float xSpeed, float ySpeed);
@@ -35,21 +38,27 @@ public:
 
 private:
 	static constexpr int MAX_SPLUTTER_FRAME_COUNT_ = 50;
-	static constexpr int MAX_SPLATTER_BOUNCE_COUNT_ = 3;
+	static constexpr int MAX_SPLATTER_BOUNCE_COUNT_ = 2;
 	static constexpr int MAX_SPLATTER_PER_RAINDROP_ = 3;
 
-	D2D1_ELLIPSE Ellipse;
-	float VelocityX;
-	float VelocityY;
-	int dropTrailFactor;
-	RainDropType Type;
+	static constexpr float VERTICAL_SPEED_OF_DROP = 1500; //pixels per second
+	static constexpr float HORIZONTAL_SPEED_OF_DROP_BASE = 100; // pixels per second
+	static constexpr float GRAVITY = 20.0f; // pixels per second square
+	static constexpr float AIR_RESISTANCE = 1.0f; // pixels per second square
+	static constexpr float BOUNCE_DAMPING = 0.9f;
 
+	static int WindowWidth; //  in pixels
+	static int WindowHeight; //  in pixels
+	static float ScaleFactor; // FullHD is considered as 1. 4K will be 2(twice height and width change).
 	static float Gravity;
-	static float BounceDamping;
-	static int WindowWidth;
-	static int WindowHeight;
-	static float ScaleFactor;
 
+
+	RainDropType Type;
+	int WindDirectionFactor;
+	D2D1_ELLIPSE Ellipse;
+	float DeltaX_PerPhysicsFrame;
+	float DeltaY_PerPhysicsFrame;
+	int DropTrailLength;
 
 	bool TouchedGround = false;
 	int SplatterBounceCount = 0;
@@ -57,9 +66,10 @@ private:
 
 	std::vector<RainDrop*> Splatters;
 
+
 	static Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> DropColorBrush;
 	static std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> PrebuiltSplatterOpacityBrushes;
 	//static Microsoft::WRL::ComPtr < ID2D1StrokeStyle1> strokeStyleFixedThickness;	
 
-	void Initialize();
+	void InitializeMainDrop();
 };

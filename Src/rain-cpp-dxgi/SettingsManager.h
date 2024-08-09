@@ -3,31 +3,31 @@
 #include <string>
 #include <windows.h>
 
-class Setting {
+class Setting
+{
 public:
-    int MaxRainDrops;
-    int RainDirection;
-    COLORREF RainColor;
+	int MaxRainDrops;
+	int RainDirection;
+	COLORREF RainColor;
 
-    Setting(int maxRainDrops = 10, int rainDirection = 3, COLORREF rainColor = 0x00AAAAAA)
-        : MaxRainDrops(maxRainDrops), RainDirection(rainDirection), RainColor(rainColor) {}
+	Setting(int maxRainDrops = 10, int rainDirection = 3, COLORREF rainColor = 0x00AAAAAA)
+		: MaxRainDrops(maxRainDrops), RainDirection(rainDirection), RainColor(rainColor)
+	{
+	}
 };
 
-class SettingsManager {
-private:
-    static SettingsManager* instance;
-    std::wstring iniFilePath;
-    Setting defaultSetting;
+class SettingsManager
+{
+	static SettingsManager* instance;
+	std::wstring iniFilePath;
+	Setting defaultSetting;
 
-    SettingsManager();
-    static std::wstring GetAppDataPath();
-    void CreateINIFile() const;
+	SettingsManager();
+	static std::wstring GetAppDataPath();
+	void CreateINIFile() const;
 
 public:
-    static SettingsManager* GetInstance();
-    void ReadSettings(Setting& setting) const;
-    void WriteSettings(const Setting& setting) const;
+	static SettingsManager* GetInstance();
+	void ReadSettings(Setting& setting) const;
+	void WriteSettings(const Setting& setting) const;
 };
-
-
-

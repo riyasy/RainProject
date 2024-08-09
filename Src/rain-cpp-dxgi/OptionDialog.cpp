@@ -67,6 +67,8 @@ LRESULT CALLBACK OptionsDialog::DialogProc(HWND hWnd, UINT message, WPARAM wPara
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDC_BUTTON_SHOW_COLOR)
 		{
+			//ShellExecute(NULL, L"open", L"https://www.google.com", NULL, NULL, SW_SHOWNORMAL);
+
 			CHOOSECOLOR cc;
 			static COLORREF acrCustClr[16]; // array of custom colors 
 			ZeroMemory(&cc, sizeof(cc));

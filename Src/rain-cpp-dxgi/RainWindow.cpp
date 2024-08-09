@@ -1,5 +1,6 @@
 #include "RainWindow.h"
 
+#include <chrono>
 #include <shellapi.h>
 #include <commctrl.h>
 #include <sstream>
@@ -52,9 +53,9 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 	RegisterClass(&wc);
 
 	//WS_EX_TOOLWINDOW
-	const DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST;
+	constexpr DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST;
 	//DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
-	const DWORD style = WS_POPUP | WS_VISIBLE;
+	constexpr DWORD style = WS_POPUP | WS_VISIBLE;
 
 	const HWND window = CreateWindowEx(exstyle, wc.lpszClassName, L"let it rain", style,
 	                                   CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
@@ -64,7 +65,8 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 
 	LoadOptionValues();
 
-	pOptionsDlg = new OptionsDialog(AppInstance, this, settings.MaxRainDrops, settings.RainDirection, settings.RainColor);
+	pOptionsDlg = new OptionsDialog(AppInstance, this, settings.MaxRainDrops, settings.RainDirection,
+	                                settings.RainColor);
 	pOptionsDlg->Create();
 
 	InitDirect2D(window);
@@ -73,6 +75,7 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 
 	return 0;
 }
+
 
 void RainWindow::UpdateRainDropCount(int val)
 {
@@ -177,8 +180,21 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
+double RainWindow::hires_time_in_seconds()
+{
+	using namespace std::chrono;
+	return duration<double>(high_resolution_clock::now().time_since_epoch()).count();
+}
+
 void RainWindow::RunMessageLoop()
 {
+	double t = 0.0;
+	constexpr double dt = 0.01;
+
+	double currentTime = hires_time_in_seconds();
+	double accumulator = 0.0;
+
+
 	MSG msg = {};
 
 	while (msg.message != WM_QUIT)
@@ -190,10 +206,23 @@ void RainWindow::RunMessageLoop()
 		}
 		else
 		{
-			if (!cpuIsBusy)
+			double newTime = hires_time_in_seconds();
+			double frameTime = newTime - currentTime;
+			currentTime = newTime;
+
+			accumulator += frameTime;
+
+			while (accumulator >= dt)
 			{
-				Paint();
+				UpdateRainDrops();
+				accumulator -= dt;
+				t += dt;
 			}
+			DrawRainDrops();
+			//if (!cpuIsBusy)
+			//{
+			//	Paint();
+			//}
 			Sleep(10);
 		}
 	}
@@ -299,6 +328,8 @@ void RainWindow::InitDirect2D(HWND hWnd)
 	HR(Dc->CreateBitmapFromDxgiSurface(Surface.Get(),
 	                                   properties,
 	                                   Bitmap.GetAddressOf()));
+
+
 	// Point the device context to the bitmap for rendering
 	Dc->SetTarget(Bitmap.Get());
 
@@ -417,28 +448,22 @@ int RainWindow::GetTaskBarHeight()
 	return 0;
 }
 
-void RainWindow::Paint()
+void RainWindow::DrawRainDrops() const
 {
 	Dc->BeginDraw();
 	Dc->Clear();
-	DrawRainDrops();
+
+	for (const auto drop : RainDrops)
+	{
+		drop->Draw(Dc.Get());
+	}
+
 	HR(Dc->EndDraw());
 	// Make the swap chain available to the composition engine
 	HR(SwapChain->Present(1, 0));
 }
 
-
-void RainWindow::DrawRainDrops()
-{
-	CheckAndGenerateRainDrops();
-	for (const auto drop : RainDrops)
-	{
-		drop->Draw(Dc.Get());
-		drop->MoveToNewPosition();
-	}
-}
-
-void RainWindow::CheckAndGenerateRainDrops()
+void RainWindow::UpdateRainDrops()
 {
 	// Move each raindrop to the next point
 	for (const auto drop : RainDrops)
