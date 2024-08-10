@@ -13,11 +13,9 @@
 #include "OptionDialog.h"
 #include "SettingsManager.h"
 
-
 // https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/june/windows-with-c-high-performance-window-layering-using-the-windows-composition-engine
 
 using namespace Microsoft::WRL;
-
 
 // Use a guid to uniquely identify our icon
 class __declspec(uuid("9D0B8B92-4E1C-488e-A1E1-2331AFCE2CB5")) RainIcon;
@@ -26,7 +24,7 @@ class RainWindow final : CallBackWindow
 {
 public:
 	HRESULT Initialize(HINSTANCE hInstance);
-	static double hires_time_in_seconds();
+	static double GetCurrentTimeInSeconds();
 	void RunMessageLoop();
 
 	void UpdateRainDropCount(int val) override;
@@ -74,16 +72,15 @@ private:
 	void LoadOptionValues();
 
 	void HandleWindowBoundsChange(HWND window, bool clearDrops);
-	static void HandleTaskBarHeightChange(HWND hWnd);
+	static void HandleTaskBarChange();
 	static void HandleCPULoadChange(HWND hWnd);
+
+	static void FindRainableRect(RECT& rainableRect, float& scaleFactor);
 
 	static void InitNotifyIcon(HWND hWnd);
 	void InitDirect2D(HWND hWnd);
 
 	static void ShowContextMenu(HWND hWnd);
-
-	static int GetTaskBarHeight();
-	static bool IsTaskBarVisible();
 
 	void UpdateRainDrops();
 	void DrawRainDrops() const;

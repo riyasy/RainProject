@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <d2d1.h>
 #include <vector>
 #include <dcomp.h>
@@ -27,13 +26,15 @@ public:
 
 	bool DidTouchGround() const;
 	bool IsReadyForErase() const;
+	void CreateSplatters();
 	void MoveToNewPosition();
+
 	void Draw(ID2D1DeviceContext* dc) const;
 	void DrawSplatter(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const;
 
 	void SetPositionAndSpeed(float x, float y, float xSpeed, float ySpeed);
 	static void SetRainColor(ID2D1DeviceContext* dc, COLORREF color);
-	static void SetWindowBounds(int windowWidth, int windowHeight, float scaleFactor);
+	static void SetWindowBounds(RECT windowRect, float scaleFactor);
 	~RainDrop();
 
 private:
@@ -47,11 +48,11 @@ private:
 	static constexpr float AIR_RESISTANCE = 1.0f; // pixels per second square
 	static constexpr float BOUNCE_DAMPING = 0.9f;
 
-	static int WindowWidth; //  in pixels
-	static int WindowHeight; //  in pixels
+	//static int WindowWidth; //  in pixels
+	//static int WindowHeight; //  in pixels
+	static RECT WindowRect;
 	static float ScaleFactor; // FullHD is considered as 1. 4K will be 2(twice height and width change).
 	static float Gravity;
-
 
 	RainDropType Type;
 	int WindDirectionFactor;
@@ -61,11 +62,11 @@ private:
 	int DropTrailLength;
 
 	bool TouchedGround = false;
+	bool IsDead = false;
 	int SplatterBounceCount = 0;
 	int CurrentFrameCountForSplatter = 0;
 
 	std::vector<RainDrop*> Splatters;
-
 
 	static Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> DropColorBrush;
 	static std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> PrebuiltSplatterOpacityBrushes;

@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "CPUUsageTracker.h"
+#include "MathUtil.h"
 #include "Resource.h"
 #include "SettingsManager.h"
 
@@ -38,7 +39,6 @@ void HR(const HRESULT result)
 HINSTANCE RainWindow::AppInstance = nullptr;
 RainWindow* RainWindow::pThis;
 OptionsDialog* RainWindow::pOptionsDlg;
-
 
 HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 {
@@ -76,7 +76,6 @@ HRESULT RainWindow::Initialize(HINSTANCE hInstance)
 	return 0;
 }
 
-
 void RainWindow::UpdateRainDropCount(int val)
 {
 	settings.MaxRainDrops = val;
@@ -99,7 +98,6 @@ void RainWindow::LoadOptionValues()
 	SettingsManager::GetInstance()->ReadSettings(settings);
 }
 
-
 LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static UINT_PTR timerId = 0;
@@ -111,6 +109,12 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			InitNotifyIcon(hWnd);
 			SetTimer(hWnd, CPU_CHECK_TIMER, 500, nullptr);
 			break;
+		}
+	case WM_DESTROY:
+		{
+			SettingsManager::GetInstance()->WriteSettings(pThis->settings);
+			PostQuitMessage(0);
+			return 0;
 		}
 	case WM_DISPLAYCHANGE:
 	case WM_DPICHANGED:
@@ -131,7 +135,7 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 		}
 		if (wParam == CPU_CHECK_TIMER)
 		{
-			HandleTaskBarHeightChange(hWnd);
+			HandleTaskBarChange();
 			//HandleCPULoadChange(hWnd);			
 		}
 		break;
@@ -159,28 +163,17 @@ LRESULT RainWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lPara
 			if (hit == HTCLIENT) hit = HTCAPTION;
 			return hit;
 		}
-	case WM_KEYDOWN: // Pressing any key will trigger a redraw 
-		{
-			InvalidateRect(hWnd, nullptr, false);
-			break;
-		}
+	case WM_KEYDOWN:
 	case WM_PAINT:
 		{
-			//Paint();
 			break;
-		}
-	case WM_DESTROY:
-		{
-			SettingsManager::GetInstance()->WriteSettings(pThis->settings);
-			PostQuitMessage(0);
-			return 0;
 		}
 	default: ;
 	}
 	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
-double RainWindow::hires_time_in_seconds()
+double RainWindow::GetCurrentTimeInSeconds()
 {
 	using namespace std::chrono;
 	return duration<double>(high_resolution_clock::now().time_since_epoch()).count();
@@ -191,9 +184,8 @@ void RainWindow::RunMessageLoop()
 	double t = 0.0;
 	constexpr double dt = 0.01;
 
-	double currentTime = hires_time_in_seconds();
+	double currentTime = GetCurrentTimeInSeconds();
 	double accumulator = 0.0;
-
 
 	MSG msg = {};
 
@@ -206,7 +198,7 @@ void RainWindow::RunMessageLoop()
 		}
 		else
 		{
-			double newTime = hires_time_in_seconds();
+			double newTime = GetCurrentTimeInSeconds();
 			double frameTime = newTime - currentTime;
 			currentTime = newTime;
 
@@ -227,7 +219,6 @@ void RainWindow::RunMessageLoop()
 		}
 	}
 }
-
 
 void RainWindow::InitNotifyIcon(HWND hWnd)
 {
@@ -329,7 +320,6 @@ void RainWindow::InitDirect2D(HWND hWnd)
 	                                   properties,
 	                                   Bitmap.GetAddressOf()));
 
-
 	// Point the device context to the bitmap for rendering
 	Dc->SetTarget(Bitmap.Get());
 
@@ -337,7 +327,6 @@ void RainWindow::InitDirect2D(HWND hWnd)
 		DxgiDevice.Get(),
 		__uuidof(DcompDevice),
 		reinterpret_cast<void**>(DcompDevice.GetAddressOf())));
-
 
 	HR(DcompDevice->CreateTargetForHwnd(hWnd,
 	                                    true, // Top most
@@ -355,36 +344,18 @@ void RainWindow::HandleWindowBoundsChange(const HWND window, bool clearDrops)
 	{
 		RainDrops.clear();
 	}
-
-	RECT rc;
-	GetClientRect(window, &rc);
-	WindowWidth = rc.right - rc.left;
-	WindowHeight = rc.bottom - rc.top;
-	TaskBarHeight = GetTaskBarHeight();
-	const float scaleFactor = WindowHeight / 1080.0f;
-	RainDrop::SetWindowBounds(WindowWidth, WindowHeight - TaskBarHeight, scaleFactor);
-
-
-	//std::wostringstream output;
-	//output << L"WindowWidth: " << WindowWidth << L"\n";
-	//output << L"WindowHeight: " << WindowHeight << L"\n";
-	//output << L"TaskBarHeight: " << TaskBarHeight << L"\n";
-	//OutputDebugString(output.str().c_str());
+	RECT rainableRect;
+	float scaleFactor = 1.0f;
+	FindRainableRect(rainableRect, scaleFactor);
+	RainDrop::SetWindowBounds(rainableRect, scaleFactor);
 }
 
-void RainWindow::HandleTaskBarHeightChange(HWND hWnd)
+void RainWindow::HandleTaskBarChange()
 {
-	static int previousTaskBarHeight = -1;
-	const int taskBarHeight = GetTaskBarHeight();
-	if (previousTaskBarHeight == -1)
-	{
-		previousTaskBarHeight = taskBarHeight;
-	}
-	else if (previousTaskBarHeight != taskBarHeight)
-	{
-		previousTaskBarHeight = taskBarHeight;
-		pThis->HandleWindowBoundsChange(hWnd, false);
-	}
+	RECT rainableRect;
+	float scaleFactor = 1.0f;
+	FindRainableRect(rainableRect, scaleFactor);
+	RainDrop::SetWindowBounds(rainableRect, scaleFactor);
 }
 
 void RainWindow::HandleCPULoadChange(HWND hWnd)
@@ -417,35 +388,39 @@ void RainWindow::HandleCPULoadChange(HWND hWnd)
 	}
 }
 
-bool RainWindow::IsTaskBarVisible()
+void RainWindow::FindRainableRect(RECT& rainableRect, float& scaleFactor)
 {
 	const HWND hTaskbarWnd = FindWindow(L"Shell_traywnd", nullptr);
 	const HMONITOR hMonitor = MonitorFromWindow(hTaskbarWnd, MONITOR_DEFAULTTONEAREST);
 	MONITORINFO info = {sizeof(MONITORINFO)};
+
+	RECT taskBarRect, desktopRect;
+
+	GetWindowRect(hTaskbarWnd, &taskBarRect);
 	if (GetMonitorInfo(hMonitor, &info))
 	{
-		RECT rect;
-		GetWindowRect(hTaskbarWnd, &rect);
-		if ((rect.top >= info.rcMonitor.bottom - 4) ||
-			(rect.right <= 2) ||
-			(rect.bottom <= 4) ||
-			(rect.left >= info.rcMonitor.right - 2))
-			return false;
-
-		return true;
+		desktopRect = info.rcMonitor;
 	}
-	return false;
-}
-
-int RainWindow::GetTaskBarHeight()
-{
-	RECT rect;
-	const HWND taskBar = FindWindow(L"Shell_traywnd", nullptr);
-	if (taskBar && GetWindowRect(taskBar, &rect) && IsTaskBarVisible())
+	else
 	{
-		return rect.bottom - rect.top;
+		GetWindowRect(GetDesktopWindow(), &desktopRect);
 	}
-	return 0;
+
+	// Check if task bar is hidden and act accordingly
+	if ((taskBarRect.top >= desktopRect.bottom - 4) ||
+		(taskBarRect.right <= 2) ||
+		(taskBarRect.bottom <= 4) ||
+		(taskBarRect.left >= desktopRect.right - 2))
+	{
+		rainableRect = desktopRect;
+	}
+	else
+	{
+		rainableRect = MathUtil::SubtractRect(info.rcMonitor, taskBarRect);
+	}
+
+	int monitorHeight = info.rcMonitor.bottom - info.rcMonitor.top;
+	scaleFactor = static_cast<float>(monitorHeight) / 1080.0f;
 }
 
 void RainWindow::DrawRainDrops() const

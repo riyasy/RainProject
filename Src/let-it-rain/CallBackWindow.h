@@ -1,6 +1,5 @@
 #pragma once
 
-
 // An abstract class
 class CallBackWindow
 {

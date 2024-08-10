@@ -4,9 +4,7 @@
 
 #include "Resource.h"
 
-
 OptionsDialog* OptionsDialog::pThis;
-
 
 OptionsDialog::OptionsDialog(HINSTANCE hInstance, CallBackWindow* pRainWindow, int maxRainDrops,
                              int rainDirection,

@@ -1,0 +1,88 @@
+
+10 Aug
+	Main rain drops are drawn only if both start and end point are inside the drawable rect.
+	This should be optimised 
+	In HandleTaskBarChange, call the update only if the rainable rect has changed between subsequent calls.
+
+
+
+
+
+
+
+
+
+
+Unused Code
+
+//void RainDrop::SetRainColor(ID2D1Factory2* factory, ID2D1DeviceContext* dc, COLORREF color)
+//{
+//	SetRainColor(dc, color);
+//
+//	HRESULT hr = factory->CreateStrokeStyle(
+//		D2D1::StrokeStyleProperties1(
+//			D2D1_CAP_STYLE_FLAT,
+//			D2D1_CAP_STYLE_FLAT,
+//			D2D1_CAP_STYLE_FLAT,
+//			D2D1_LINE_JOIN_MITER,
+//			10.0f,
+//			D2D1_DASH_STYLE_SOLID,
+//			0.0f, D2D1_STROKE_TRANSFORM_TYPE_FIXED),
+//		nullptr, 0, strokeStyleFixedThickness.GetAddressOf());
+//}
+
+	//D2D1_RECT_F rect;
+	//rect.top = 0;
+	//rect.left = 0;
+	//rect.right = WindowWidth;
+	//rect.bottom = WindowHeight;
+	//dc->DrawRectangle(&rect, DropColorBrush.Get());
+
+
+
+//
+//bool RainWindow::IsTaskBarVisible()
+//{
+//	const HWND hTaskbarWnd = FindWindow(L"Shell_traywnd", nullptr);
+//	const HMONITOR hMonitor = MonitorFromWindow(hTaskbarWnd, MONITOR_DEFAULTTONEAREST);
+//	MONITORINFO info = {sizeof(MONITORINFO)};
+//	if (GetMonitorInfo(hMonitor, &info))
+//	{
+//		RECT rect;
+//		GetWindowRect(hTaskbarWnd, &rect);
+//		if ((rect.top >= info.rcMonitor.bottom - 4) ||
+//			(rect.right <= 2) ||
+//			(rect.bottom <= 4) ||
+//			(rect.left >= info.rcMonitor.right - 2))
+//			return false;
+//
+//		return true;
+//	}
+//	return false;
+//}
+//
+//int RainWindow::GetTaskBarHeight()
+//{
+//	RECT rect;
+//	const HWND taskBar = FindWindow(L"Shell_traywnd", nullptr);
+//	if (taskBar && GetWindowRect(taskBar, &rect) && IsTaskBarVisible())
+//	{
+//		return rect.bottom - rect.top;
+//	}
+//	return 0;
+//}
+
+
+	//// Create a string stream to format the RECT values
+	//std::ostringstream oss;
+	//oss << "RECT: {left: " << rainableRect.left
+	//	<< ", top: " << rainableRect.top
+	//	<< ", right: " << rainableRect.right
+	//	<< ", bottom: " << rainableRect.bottom
+	//	<< "}\n";
+
+	//// Convert the stream to a string
+	//std::string logMessage = oss.str();
+
+	//// Send the log message to the Output window
+	//OutputDebugStringA(logMessage.c_str());
