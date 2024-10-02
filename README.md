@@ -6,7 +6,7 @@ Welcome to **Let It Rain**, an ASMR-inspired rain simulation for the Windows des
 
 - 🌧️ **Realistic Raindrop Motion**: Watch raindrops gently descend from the top of the screen and interact with your desktop.
 - 💦 **Splattering Effect**: Raindrops splatter when they hit the taskbar, adding to the immersive experience.
-- 🎧 **ASMR Visuals**: Calm your mind as you watch raindrops dance across your workspace, creating a visual ASMR atmosphere.
+- **ASMR Visuals**: Calm your mind as you watch raindrops dance across your workspace, creating a visual ASMR atmosphere.
 - ⚙️ **Customizable Settings**: Adjust the raindrop count, direction, and rain color to suit your preferences.
 
 ## Installation
