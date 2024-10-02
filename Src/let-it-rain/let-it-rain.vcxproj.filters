@@ -73,6 +73,9 @@
     <Image Include="let-it-rain.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="github.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="let-it-rain.rc">

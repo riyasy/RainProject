@@ -18,7 +18,7 @@
 using namespace Microsoft::WRL;
 
 // Use a guid to uniquely identify our icon
-class __declspec(uuid("9D0B8B92-4E1C-488e-A1E1-2331AFCE2CB5")) RainIcon;
+class __declspec(uuid("355F4E1D-8039-4078-BABD-8668FD2D1F7B")) RainIcon;
 
 class RainWindow final : CallBackWindow
 {

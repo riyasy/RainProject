@@ -228,6 +228,7 @@
     <ResourceCompile Include="let-it-rain.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="github.ico" />
     <Image Include="let-it-rain.ico" />
     <Image Include="small.ico" />
   </ItemGroup>

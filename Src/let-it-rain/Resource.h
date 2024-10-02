@@ -13,21 +13,22 @@
 #define IDI_SMALL                       108
 #define IDC_RAINCPPDXGI                 109
 #define IDR_MAINFRAME                   128
-#define IDC_BUTTON1                     1000
+#define IDI_GITHUB_ICON                 130
+#define IDC_BUTTON_SHOW_COLOR           135
+#define IDC_BUTTON_GITHUB               1000
 #define IDC_SLIDER                      1002
 #define IDC_SLIDER2                     1003
 #define ID_TRAY_EXIT_CONTEXT_MENU_ITEM  3000
 #define ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM 3001
 #define ID_TRAY_APP_ICON                5000
 #define IDC_STATIC                      -1
-#define IDC_BUTTON_SHOW_COLOR			135
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        129
+#define _APS_NEXT_RESOURCE_VALUE        131
 #define _APS_NEXT_COMMAND_VALUE         32771
 #define _APS_NEXT_CONTROL_VALUE         1001
 #define _APS_NEXT_SYMED_VALUE           110

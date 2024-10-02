@@ -43,12 +43,30 @@ LRESULT CALLBACK OptionsDialog::DialogProc(HWND hWnd, UINT message, WPARAM wPara
 	switch (message)
 	{
 	case WM_INITDIALOG:
-		SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_SETRANGE, TRUE, MAKELONG(5, 50));
-		SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_SETRANGE, TRUE, MAKELONG(-5, 5));
+		{
+			SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_SETRANGE, TRUE, MAKELONG(5, 50));
+			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_SETRANGE, TRUE, MAKELONG(-5, 5));
 
-		SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_SETPOS, TRUE, pThis->MaxRainDrops);
-		SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_SETPOS, TRUE, pThis->RainDirection);
+			SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_SETPOS, TRUE, pThis->MaxRainDrops);
+			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_SETPOS, TRUE, pThis->RainDirection);
 
+
+			// Load the image from resources
+			HICON hIcon = (HICON)LoadIcon(pThis->hInstance, MAKEINTRESOURCE(IDI_GITHUB_ICON));
+
+			// Get handle to the button
+			HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);
+
+			// Set the button style to allow both image and text
+			LONG_PTR style = GetWindowLongPtr(hButton, GWL_STYLE);
+			//SetWindowLongPtr(hButton, GWL_STYLE, style | BS_ICON | BS_TEXT);
+			SetWindowLongPtr(hButton, GWL_STYLE, style |   BS_CENTER | BS_TEXT);
+
+			// Set the image and the text
+			SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, (LPARAM)hIcon);
+			SetWindowText(hButton, L"Github Repo");
+
+		}
 		return TRUE;
 	case WM_HSCROLL:
 		if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER))
@@ -81,9 +99,11 @@ LRESULT CALLBACK OptionsDialog::DialogProc(HWND hWnd, UINT message, WPARAM wPara
 				pThis->RainColor = cc.rgbResult;
 				pThis->pRainWindow->UpdateRainColor(pThis->RainColor);
 			}
-
-			return TRUE;
 		}
+		else if (LOWORD(wParam) == IDC_BUTTON_GITHUB) {
+			ShellExecute(NULL, L"open", L"https://github.com/riyasy/RainProject", NULL, NULL, SW_SHOWNORMAL);
+		}
+		return TRUE;
 		break;
 	case WM_CLOSE:
 		ShowWindow(hWnd, SW_HIDE);
