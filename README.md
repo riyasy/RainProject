@@ -2,6 +2,10 @@
 
 Welcome to **Let It Rain**, an ASMR-inspired rain simulation for the Windows desktop. This lightweight app brings a soothing visual experience by simulating raindrops falling from the top of your screen and splattering as they reach the taskbar.
 
+Watch "let-it-rain" in action
+
+[![let-it-rain](https://markdown-videos-api.jorgenkh.no/url?url=https%3A%2F%2Fyoutu.be%2FEG98oerTAS4)](https://youtu.be/EG98oerTAS4)
+
 ## Features
 
 - 🌧️ **Realistic Raindrop Motion**: Watch raindrops gently descend from the top of the screen and interact with your desktop.
