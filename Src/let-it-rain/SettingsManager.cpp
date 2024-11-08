@@ -10,7 +10,7 @@ SettingsManager* SettingsManager::instance = nullptr;
 
 SettingsManager::SettingsManager() : defaultSetting(10, 3, 0x00AAAAAA)
 {
-	std::wstring appDataPath = GetAppDataPath();
+	const std::wstring appDataPath = GetAppDataPath();
 	iniFilePath = appDataPath + L"\\let-it-rain.ini";
 }
 

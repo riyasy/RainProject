@@ -86,3 +86,36 @@ Unused Code
 
 	//// Send the log message to the Output window
 	//OutputDebugStringA(logMessage.c_str());
+
+
+
+void RainWindow::HandleCPULoadChange(HWND hWnd)
+{
+	static int cpuFreeCycles = 1;
+	static bool windowHidden = false;
+	if (CPUUsageTracker::getInstance().GetCPUUsage() > 80)
+	{
+		if (!windowHidden)
+		{
+			cpuFreeCycles = 0;
+			cpuIsBusy = true;
+			ShowWindow(hWnd, SW_HIDE);
+			windowHidden = true;
+			if (!RainDrops.empty())
+			{
+				RainDrops.clear();
+			}
+		}
+	}
+	else
+	{
+		cpuFreeCycles++;
+		if (cpuFreeCycles > 3)
+		{
+			RainWindow* pThis = reinterpret_cast<RainWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+			pThis->cpuIsBusy = false;
+			ShowWindow(hWnd, SW_SHOW);
+			windowHidden = false;
+		}
+	}
+}

@@ -24,11 +24,11 @@ public:
 
 	int GenerateInt(int range1Min, int range1Max, int range2Min, int range2Max)
 	{
-		int totalRangeSize = (range1Max - range1Min) + (range2Max - range2Min);
+		const int totalRangeSize = (range1Max - range1Min) + (range2Max - range2Min);
 		disRange1 = std::uniform_int_distribution<>(range1Min, range1Max);
 		disRange2 = std::uniform_int_distribution<>(range2Min, range2Max);
 
-		int choice = std::uniform_int_distribution<>(0, totalRangeSize)(gen);
+		const int choice = std::uniform_int_distribution<>(0, totalRangeSize)(gen);
 		if (choice <= (range1Max - range1Min))
 		{
 			return disRange1(gen);

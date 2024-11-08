@@ -6,6 +6,7 @@
 class Setting
 {
 public:
+	bool loaded = false;
 	int MaxRainDrops;
 	int RainDirection;
 	COLORREF RainColor;

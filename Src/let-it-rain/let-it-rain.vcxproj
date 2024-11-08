@@ -212,6 +212,7 @@
     <ClInclude Include="OptionDialog.h" />
     <ClInclude Include="RainWindow.h" />
     <ClInclude Include="RainDrop.h" />
+    <ClInclude Include="RainWindowData.h" />
     <ClInclude Include="RandomGenerator.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SettingsManager.h" />
@@ -222,6 +223,7 @@
     <ClCompile Include="OptionDialog.cpp" />
     <ClCompile Include="RainWindow.cpp" />
     <ClCompile Include="RainDrop.cpp" />
+    <ClCompile Include="RainWindowData.cpp" />
     <ClCompile Include="SettingsManager.cpp" />
   </ItemGroup>
   <ItemGroup>

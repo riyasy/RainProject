@@ -20,16 +20,24 @@ using namespace Microsoft::WRL;
 // Use a guid to uniquely identify our icon
 class __declspec(uuid("355F4E1D-8039-4078-BABD-8668FD2D1F7B")) RainIcon;
 
+struct MonitorData {
+	RECT DisplayRect;       // The display's rectangle dimensions
+	std::wstring Name; // The display name, if available
+	bool IsDefaultDisplay;    // True if the display is the primary one
+};
+
 class RainWindow final : CallBackWindow
 {
 public:
-	HRESULT Initialize(HINSTANCE hInstance);
-	static double GetCurrentTimeInSeconds();
-	void RunMessageLoop();
+	HRESULT Initialize(HINSTANCE hInstance, const MonitorData& monitorInfo);	
+	void Animate();
 
+	// CallBackWindow Overrides
 	void UpdateRainDropCount(int val) override;
 	void UpdateRainDirection(int val) override;
 	void UpdateRainColor(COLORREF color) override;
+
+	~RainWindow() override;
 
 private:
 	ComPtr<ID3D11Device> Direct3dDevice;
@@ -44,23 +52,22 @@ private:
 	ComPtr<IDCompositionDevice> DcompDevice;
 	ComPtr<IDCompositionTarget> Target;
 	ComPtr<IDCompositionVisual> Visual;
-	bool cpuIsBusy = false;
 
 	static HINSTANCE AppInstance;
-	static RainWindow* pThis;
 	static OptionsDialog* pOptionsDlg;
 
 	std::vector<RainDrop*> RainDrops;
 
-	int WindowWidth = 100;
-	int WindowHeight = 100;
-	int TaskBarHeight = 0;
+	// For animation
+	double CurrentTime = -1.0;
+	double Accumulator = 0.0;
 
-	Setting settings;
+	static Setting Settings;
 
-	//int MaxRainDrops = 10;
-	//int RainDirection = 3;
-	//COLORREF RainColor = 0x00AAAAAA;
+	RainWindowData RainWindowData;
+	MonitorData MonitorData;
+
+
 
 	static LRESULT CALLBACK WndProc(
 		HWND hWnd,
@@ -69,19 +76,21 @@ private:
 		LPARAM lParam
 	);
 
-	void LoadOptionValues();
-
-	void HandleWindowBoundsChange(HWND window, bool clearDrops);
-	static void HandleTaskBarChange();
-	static void HandleCPULoadChange(HWND hWnd);
-
-	static void FindRainableRect(RECT& rainableRect, float& scaleFactor);
-
-	static void InitNotifyIcon(HWND hWnd);
 	void InitDirect2D(HWND hWnd);
 
-	static void ShowContextMenu(HWND hWnd);
 
+	void HandleWindowBoundsChange(HWND window, bool clearDrops);
+	void HandleTaskBarChange();
+	void FindRainableRect(RECT& rainableRect, float& scaleFactor);
+
+	static void InitNotifyIcon(HWND hWnd);
+	static void ShowContextMenu(HWND hWnd);	
+
+
+	static double GetCurrentTimeInSeconds();
 	void UpdateRainDrops();
 	void DrawRainDrops() const;
+
+
+	
 };

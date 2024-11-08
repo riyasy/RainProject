@@ -5,17 +5,22 @@
 #include "Resource.h"
 
 OptionsDialog* OptionsDialog::pThis;
+std::vector<CallBackWindow*> OptionsDialog::subscribers;
 
-OptionsDialog::OptionsDialog(HINSTANCE hInstance, CallBackWindow* pRainWindow, int maxRainDrops,
+OptionsDialog::OptionsDialog(HINSTANCE hInstance, int maxRainDrops,
                              int rainDirection,
                              COLORREF rainColor) : hInstance(hInstance),
-                                                   hDialog(nullptr),
-                                                   pRainWindow(pRainWindow),
+                                                   hDialog(nullptr),                                                   
                                                    MaxRainDrops(maxRainDrops),
                                                    RainDirection(rainDirection),
                                                    RainColor(rainColor)
 {
 	pThis = this;
+}
+
+void OptionsDialog::SubscribeToChange(CallBackWindow* subscriber)
+{
+	subscribers.push_back(subscriber);
 }
 
 bool OptionsDialog::Create()
@@ -55,10 +60,10 @@ LRESULT CALLBACK OptionsDialog::DialogProc(HWND hWnd, UINT message, WPARAM wPara
 			HICON hIcon = (HICON)LoadIcon(pThis->hInstance, MAKEINTRESOURCE(IDI_GITHUB_ICON));
 
 			// Get handle to the button
-			HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);
+			const HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);
 
 			// Set the button style to allow both image and text
-			LONG_PTR style = GetWindowLongPtr(hButton, GWL_STYLE);
+			const LONG_PTR style = GetWindowLongPtr(hButton, GWL_STYLE);
 			//SetWindowLongPtr(hButton, GWL_STYLE, style | BS_ICON | BS_TEXT);
 			SetWindowLongPtr(hButton, GWL_STYLE, style |   BS_CENTER | BS_TEXT);
 
@@ -71,13 +76,17 @@ LRESULT CALLBACK OptionsDialog::DialogProc(HWND hWnd, UINT message, WPARAM wPara
 	case WM_HSCROLL:
 		if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER))
 		{
-			int pos = SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_GETPOS, 0, 0);
-			pThis->pRainWindow->UpdateRainDropCount(pos);
+			const int pos = SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_GETPOS, 0, 0);
+			for (CallBackWindow* subscriber : subscribers) {
+				subscriber->UpdateRainDropCount(pos);
+			}
 		}
 		else if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER2))
 		{
-			int pos = SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_GETPOS, 0, 0);
-			pThis->pRainWindow->UpdateRainDirection(pos);
+			const int pos = SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_GETPOS, 0, 0);
+			for (CallBackWindow* subscriber : subscribers) {
+				subscriber->UpdateRainDirection(pos);
+			}
 		}
 		return TRUE;
 	case WM_COMMAND:
@@ -97,7 +106,9 @@ LRESULT CALLBACK OptionsDialog::DialogProc(HWND hWnd, UINT message, WPARAM wPara
 			if (ChooseColor(&cc) == TRUE)
 			{
 				pThis->RainColor = cc.rgbResult;
-				pThis->pRainWindow->UpdateRainColor(pThis->RainColor);
+				for (CallBackWindow* subscriber : subscribers) {
+					subscriber->UpdateRainColor(pThis->RainColor);
+				}
 			}
 		}
 		else if (LOWORD(wParam) == IDC_BUTTON_GITHUB) {

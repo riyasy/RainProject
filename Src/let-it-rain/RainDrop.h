@@ -8,6 +8,8 @@
 
 #include "RandomGenerator.h"
 
+#include "RainWindowData.h"
+
 // Enum for RainDrop types
 enum class RainDropType
 {
@@ -21,7 +23,7 @@ class RainDrop
 public:
 	static constexpr float PHYSICS_FRAME_INTERVAL = 0.01f; // in second
 
-	RainDrop(int windDirectionFactor, RainDropType type);
+	RainDrop(const int windDirectionFactor, const RainDropType type, RainWindowData* windowData);
 	void InitializeSplatter();
 
 	bool DidTouchGround() const;
@@ -33,8 +35,7 @@ public:
 	void DrawSplatter(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const;
 
 	void SetPositionAndSpeed(float x, float y, float xSpeed, float ySpeed);
-	static void SetRainColor(ID2D1DeviceContext* dc, COLORREF color);
-	static void SetWindowBounds(RECT windowRect, float scaleFactor);
+
 	~RainDrop();
 
 private:
@@ -48,10 +49,10 @@ private:
 	static constexpr float AIR_RESISTANCE = 1.0f; // pixels per second square
 	static constexpr float BOUNCE_DAMPING = 0.9f;
 
-	//static int WindowWidth; //  in pixels
-	//static int WindowHeight; //  in pixels
-	static RECT WindowRect;
-	static float ScaleFactor; // FullHD is considered as 1. 4K will be 2(twice height and width change).
+	RainWindowData* pRainWindowData;
+
+
+
 	static float Gravity;
 
 	RainDropType Type;
@@ -68,9 +69,9 @@ private:
 
 	std::vector<RainDrop*> Splatters;
 
-	static Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> DropColorBrush;
-	static std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> PrebuiltSplatterOpacityBrushes;
-	//static Microsoft::WRL::ComPtr < ID2D1StrokeStyle1> strokeStyleFixedThickness;	
+
+
+	
 
 	void InitializeMainDrop();
 };

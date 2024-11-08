@@ -34,7 +34,7 @@ public:
 		}
 
 		// Time elapsed since last call
-		double elapsedTime = static_cast<double>(currentTime.QuadPart - lastQueryTime.QuadPart) / frequency.QuadPart;
+		const double elapsedTime = static_cast<double>(currentTime.QuadPart - lastQueryTime.QuadPart) / frequency.QuadPart;
 		lastQueryTime = currentTime;
 
 		// Collect data again for accurate results

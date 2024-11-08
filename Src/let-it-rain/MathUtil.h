@@ -20,15 +20,15 @@ public:
 	static bool LineIntersect(const D2D1_POINT_2F& p1, const D2D1_POINT_2F& p2, const D2D1_POINT_2F& q1,
 	                          const D2D1_POINT_2F& q2, D2D1_POINT_2F& intersection)
 	{
-		float A1 = p2.y - p1.y;
-		float B1 = p1.x - p2.x;
-		float C1 = A1 * p1.x + B1 * p1.y;
+		const float A1 = p2.y - p1.y;
+		const float B1 = p1.x - p2.x;
+		const float C1 = A1 * p1.x + B1 * p1.y;
 
-		float A2 = q2.y - q1.y;
-		float B2 = q1.x - q2.x;
-		float C2 = A2 * q1.x + B2 * q1.y;
+		const float A2 = q2.y - q1.y;
+		const float B2 = q1.x - q2.x;
+		const float C2 = A2 * q1.x + B2 * q1.y;
 
-		float det = A1 * B2 - A2 * B1;
+		const float det = A1 * B2 - A2 * B1;
 		if (det == 0) return false; // Parallel lines
 
 		intersection.x = (B2 * C1 - B1 * C2) / det;
@@ -41,7 +41,7 @@ public:
 	static void TrimLineSegment(const RECT& boundRect, const D2D1_POINT_2F& lineStart, const D2D1_POINT_2F& lineEnd,
 	                            D2D1_POINT_2F& lineTrimmedStart, D2D1_POINT_2F& lineTrimmedEnd)
 	{
-		D2D1_POINT_2F rectPoints[4] = {
+		const D2D1_POINT_2F rectPoints[4] = {
 			{static_cast<float>(boundRect.left), static_cast<float>(boundRect.top)},
 			{static_cast<float>(boundRect.right), static_cast<float>(boundRect.top)},
 			{static_cast<float>(boundRect.right), static_cast<float>(boundRect.bottom)},
@@ -53,7 +53,7 @@ public:
 
 		for (int i = 0; i < 4; ++i)
 		{
-			int next = (i + 1) % 4;
+			const int next = (i + 1) % 4;
 			D2D1_POINT_2F intersection;
 			if (LineIntersect(lineStart, lineEnd, rectPoints[i], rectPoints[next], intersection))
 			{
@@ -112,6 +112,16 @@ public:
 			// Left remaining rectangle
 			result = {monitorRect.left, monitorRect.top, taskBarRect.left, monitorRect.bottom};
 		}
+		return result;
+	}
+
+	static RECT NormalizeRect(const RECT& monitorRect, const int top, const int left)
+	{
+		RECT result = { 0, 0, 0, 0 };
+		result.top = monitorRect.top - top;
+		result.bottom = monitorRect.bottom - top;
+		result.left = monitorRect.left - left;
+		result.right = monitorRect.right - left;
 		return result;
 	}
 };
