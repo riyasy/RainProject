@@ -2,7 +2,6 @@
 
 #include <windows.h>
 #include <commctrl.h>
-#include <string>
 #include "CallBackWindow.h"
 #include <vector>
 

@@ -1,17 +1,18 @@
 #include "RainWindow.h"
 
 // Callback function to be called for each display
-BOOL CALLBACK MonitorEnumProc(const HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, const LPARAM lParam) {
-	std::vector<MonitorData>* monitors = reinterpret_cast<std::vector<MonitorData>*>(lParam);
-
+BOOL CALLBACK MonitorEnumProc(const HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, const LPARAM lParam)
+{
+	std::vector<MonitorData>* monitorDataList = reinterpret_cast<std::vector<MonitorData>*>(lParam);
 	MONITORINFOEX monitorInfo;
 	monitorInfo.cbSize = sizeof(monitorInfo);
-	if (GetMonitorInfo(hMonitor, &monitorInfo)) {
-		MonitorData info;
-		info.DisplayRect = monitorInfo.rcMonitor;
-		info.Name = monitorInfo.szDevice;
-		info.IsDefaultDisplay = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
-		monitors->push_back(info);
+	if (GetMonitorInfo(hMonitor, &monitorInfo))
+	{
+		MonitorData monitorData;
+		monitorData.DisplayRect = monitorInfo.rcMonitor;
+		monitorData.Name = monitorInfo.szDevice;
+		monitorData.IsDefaultDisplay = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
+		monitorDataList->push_back(monitorData);
 	}
 	return TRUE;
 }
@@ -32,15 +33,16 @@ int WINAPI WinMain(
 
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
 
-	std::vector<MonitorData> monitorInfoList;	
-	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitorInfoList));	
+	std::vector<MonitorData> monitorDataList;
+	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitorDataList));
 
 	if (SUCCEEDED(CoInitialize(NULL)))
 	{
-		std::vector<RainWindow*> rainWindows;			
-		for (const auto& monitorInfo : monitorInfoList) {
+		std::vector<RainWindow*> rainWindows;
+		for (const auto& monitorData : monitorDataList)
+		{
 			RainWindow* rainWindow = new RainWindow();
-			if (SUCCEEDED(rainWindow->Initialize(hInstance, monitorInfo)))
+			if (SUCCEEDED(rainWindow->Initialize(hInstance, monitorData)))
 			{
 				rainWindows.push_back(rainWindow);
 			}
@@ -58,13 +60,15 @@ int WINAPI WinMain(
 				}
 				else
 				{
-					for (RainWindow* rainWindow : rainWindows) {
+					for (RainWindow* rainWindow : rainWindows)
+					{
 						rainWindow->Animate();
 					}
 					Sleep(10);
 				}
 			}
-			for (const RainWindow* rainWindow : rainWindows) {
+			for (const RainWindow* rainWindow : rainWindows)
+			{
 				delete rainWindow;
 			}
 		}

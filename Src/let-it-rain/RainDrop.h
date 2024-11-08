@@ -3,12 +3,10 @@
 #include <d2d1.h>
 #include <vector>
 #include <dcomp.h>
-#include <vector>
-#include <wrl/client.h>
 
 #include "RandomGenerator.h"
 
-#include "RainWindowData.h"
+#include "WindowData.h"
 
 // Enum for RainDrop types
 enum class RainDropType
@@ -23,7 +21,7 @@ class RainDrop
 public:
 	static constexpr float PHYSICS_FRAME_INTERVAL = 0.01f; // in second
 
-	RainDrop(const int windDirectionFactor, const RainDropType type, RainWindowData* windowData);
+	RainDrop(int windDirectionFactor, RainDropType type, WindowData* windowData);
 	void InitializeSplatter();
 
 	bool DidTouchGround() const;
@@ -49,14 +47,13 @@ private:
 	static constexpr float AIR_RESISTANCE = 1.0f; // pixels per second square
 	static constexpr float BOUNCE_DAMPING = 0.9f;
 
-	RainWindowData* pRainWindowData;
-
-
+	WindowData* pWindowData;
 
 	static float Gravity;
 
 	RainDropType Type;
 	int WindDirectionFactor;
+
 	D2D1_ELLIPSE Ellipse;
 	float DeltaX_PerPhysicsFrame;
 	float DeltaY_PerPhysicsFrame;
@@ -68,10 +65,6 @@ private:
 	int CurrentFrameCountForSplatter = 0;
 
 	std::vector<RainDrop*> Splatters;
-
-
-
-	
 
 	void InitializeMainDrop();
 };

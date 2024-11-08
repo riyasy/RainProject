@@ -1,5 +1,6 @@
 #pragma once
 
+/*
 #include <windows.h>
 #include <pdh.h>
 #include <iostream>
@@ -120,3 +121,5 @@ private:
 //
 //	return 0;
 //}
+
+*/

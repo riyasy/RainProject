@@ -33,16 +33,19 @@ void HR(const HRESULT result)
 	}
 }
 
-#define DELAY_TIMER_1 1947
-#define CPU_CHECK_TIMER 1948
+enum
+{
+	DELAY_TIMER = 1947,
+	INTERVAL_TIMER = 1948
+};
 
 HINSTANCE RainWindow::AppInstance = nullptr;
 OptionsDialog* RainWindow::pOptionsDlg;
-Setting RainWindow::Settings;
+Setting RainWindow::GeneralSettings;
 
-HRESULT RainWindow::Initialize(const HINSTANCE hInstance, const MonitorData& monitorInfo)
+HRESULT RainWindow::Initialize(const HINSTANCE hInstance, const MonitorData& monitorData)
 {
-	MonitorData = monitorInfo;
+	MonitorDat = monitorData;
 	AppInstance = hInstance;
 	WNDCLASS wc = {};
 	wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
@@ -57,88 +60,77 @@ HRESULT RainWindow::Initialize(const HINSTANCE hInstance, const MonitorData& mon
 	constexpr DWORD style = WS_POPUP | WS_VISIBLE;
 
 	const HWND window = CreateWindowEx(exstyle, wc.lpszClassName, L"let it rain", style,
-		monitorInfo.DisplayRect.left, 
-		monitorInfo.DisplayRect.top,
-		monitorInfo.DisplayRect.right - monitorInfo.DisplayRect.left,
-		monitorInfo.DisplayRect.bottom - monitorInfo.DisplayRect.top, 
-		nullptr, nullptr, HINST_THISCOMPONENT, this);
+	                                   monitorData.DisplayRect.left,
+	                                   monitorData.DisplayRect.top,
+	                                   monitorData.DisplayRect.right - monitorData.DisplayRect.left,
+	                                   monitorData.DisplayRect.bottom - monitorData.DisplayRect.top,
+	                                   nullptr, nullptr, HINST_THISCOMPONENT, this);
 
 	ShowWindow(window, SW_SHOW);
-	
-	if (!Settings.loaded)
+
+	if (!GeneralSettings.loaded)
 	{
-		SettingsManager::GetInstance()->ReadSettings(Settings);
+		SettingsManager::GetInstance()->ReadSettings(GeneralSettings);
 	}
 
 	OptionsDialog::SubscribeToChange(this);
-	if (MonitorData.IsDefaultDisplay)
+	if (MonitorDat.IsDefaultDisplay)
 	{
-		pOptionsDlg = new OptionsDialog(AppInstance, Settings.MaxRainDrops, Settings.RainDirection,
-			Settings.RainColor);
+		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxRainDrops, GeneralSettings.RainDirection,
+		                                GeneralSettings.RainColor);
 		pOptionsDlg->Create();
 	}
 
 	InitDirect2D(window);
-	RainWindowData.SetRainColor(Dc.Get(), Settings.RainColor);
+	WindowSpecificData.SetRainColor(Dc.Get(), GeneralSettings.RainColor);
 	HandleWindowBoundsChange(window, false);
 
-	return 0;	
+	return 0;
 }
 
 void RainWindow::UpdateRainDropCount(const int val)
 {
-	Settings.MaxRainDrops = val;
+	GeneralSettings.MaxRainDrops = val;
 }
 
 void RainWindow::UpdateRainDirection(const int val)
 {
-	Settings.RainDirection = val;
+	GeneralSettings.RainDirection = val;
 }
 
 void RainWindow::UpdateRainColor(const COLORREF color)
 {
-	Settings.RainColor = color;
-	RainWindowData.SetRainColor(Dc.Get(), color);
+	GeneralSettings.RainColor = color;
+	WindowSpecificData.SetRainColor(Dc.Get(), color);
 }
-
-RainWindow::~RainWindow()
-{
-}
-
 
 LRESULT RainWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam)
 {
 	static UINT_PTR timerId = 0;
-	RainWindow* pThis = nullptr;
 
 	switch (message)
 	{
 	case WM_NCCREATE:
-	{
-		// Extract the pointer to the MyWindow instance from lpCreateParams
-		pThis = static_cast<RainWindow*>(reinterpret_cast<CREATESTRUCT*>(lParam)->lpCreateParams);
-		// Associate the instance with the window handle
-		SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
-		//pThis->hwnd = hWnd;
-		break;
-	}
+		{
+			SetInstanceToHwnd(hWnd, lParam);
+			break;
+		}
 	case WM_CREATE:
 		{
-			pThis = reinterpret_cast<RainWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-			if (pThis->MonitorData.IsDefaultDisplay)
+			RainWindow* pThis = GetInstanceFromHwnd(hWnd);
+			if (pThis->MonitorDat.IsDefaultDisplay)
 			{
-
 				InitNotifyIcon(hWnd);
-			}			
-			SetTimer(hWnd, CPU_CHECK_TIMER, 500, nullptr);
+			}
+			SetTimer(hWnd, INTERVAL_TIMER, 500, nullptr);
 			break;
 		}
 	case WM_DESTROY:
 		{
-			pThis = reinterpret_cast<RainWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
-			if (pThis->MonitorData.IsDefaultDisplay)
-			{				
-				SettingsManager::GetInstance()->WriteSettings(pThis->Settings);
+			RainWindow* pThis = GetInstanceFromHwnd(hWnd);
+			if (pThis->MonitorDat.IsDefaultDisplay)
+			{
+				SettingsManager::GetInstance()->WriteSettings(GeneralSettings);
 			}
 			PostQuitMessage(0);
 			return 0;
@@ -150,22 +142,21 @@ LRESULT RainWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM wP
 			{
 				KillTimer(hWnd, timerId);
 			}
-			timerId = SetTimer(hWnd, DELAY_TIMER_1, 1000, nullptr);
+			timerId = SetTimer(hWnd, DELAY_TIMER, 1000, nullptr);
 			break;
 		}
 	case WM_TIMER:
-		if (wParam == DELAY_TIMER_1)
+		if (wParam == DELAY_TIMER)
 		{
-			pThis = reinterpret_cast<RainWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+			RainWindow* pThis = GetInstanceFromHwnd(hWnd);
 			pThis->HandleWindowBoundsChange(hWnd, true);
-			KillTimer(hWnd, DELAY_TIMER_1);
+			KillTimer(hWnd, DELAY_TIMER);
 			timerId = 0;
 		}
-		if (wParam == CPU_CHECK_TIMER)
+		if (wParam == INTERVAL_TIMER)
 		{
-			pThis = reinterpret_cast<RainWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+			RainWindow* pThis = GetInstanceFromHwnd(hWnd);
 			pThis->HandleTaskBarChange();
-			//pThis->HandleCPULoadChange(hWnd);			
 		}
 		break;
 	case WM_TRAYICON:
@@ -263,7 +254,6 @@ void RainWindow::ShowContextMenu(const HWND hWnd)
 
 void RainWindow::InitDirect2D(const HWND hWnd)
 {
-
 	HR(D3D11CreateDevice(nullptr, // Adapter
 	                     D3D_DRIVER_TYPE_HARDWARE,
 	                     nullptr, // Module
@@ -358,7 +348,7 @@ void RainWindow::HandleWindowBoundsChange(const HWND window, const bool clearDro
 	RECT rainableRect;
 	float scaleFactor = 1.0f;
 	FindRainableRect(rainableRect, scaleFactor);
-	RainWindowData.SetWindowBounds(rainableRect, scaleFactor);
+	WindowSpecificData.SetWindowBounds(rainableRect, scaleFactor);
 }
 
 void RainWindow::HandleTaskBarChange()
@@ -366,13 +356,13 @@ void RainWindow::HandleTaskBarChange()
 	RECT rainableRect;
 	float scaleFactor = 1.0f;
 	FindRainableRect(rainableRect, scaleFactor);
-	RainWindowData.SetWindowBounds(rainableRect, scaleFactor);
+	WindowSpecificData.SetWindowBounds(rainableRect, scaleFactor);
 }
 
 void RainWindow::FindRainableRect(RECT& rainableRect, float& scaleFactor)
 {
 	HWND hTaskbarWnd;
-	if (MonitorData.IsDefaultDisplay)
+	if (MonitorDat.IsDefaultDisplay)
 	{
 		hTaskbarWnd = FindWindow(L"Shell_traywnd", nullptr);
 	}
@@ -380,7 +370,7 @@ void RainWindow::FindRainableRect(RECT& rainableRect, float& scaleFactor)
 	{
 		hTaskbarWnd = FindWindow(L"Shell_SecondaryTrayWnd", nullptr);
 	}
-	
+
 	const HMONITOR hMonitor = MonitorFromWindow(hTaskbarWnd, MONITOR_DEFAULTTONEAREST);
 	MONITORINFO info = {sizeof(MONITORINFO)};
 
@@ -464,12 +454,25 @@ void RainWindow::UpdateRainDrops()
 			countOfFallingDrops++;
 		}
 	}
-	const int noOfDropsToGenerate = Settings.MaxRainDrops - countOfFallingDrops;
+	const int noOfDropsToGenerate = GeneralSettings.MaxRainDrops - countOfFallingDrops;
 
 	// Generate new raindrops
 	for (int i = 0; i < noOfDropsToGenerate; ++i)
 	{
-		RainDrop* pDrop = new RainDrop(Settings.RainDirection, RainDropType::MainDrop, &RainWindowData);
+		RainDrop* pDrop = new RainDrop(GeneralSettings.RainDirection, RainDropType::MainDrop, &WindowSpecificData);
 		RainDrops.push_back(pDrop);
 	}
 }
+
+void RainWindow::SetInstanceToHwnd(const HWND hWnd, const LPARAM lParam)
+{
+	RainWindow* pThis = static_cast<RainWindow*>(reinterpret_cast<CREATESTRUCT*>(lParam)->lpCreateParams);
+	SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(pThis));
+}
+
+RainWindow* RainWindow::GetInstanceFromHwnd(const HWND hWnd)
+{
+	return reinterpret_cast<RainWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+}
+
+RainWindow::~RainWindow() = default;

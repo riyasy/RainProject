@@ -117,11 +117,12 @@ public:
 
 	static RECT NormalizeRect(const RECT& monitorRect, const int top, const int left)
 	{
-		RECT result = { 0, 0, 0, 0 };
-		result.top = monitorRect.top - top;
-		result.bottom = monitorRect.bottom - top;
-		result.left = monitorRect.left - left;
-		result.right = monitorRect.right - left;
+		RECT result = {
+			monitorRect.left - left, // left
+			monitorRect.top - top, // top
+			monitorRect.right - left, // right
+			monitorRect.bottom - top // bottom
+		};
 		return result;
 	}
 };

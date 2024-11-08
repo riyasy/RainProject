@@ -20,16 +20,21 @@ using namespace Microsoft::WRL;
 // Use a guid to uniquely identify our icon
 class __declspec(uuid("355F4E1D-8039-4078-BABD-8668FD2D1F7B")) RainIcon;
 
-struct MonitorData {
-	RECT DisplayRect;       // The display's rectangle dimensions
+struct MonitorData
+{
+	RECT DisplayRect; // The display's rectangle dimensions
 	std::wstring Name; // The display name, if available
-	bool IsDefaultDisplay;    // True if the display is the primary one
+	bool IsDefaultDisplay; // True if the display is the primary one
+
+	MonitorData() : DisplayRect{0, 0, 0, 0}, Name(L""), IsDefaultDisplay(false)
+	{
+	}
 };
 
 class RainWindow final : CallBackWindow
 {
 public:
-	HRESULT Initialize(HINSTANCE hInstance, const MonitorData& monitorInfo);	
+	HRESULT Initialize(HINSTANCE hInstance, const MonitorData& monitorData);
 	void Animate();
 
 	// CallBackWindow Overrides
@@ -62,12 +67,10 @@ private:
 	double CurrentTime = -1.0;
 	double Accumulator = 0.0;
 
-	static Setting Settings;
+	static Setting GeneralSettings;
 
-	RainWindowData RainWindowData;
-	MonitorData MonitorData;
-
-
+	WindowData WindowSpecificData;
+	MonitorData MonitorDat;
 
 	static LRESULT CALLBACK WndProc(
 		HWND hWnd,
@@ -78,19 +81,17 @@ private:
 
 	void InitDirect2D(HWND hWnd);
 
-
 	void HandleWindowBoundsChange(HWND window, bool clearDrops);
 	void HandleTaskBarChange();
 	void FindRainableRect(RECT& rainableRect, float& scaleFactor);
 
 	static void InitNotifyIcon(HWND hWnd);
-	static void ShowContextMenu(HWND hWnd);	
-
+	static void ShowContextMenu(HWND hWnd);
 
 	static double GetCurrentTimeInSeconds();
 	void UpdateRainDrops();
 	void DrawRainDrops() const;
 
-
-	
+	static void SetInstanceToHwnd(HWND hWnd, LPARAM lParam);
+	static RainWindow* GetInstanceFromHwnd(HWND hWnd);
 };

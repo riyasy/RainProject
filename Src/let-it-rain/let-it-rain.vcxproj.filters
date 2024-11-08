@@ -48,7 +48,7 @@
     <ClInclude Include="MathUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RainWindowData.h">
+    <ClInclude Include="WindowData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -68,7 +68,7 @@
     <ClCompile Include="SettingsManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RainWindowData.cpp">
+    <ClCompile Include="WindowData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
