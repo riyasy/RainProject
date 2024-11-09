@@ -391,8 +391,8 @@ void RainWindow::FindRainableRect(RECT& rainableRect, float& scaleFactor)
 
 	// Check if task bar is hidden and act accordingly
 	if ((taskBarRect.top >= desktopRect.bottom - 4) ||
-		(taskBarRect.right <= 2) ||
-		(taskBarRect.bottom <= 4) ||
+		(taskBarRect.right <= desktopRect.left + 2) ||
+		(taskBarRect.bottom <= desktopRect.top + 4) ||
 		(taskBarRect.left >= desktopRect.right - 2))
 	{
 		rainableRect = desktopRect;
