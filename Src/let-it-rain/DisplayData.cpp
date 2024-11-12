@@ -1,6 +1,6 @@
-#include "WindowData.h"
+#include "DisplayData.h"
 
-void WindowData::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
+void DisplayData::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
 {
 	const float red = static_cast<float>(GetRValue(color)) / 255.0f;
 	const float green = static_cast<float>(GetGValue(color)) / 255.0f;
@@ -25,7 +25,7 @@ void WindowData::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
 	}
 }
 
-void WindowData::SetWindowBounds(RECT windowRect, float scaleFactor)
+void DisplayData::SetWindowBounds(RECT windowRect, float scaleFactor)
 {
 	WindowRect = windowRect;
 	ScaleFactor = scaleFactor;

@@ -5,7 +5,7 @@
 #include <dcomp.h>
 #include <wrl/client.h>
 
-class WindowData
+class DisplayData
 {
 public:
 	void SetRainColor(ID2D1DeviceContext* dc, COLORREF color);

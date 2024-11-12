@@ -10,7 +10,7 @@ class MathUtil
 {
 public:
 	// Function to check if a point is inside or on the edge of a RECT
-	static bool IsPointInRect(const RECT& rect, const D2D1_POINT_2F& point)
+	static bool IsPointInRect(const RECT& rect, const Vector2& point)
 	{
 		// Check if the point is within or on the boundary of the rectangle
 		return (point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom);
@@ -124,5 +124,22 @@ public:
 			monitorRect.bottom - top // bottom
 		};
 		return result;
+	}
+
+	static Vector2 FindFirstPoint(double length, Vector2 secondPoint, Vector2 vel)
+	{
+		// Calculate the magnitude of the velocity vector
+		double magnitude = std::sqrt(vel.x * vel.x + vel.y * vel.y);
+
+		// Normalize the velocity components to get the unit direction vector
+		double unitVx = vel.x / magnitude;
+		double unitVy = vel.y / magnitude;
+
+		// Calculate the first point (x1, y1) using the length and direction
+		Vector2 firstPoint;
+		firstPoint.x = secondPoint.x - length * unitVx;
+		firstPoint.y = secondPoint.y - length * unitVy;
+
+		return firstPoint;
 	}
 };

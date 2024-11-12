@@ -207,12 +207,16 @@
   <ItemGroup>
     <ClInclude Include="CallBackWindow.h" />
     <ClInclude Include="CPUUsageTracker.h" />
+    <ClInclude Include="db_perlin.hpp" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MathUtil.h" />
     <ClInclude Include="OptionDialog.h" />
-    <ClInclude Include="RainWindow.h" />
+    <ClInclude Include="DisplayWindow.h" />
     <ClInclude Include="RainDrop.h" />
-    <ClInclude Include="WindowData.h" />
+    <ClInclude Include="SnowFlake.h" />
+    <ClInclude Include="Splatter.h" />
+    <ClInclude Include="Vector2.h" />
+    <ClInclude Include="DisplayData.h" />
     <ClInclude Include="RandomGenerator.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SettingsManager.h" />
@@ -221,9 +225,12 @@
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="OptionDialog.cpp" />
-    <ClCompile Include="RainWindow.cpp" />
+    <ClCompile Include="DisplayWindow.cpp" />
     <ClCompile Include="RainDrop.cpp" />
-    <ClCompile Include="WindowData.cpp" />
+    <ClCompile Include="SnowFlake.cpp" />
+    <ClCompile Include="Splatter.cpp" />
+    <ClCompile Include="Vector2.cpp" />
+    <ClCompile Include="DisplayData.cpp" />
     <ClCompile Include="SettingsManager.cpp" />
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,4 @@
-#include "RainWindow.h"
+#include "DisplayWindow.h"
 
 // Callback function to be called for each display
 BOOL CALLBACK MonitorEnumProc(const HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, const LPARAM lParam)
@@ -38,10 +38,10 @@ int WINAPI WinMain(
 
 	if (SUCCEEDED(CoInitialize(NULL)))
 	{
-		std::vector<RainWindow*> rainWindows;
+		std::vector<DisplayWindow*> rainWindows;
 		for (const auto& monitorData : monitorDataList)
 		{
-			RainWindow* rainWindow = new RainWindow();
+			DisplayWindow* rainWindow = new DisplayWindow();
 			if (SUCCEEDED(rainWindow->Initialize(hInstance, monitorData)))
 			{
 				rainWindows.push_back(rainWindow);
@@ -60,14 +60,14 @@ int WINAPI WinMain(
 				}
 				else
 				{
-					for (RainWindow* rainWindow : rainWindows)
+					for (DisplayWindow* rainWindow : rainWindows)
 					{
 						rainWindow->Animate();
 					}
 					Sleep(10);
 				}
 			}
-			for (const RainWindow* rainWindow : rainWindows)
+			for (const DisplayWindow* rainWindow : rainWindows)
 			{
 				delete rainWindow;
 			}

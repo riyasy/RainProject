@@ -12,6 +12,7 @@
 #include "CallBackWindow.h"
 #include "OptionDialog.h"
 #include "SettingsManager.h"
+#include "SnowFlake.h"
 
 // https://docs.microsoft.com/en-us/archive/msdn-magazine/2014/june/windows-with-c-high-performance-window-layering-using-the-windows-composition-engine
 
@@ -31,7 +32,7 @@ struct MonitorData
 	}
 };
 
-class RainWindow final : CallBackWindow
+class DisplayWindow final : CallBackWindow
 {
 public:
 	HRESULT Initialize(HINSTANCE hInstance, const MonitorData& monitorData);
@@ -42,7 +43,7 @@ public:
 	void UpdateRainDirection(int val) override;
 	void UpdateRainColor(COLORREF color) override;
 
-	~RainWindow() override;
+	~DisplayWindow() override;
 
 private:
 	ComPtr<ID3D11Device> Direct3dDevice;
@@ -62,6 +63,7 @@ private:
 	static OptionsDialog* pOptionsDlg;
 
 	std::vector<RainDrop*> RainDrops;
+	std::vector<SnowFlake*> SnowFlakes;
 
 	// For animation
 	double CurrentTime = -1.0;
@@ -69,7 +71,7 @@ private:
 
 	static Setting GeneralSettings;
 
-	WindowData WindowSpecificData;
+	DisplayData WindowSpecificData;
 	MonitorData MonitorDat;
 
 	static LRESULT CALLBACK WndProc(
@@ -90,8 +92,10 @@ private:
 
 	static double GetCurrentTimeInSeconds();
 	void UpdateRainDrops();
+	void UpdateSnowFlakes();
 	void DrawRainDrops() const;
+	void DrawSnowFlakes() const;
 
 	static void SetInstanceToHwnd(HWND hWnd, LPARAM lParam);
-	static RainWindow* GetInstanceFromHwnd(HWND hWnd);
+	static DisplayWindow* GetInstanceFromHwnd(HWND hWnd);
 };
