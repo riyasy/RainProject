@@ -35,16 +35,15 @@ void DisplayData::SetWindowBounds(RECT windowRect, float scaleFactor)
 	WindowRectNorm.left = 0;
 	WindowRectNorm.bottom = WindowRect.bottom - WindowRect.top;
 	WindowRectNorm.right = WindowRect.right - WindowRect.left;
+
+	Width = WindowRect.right - WindowRect.left;
+	Height = WindowRect.bottom - WindowRect.top;
+
+	maxSnowHeight = Height - 2;
+
+	if (scene == nullptr)
+	{
+		scene = new bool[Height * Width]();
+	}
 }
 
-long DisplayData::GetWidth() const
-{
-	// TODO make abosule - change of negative values in multi monitor
-	return WindowRect.right - WindowRect.left;
-}
-
-long DisplayData::GetHeight() const
-{
-	// TODO make abosule - change of negative values in multi monitor
-	return WindowRect.bottom - WindowRect.top;
-}

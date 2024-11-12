@@ -5,7 +5,7 @@
 
 #define TWO_PI 6.28318530718f
 #define PI 3.14159265359f
-#define SNOW_FLOW_RATE  0.25f
+
 
 class SnowFlake
 {
@@ -24,6 +24,7 @@ private:
 	static constexpr float GRAVITY = 10.0f;
 	static constexpr bool SNOW_COLOR = true;
 	static constexpr bool AIR_COLOR = false;
+	static constexpr int SNOW_FLOW_RATE = 3;
 
 	Vector2 pos;
 	Vector2 vel;
