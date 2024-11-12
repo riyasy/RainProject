@@ -1,5 +1,6 @@
 #include "DisplayData.h"
 
+
 void DisplayData::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
 {
 	const float red = static_cast<float>(GetRValue(color)) / 255.0f;
@@ -29,4 +30,21 @@ void DisplayData::SetWindowBounds(RECT windowRect, float scaleFactor)
 {
 	WindowRect = windowRect;
 	ScaleFactor = scaleFactor;
+
+	WindowRectNorm.top = 0;
+	WindowRectNorm.left = 0;
+	WindowRectNorm.bottom = WindowRect.bottom - WindowRect.top;
+	WindowRectNorm.right = WindowRect.right - WindowRect.left;
+}
+
+long DisplayData::GetWidth() const
+{
+	// TODO make abosule - change of negative values in multi monitor
+	return WindowRect.right - WindowRect.left;
+}
+
+long DisplayData::GetHeight() const
+{
+	// TODO make abosule - change of negative values in multi monitor
+	return WindowRect.bottom - WindowRect.top;
 }

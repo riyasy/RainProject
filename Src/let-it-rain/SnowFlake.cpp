@@ -7,20 +7,24 @@
 SnowFlake::SnowFlake(DisplayData* pDispData) :
 	pDisplayData(pDispData)
 {
+	if (pDispData->scene == nullptr)
+	{
+		pDispData->scene = new bool[pDispData->GetHeight() * pDispData->GetWidth()];
+	}
 	Spawn();
 }
 
 void SnowFlake::Spawn()
 {
-	pos.x = RandomGenerator::GetInstance().GenerateInt(-SCENE_WIDTH * 0.5f, SCENE_WIDTH * 1.5f);
-	pos.y = RandomGenerator::GetInstance().GenerateInt(-SCENE_HEIGHT * 0.5f, SCENE_HEIGHT);
+	pos.x = RandomGenerator::GetInstance().GenerateInt(-pDisplayData->GetWidth() * 0.5f, pDisplayData->GetWidth() * 1.5f);
+	pos.y = RandomGenerator::GetInstance().GenerateInt(-pDisplayData->GetHeight() * 0.5f, pDisplayData->GetHeight());
 	vel.x = 0.0f;
 	vel.y = RandomGenerator::GetInstance().GenerateInt(5.0f, 20.0f);
 }
 
 void SnowFlake::ReSpawn()
 {
-	pos.x = RandomGenerator::GetInstance().GenerateInt(-SCENE_WIDTH * 0.5f, SCENE_WIDTH * 1.5f);
+	pos.x = RandomGenerator::GetInstance().GenerateInt(-pDisplayData->GetWidth() * 0.5f, pDisplayData->GetWidth() * 1.5f);
 	pos.y = -5.0f;
 	vel.x = 0.0f;
 	vel.y = RandomGenerator::GetInstance().GenerateInt(5.0f, 20.0f);
@@ -45,13 +49,13 @@ void SnowFlake::UpdatePosition(float deltaSeconds)
 	pos.x += vel.x * deltaSeconds;
 	pos.y += vel.y * deltaSeconds;
 
-	if (pos.x < -SCENE_WIDTH * 0.5f || pos.x >= SCENE_WIDTH * 1.5f || pos.y < -SCENE_HEIGHT * 0.5f || pos.y >=
-		SCENE_HEIGHT)
+	if (pos.x < -pDisplayData->GetWidth() * 0.5f || pos.x >= pDisplayData->GetWidth() * 1.5f || pos.y < -pDisplayData->GetHeight() * 0.5f || pos.y >=
+		pDisplayData->GetHeight())
 	{
-		if (pos.x >= 0 && pos.x < SCENE_WIDTH && pos.y >= SCENE_HEIGHT)
+		if (pos.x >= 0 && pos.x < pDisplayData->GetWidth() && pos.y >= pDisplayData->GetHeight())
 		{
 			int x = (pos.x);
-			scene[x + (SCENE_HEIGHT - 1) * SCENE_WIDTH] = SNOW_COLOR;
+			pDisplayData->scene[x + (pDisplayData->GetHeight() - 1) * pDisplayData->GetWidth()] = SNOW_COLOR;
 		}
 		ReSpawn();
 	}
@@ -60,7 +64,7 @@ void SnowFlake::UpdatePosition(float deltaSeconds)
 	int x = pos.x;
 	int y = pos.y;
 
-	if (x >= 0 && x < SCENE_WIDTH && y >= 0 && y < SCENE_HEIGHT)
+	if (x >= 0 && x < pDisplayData->GetWidth() && y >= 0 && y < pDisplayData->GetHeight())
 	{
 		for (int xOff = -1; xOff <= 1; ++xOff)
 		{
@@ -68,10 +72,10 @@ void SnowFlake::UpdatePosition(float deltaSeconds)
 			{
 				if (IsSceneryPixelSet(x + xOff, y + yOff))
 				{
-					if (scene[x + y * SCENE_WIDTH] == AIR_COLOR)
+					if (pDisplayData->scene[x + y * pDisplayData->GetWidth()] == AIR_COLOR)
 					{
 						// Only settle if the pixel is empty
-						scene[x + y * SCENE_WIDTH] = SNOW_COLOR;
+						pDisplayData->scene[x + y * pDisplayData->GetWidth()] = SNOW_COLOR;
 					}
 					ReSpawn();
 					return;
@@ -80,6 +84,8 @@ void SnowFlake::UpdatePosition(float deltaSeconds)
 		}
 	}
 }
+
+
 
 void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 {
@@ -93,14 +99,14 @@ void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData)
 {
 	// Iterate through the 1D scene array with a single loop
-	for (int i = 0; i < SCENE_WIDTH * SCENE_HEIGHT; ++i)
+	for (int i = 0; i < pDispData->GetWidth() * pDispData->GetHeight(); ++i)
 	{
-		if (scene[i] == SNOW_COLOR)
+		if (pDispData->scene[i] == SNOW_COLOR)
 		{
 			// Only draw if this position has snow (is true)
 			// Calculate x and y coordinates from the 1D index
-			int x = i % SCENE_WIDTH;
-			int y = i / SCENE_WIDTH;
+			int x = i % pDispData->GetWidth();
+			int y = i / pDispData->GetWidth();
 
 			// Define the ellipse with center at (posX, posY) and radius 5px
 			D2D1_ELLIPSE ellipse = D2D1::Ellipse(D2D1::Point2F(x, y), 2.0f, 2.0f);
@@ -111,37 +117,37 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 	}
 }
 
-bool SnowFlake::CanSnowFlowInto(int x, int y)
+bool SnowFlake::CanSnowFlowInto(int x, int y, const DisplayData* pDispData)
 {
-	if (x < 0 || x >= SCENE_WIDTH || y < 0 || y >= SCENE_HEIGHT) return false; // Out-of-bounds
-	bool pixel = scene[x + y * SCENE_WIDTH];
+	if (x < 0 || x >= pDispData->GetWidth() || y < 0 || y >= pDispData->GetHeight()) return false; // Out-of-bounds
+	bool pixel = pDispData->scene[x + y * pDispData->GetWidth()];
 	return pixel == AIR_COLOR;
 }
 
-bool SnowFlake::IsSceneryPixelSet(int x, int y)
+bool SnowFlake::IsSceneryPixelSet(int x, int y) const
 {
-	if (x < 0 || x >= SCENE_WIDTH || y < 0 || y >= SCENE_HEIGHT) return false; // Out-of-bounds
-	bool pixel = scene[x + y * SCENE_WIDTH];
+	if (x < 0 || x >= pDisplayData->GetWidth() || y < 0 || y >= pDisplayData->GetHeight()) return false; // Out-of-bounds
+	bool pixel = pDisplayData->scene[x + y * pDisplayData->GetWidth()];
 	return pixel == SNOW_COLOR;
 }
 
-void SnowFlake::SettleSnow()
+void SnowFlake::SettleSnow(const DisplayData* pDispData)
 {
 	// Settled snow physics
 	// Iterate from bottom-up, to avoid updating falling pixels multiple times per-frame, which would cause them to "teleport"
-	for (int y = SCENE_HEIGHT - 1; y > 0; --y)
+	for (int y = pDispData->GetHeight() - 1; y > 0; --y)
 	{
-		for (int x = 0; x < SCENE_WIDTH; ++x)
+		for (int x = 0; x < pDispData->GetWidth(); ++x)
 		{
-			bool pixel = scene[x + y * SCENE_WIDTH];
+			bool pixel = pDispData->scene[x + y * pDispData->GetWidth()];
 			if (pixel != SNOW_COLOR) continue;
 			if (RandomGenerator::GetInstance().GenerateInt(0, 1) > SNOW_FLOW_RATE) continue;
 
-			if (CanSnowFlowInto(x, y + 1))
+			if (CanSnowFlowInto(x, y + 1, pDispData))
 			{
 				// Flow downwards
-				scene[x + (y + 1) * SCENE_WIDTH] = SNOW_COLOR;
-				scene[x + y * SCENE_WIDTH] = AIR_COLOR;
+				pDispData->scene[x + (y + 1) * pDispData->GetWidth()] = SNOW_COLOR;
+				pDispData->scene[x + y * pDispData->GetWidth()] = AIR_COLOR;
 			}
 			else
 			{
@@ -150,15 +156,15 @@ void SnowFlake::SettleSnow()
 				int firstDirection = RandomGenerator::GetInstance().GenerateInt(0, 100) < 50 ? -1 : 1;
 				int secondDirection = -firstDirection;
 
-				if (CanSnowFlowInto(x + firstDirection, y + 1) && CanSnowFlowInto(x + firstDirection, y))
+				if (CanSnowFlowInto(x + firstDirection, y + 1, pDispData) && CanSnowFlowInto(x + firstDirection, y, pDispData))
 				{
-					scene[x + firstDirection + (y + 1) * SCENE_WIDTH] = SNOW_COLOR;
-					scene[x + y * SCENE_WIDTH] = AIR_COLOR;
+					pDispData->scene[x + firstDirection + (y + 1) * pDispData->GetWidth()] = SNOW_COLOR;
+					pDispData->scene[x + y * pDispData->GetWidth()] = AIR_COLOR;
 				}
-				else if (CanSnowFlowInto(x + secondDirection, y + 1) && CanSnowFlowInto(x + secondDirection, y))
+				else if (CanSnowFlowInto(x + secondDirection, y + 1, pDispData) && CanSnowFlowInto(x + secondDirection, y, pDispData))
 				{
-					scene[x + secondDirection + (y + 1) * SCENE_WIDTH] = SNOW_COLOR;
-					scene[x + y * SCENE_WIDTH] = AIR_COLOR;
+					pDispData->scene[x + secondDirection + (y + 1) * pDispData->GetWidth()] = SNOW_COLOR;
+					pDispData->scene[x + y * pDispData->GetWidth()] = AIR_COLOR;
 				}
 			}
 		}

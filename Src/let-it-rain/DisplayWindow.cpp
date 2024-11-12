@@ -435,7 +435,11 @@ void DisplayWindow::DrawSnowFlakes() const
 		pFlake->Draw(Dc.Get());
 	}
 
-	SnowFlake::DrawSettledSnow(Dc.Get(), &WindowSpecificData);
+	if (!SnowFlakes.empty())
+	{
+		SnowFlake::DrawSettledSnow(Dc.Get(), &WindowSpecificData);
+	}
+	
 
 	HR(Dc->EndDraw());
 	// Make the swap chain available to the composition engine
@@ -499,7 +503,7 @@ void DisplayWindow::UpdateSnowFlakes()
 	{
 		pFlake->UpdatePosition(0.01f);
 	}
-	SnowFlake::SettleSnow();
+	SnowFlake::SettleSnow(&WindowSpecificData);
 }
 
 void DisplayWindow::SetInstanceToHwnd(const HWND hWnd, const LPARAM lParam)

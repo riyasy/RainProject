@@ -3,8 +3,6 @@
 #include "Vector2.h"
 #include "DisplayData.h"
 
-#define SCENE_WIDTH 1920
-#define SCENE_HEIGHT 1080
 #define TWO_PI 6.28318530718f
 #define PI 3.14159265359f
 #define SNOW_FLOW_RATE  0.25f
@@ -14,7 +12,7 @@ class SnowFlake
 public:
 	SnowFlake(DisplayData* pDispData);
 	void UpdatePosition(float deltaSeconds);
-	static void SettleSnow();
+	static void SettleSnow(const DisplayData* pDispData);
 	void Draw(ID2D1DeviceContext* dc) const;
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
 
@@ -32,10 +30,10 @@ private:
 
 	DisplayData* pDisplayData;
 
-	inline static bool scene[SCENE_WIDTH * SCENE_HEIGHT] = {};
+	
 
-	static bool CanSnowFlowInto(int x, int y);
-	static bool IsSceneryPixelSet(int x, int y);
+	static bool CanSnowFlowInto(int x, int y, const DisplayData* pDispData);
+	bool IsSceneryPixelSet(int x, int y) const;
 	void Spawn();
 	void ReSpawn();
 };

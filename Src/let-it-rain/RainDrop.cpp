@@ -17,13 +17,13 @@ RainDrop::RainDrop(const int windDirectionFactor, DisplayData* pDispData):
 void RainDrop::Initialize()
 {
 	// Randomize x position
-	const int xWidenToAccountForSlant = RECT_WIDTH(pDisplayData->WindowRect) / 3;
+	const int xWidenToAccountForSlant = pDisplayData->GetWidth() / 3;
 	Pos.x = static_cast<float>(RandomGenerator::GetInstance().GenerateInt(
 		pDisplayData->WindowRect.left - xWidenToAccountForSlant,
 		pDisplayData->WindowRect.right + xWidenToAccountForSlant));
 
 	// Randomize y position
-	const int y = (RandomGenerator::GetInstance().GenerateInt(pDisplayData->WindowRect.top -RECT_HEIGHT(pDisplayData->WindowRect) / 2,
+	const int y = (RandomGenerator::GetInstance().GenerateInt(pDisplayData->WindowRect.top - pDisplayData->GetHeight() / 2,
 	                                                          pDisplayData->WindowRect.top) / 10) * 10;
 	Pos.y = static_cast<float>(y);
 

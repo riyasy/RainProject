@@ -3,8 +3,6 @@
 #include <d2d1.h>
 #include <algorithm>
 
-#define RECT_WIDTH(rect)  ((rect).right - (rect).left)
-#define RECT_HEIGHT(rect) ((rect).bottom - (rect).top)
 
 class MathUtil
 {
