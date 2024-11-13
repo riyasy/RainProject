@@ -39,11 +39,12 @@ void DisplayData::SetWindowBounds(RECT windowRect, float scaleFactor)
 	Width = WindowRect.right - WindowRect.left;
 	Height = WindowRect.bottom - WindowRect.top;
 
-	maxSnowHeight = Height - 2;
+	
 
 	if (scene == nullptr)
 	{
 		scene = new bool[Height * Width]();
+		maxSnowHeight = Height - 2;
 	}
 }
 
