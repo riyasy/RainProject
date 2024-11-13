@@ -14,6 +14,7 @@ public:
 	static void SettleSnow(const DisplayData* pDispData);
 	void Draw(ID2D1DeviceContext* dc) const;
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
+	static void DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDispData);
 
 private:
 	static constexpr float MAX_SPEED = 75.0f;

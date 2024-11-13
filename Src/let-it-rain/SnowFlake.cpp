@@ -96,10 +96,8 @@ void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 	dc->FillEllipse(ellipse, pDisplayData->DropColorBrush.Get());
 }
 
-void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData)
+void SnowFlake::DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDispData)
 {
-	// Iterate through the 1D scene array with a single loop
-	// TODO Lower snow heaps flickering
 	for (int y = pDispData->Height - 1; y >= pDispData->maxSnowHeight; --y)
 	{
 		for (int x = 0; x < pDispData->Width; ++x)
@@ -118,6 +116,49 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 
 				//// Draw the ellipse
 				//dc->FillEllipse(ellipse, pDispData->DropColorBrush.Get());
+			}
+		}
+	}
+}
+
+void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData)
+{
+	for (int y = pDispData->Height - 1; y >= pDispData->maxSnowHeight; --y)
+	{
+		int startX = -1;  // Start of the run of SNOW_COLOR pixels
+
+		for (int x = 0; x < pDispData->Width; ++x)
+		{
+			if (pDispData->scene[x + y * pDispData->Width] == SNOW_COLOR)
+			{
+				if (startX == -1) // New run starts
+				{
+					startX = x;
+				}
+
+				// If we reach the end of the row or the next pixel is not SNOW_COLOR
+				if (x == pDispData->Width - 1 || pDispData->scene[(x + 1) + y * pDispData->Width] != SNOW_COLOR)
+				{
+					int normXStart = startX + pDispData->WindowRect.left;
+					int normXEnd = x + pDispData->WindowRect.left;
+					int normY = y + pDispData->WindowRect.top;
+
+					D2D1_RECT_F rect = D2D1::RectF(
+						static_cast<FLOAT>(normXStart - 1),
+						static_cast<FLOAT>(normY - 1),
+						static_cast<FLOAT>(normXEnd + 1),
+						static_cast<FLOAT>(normY + 1)
+					);
+
+					dc->FillRectangle(rect, pDispData->DropColorBrush.Get());
+
+					// Reset startX for the next run
+					startX = -1;
+				}
+			}
+			else
+			{
+				startX = -1; // No more consecutive pixels in this row
 			}
 		}
 	}
