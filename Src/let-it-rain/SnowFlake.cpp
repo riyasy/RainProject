@@ -106,15 +106,21 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 		{
 			if (pDispData->scene[x + y * pDispData->Width] == SNOW_COLOR)
 			{
-				// Define the ellipse with center at (posX, posY) and radius 5px
-				D2D1_ELLIPSE ellipse = D2D1::Ellipse(
-					D2D1::Point2F(x + pDispData->WindowRect.left, y + pDispData->WindowRect.top), 2.0f, 2.0f);
+				int normX = x + pDispData->WindowRect.left;
+				int normY = y + pDispData->WindowRect.top;
 
-				// Draw the ellipse
-				dc->FillEllipse(ellipse, pDispData->DropColorBrush.Get());
+				D2D1_RECT_F rect = D2D1::RectF(normX -1, normY - 1, normX + 1, normY + 1);
+				dc->FillRectangle(rect, pDispData->DropColorBrush.Get());
+
+				//// Define the ellipse with center at (posX, posY) and radius 5px
+				//D2D1_ELLIPSE ellipse = D2D1::Ellipse(
+				//	D2D1::Point2F(normX, y + normY), 2.0f, 2.0f);
+
+				//// Draw the ellipse
+				//dc->FillEllipse(ellipse, pDispData->DropColorBrush.Get());
 			}
 		}
-	}	
+	}
 }
 
 bool SnowFlake::CanSnowFlowInto(int x, int y, const DisplayData* pDispData)

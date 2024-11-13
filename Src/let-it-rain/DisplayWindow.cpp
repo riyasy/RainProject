@@ -82,7 +82,8 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	}
 
 	InitDirect2D(window);
-	WindowSpecificData.SetRainColor(Dc.Get(), GeneralSettings.RainColor);
+	pDisplaySpecificData = new DisplayData(Dc.Get());
+	pDisplaySpecificData->SetRainColor(GeneralSettings.RainColor);
 	HandleWindowBoundsChange(window, false);
 
 	return 0;
@@ -101,7 +102,7 @@ void DisplayWindow::UpdateRainDirection(const int val)
 void DisplayWindow::UpdateRainColor(const COLORREF color)
 {
 	GeneralSettings.RainColor = color;
-	WindowSpecificData.SetRainColor(Dc.Get(), color);
+	pDisplaySpecificData->SetRainColor(color);
 }
 
 LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam)
@@ -350,7 +351,7 @@ void DisplayWindow::HandleWindowBoundsChange(const HWND window, const bool clear
 	RECT rainableRect;
 	float scaleFactor = 1.0f;
 	FindRainableRect(rainableRect, scaleFactor);
-	WindowSpecificData.SetWindowBounds(rainableRect, scaleFactor);
+	pDisplaySpecificData->SetWindowBounds(rainableRect, scaleFactor);
 }
 
 void DisplayWindow::HandleTaskBarChange()
@@ -358,7 +359,7 @@ void DisplayWindow::HandleTaskBarChange()
 	RECT rainableRect;
 	float scaleFactor = 1.0f;
 	FindRainableRect(rainableRect, scaleFactor);
-	WindowSpecificData.SetWindowBounds(rainableRect, scaleFactor);
+	pDisplaySpecificData->SetWindowBounds(rainableRect, scaleFactor);
 }
 
 void DisplayWindow::FindRainableRect(RECT& rainableRect, float& scaleFactor)
@@ -437,9 +438,8 @@ void DisplayWindow::DrawSnowFlakes() const
 
 	if (!SnowFlakes.empty())
 	{
-		SnowFlake::DrawSettledSnow(Dc.Get(), &WindowSpecificData);
+		SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData);
 	}
-	
 
 	HR(Dc->EndDraw());
 	// Make the swap chain available to the composition engine
@@ -483,7 +483,7 @@ void DisplayWindow::UpdateRainDrops()
 	// Generate new raindrops
 	for (int i = 0; i < noOfDropsToGenerate; ++i)
 	{
-		RainDrop* pDrop = new RainDrop(GeneralSettings.RainDirection, &WindowSpecificData);
+		RainDrop* pDrop = new RainDrop(GeneralSettings.RainDirection, pDisplaySpecificData);
 		RainDrops.push_back(pDrop);
 	}
 }
@@ -492,9 +492,9 @@ void DisplayWindow::UpdateSnowFlakes()
 {
 	if (SnowFlakes.empty())
 	{
-		for(int i = 0; i < 500; i ++)
+		for (int i = 0; i < 10000; i++)
 		{
-			SnowFlake* pFlake = new SnowFlake(&WindowSpecificData);
+			SnowFlake* pFlake = new SnowFlake(pDisplaySpecificData);
 			SnowFlakes.push_back(pFlake);
 		}
 	}
@@ -503,7 +503,7 @@ void DisplayWindow::UpdateSnowFlakes()
 	{
 		pFlake->UpdatePosition(0.01f);
 	}
-	SnowFlake::SettleSnow(&WindowSpecificData);
+	SnowFlake::SettleSnow(pDisplaySpecificData);
 }
 
 void DisplayWindow::SetInstanceToHwnd(const HWND hWnd, const LPARAM lParam)

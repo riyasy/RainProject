@@ -54,5 +54,3 @@ void Splatter::Draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const
 		dc->FillEllipse(ellipse, pBrush);
 	}
 }
-
-

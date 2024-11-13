@@ -1,3 +1,9 @@
+Todo
+
+	when drawing the ellipses on snow and heap, using scale factor.
+	release all created memory.
+	optimize the snow heap drawing. Currenlty very bad performance.
+
 
 10 Aug
 	Main rain drops are drawn only if both start and end point are inside the drawable rect.

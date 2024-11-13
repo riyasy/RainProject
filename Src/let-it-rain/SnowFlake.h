@@ -6,7 +6,6 @@
 #define TWO_PI 6.28318530718f
 #define PI 3.14159265359f
 
-
 class SnowFlake
 {
 public:
@@ -30,8 +29,6 @@ private:
 	Vector2 vel;
 
 	DisplayData* pDisplayData;
-
-	
 
 	static bool CanSnowFlowInto(int x, int y, const DisplayData* pDispData);
 	bool IsSceneryPixelSet(int x, int y) const;

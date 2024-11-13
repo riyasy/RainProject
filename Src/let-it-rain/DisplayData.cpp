@@ -1,14 +1,17 @@
 #include "DisplayData.h"
 
+DisplayData::DisplayData(ID2D1DeviceContext* dc): DC(dc)
+{
+}
 
-void DisplayData::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
+void DisplayData::SetRainColor(const COLORREF color)
 {
 	const float red = static_cast<float>(GetRValue(color)) / 255.0f;
 	const float green = static_cast<float>(GetGValue(color)) / 255.0f;
 	const float blue = static_cast<float>(GetBValue(color)) / 255.0f;
 
 	//Main drop is always drawn with opaque brush
-	dc->CreateSolidColorBrush(D2D1::ColorF(red, green, blue, 1.0f), DropColorBrush.GetAddressOf());
+	DC->CreateSolidColorBrush(D2D1::ColorF(red, green, blue, 1.0f), DropColorBrush.GetAddressOf());
 
 	// Splatter is drawn with transparency increasing as frame count increases
 	if (!PrebuiltSplatterOpacityBrushes.empty())
@@ -21,7 +24,7 @@ void DisplayData::SetRainColor(ID2D1DeviceContext* dc, const COLORREF color)
 		alpha *= 0.75f;
 		const D2D1_COLOR_F splatterColor = D2D1::ColorF(red, green, blue, alpha);
 		Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> splatterColorBrush;
-		dc->CreateSolidColorBrush(splatterColor, splatterColorBrush.GetAddressOf());
+		DC->CreateSolidColorBrush(splatterColor, splatterColorBrush.GetAddressOf());
 		PrebuiltSplatterOpacityBrushes.push_back(splatterColorBrush);
 	}
 }
@@ -39,12 +42,9 @@ void DisplayData::SetWindowBounds(RECT windowRect, float scaleFactor)
 	Width = WindowRect.right - WindowRect.left;
 	Height = WindowRect.bottom - WindowRect.top;
 
-	
-
 	if (scene == nullptr)
 	{
 		scene = new bool[Height * Width]();
 		maxSnowHeight = Height - 2;
 	}
 }
-

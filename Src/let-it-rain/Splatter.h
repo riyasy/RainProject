@@ -13,7 +13,7 @@ public:
 	~Splatter();
 
 	void UpdatePosition(float deltaSeconds);
-	void Draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const;	
+	void Draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const;
 
 private:
 	static constexpr int MAX_SPLUTTER_FRAME_COUNT_ = 50;

@@ -71,7 +71,7 @@ private:
 
 	static Setting GeneralSettings;
 
-	DisplayData WindowSpecificData;
+	DisplayData* pDisplaySpecificData;
 	MonitorData MonitorDat;
 
 	static LRESULT CALLBACK WndProc(
