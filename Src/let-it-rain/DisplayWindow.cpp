@@ -33,7 +33,7 @@ void HR(const HRESULT result)
 	}
 }
 
-enum
+enum TIMERS
 {
 	DELAY_TIMER = 1947,
 	INTERVAL_TIMER = 1948
@@ -118,7 +118,7 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 		}
 	case WM_CREATE:
 		{
-			DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
+			const DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
 			if (pThis->MonitorDat.IsDefaultDisplay)
 			{
 				InitNotifyIcon(hWnd);
@@ -128,7 +128,7 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 		}
 	case WM_DESTROY:
 		{
-			DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
+			const DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
 			if (pThis->MonitorDat.IsDefaultDisplay)
 			{
 				SettingsManager::GetInstance()->WriteSettings(GeneralSettings);
@@ -216,12 +216,12 @@ void DisplayWindow::Animate()
 
 	while (Accumulator >= dt)
 	{
-		//UpdateRainDrops();
-		UpdateSnowFlakes();
+		UpdateRainDrops();
+		//UpdateSnowFlakes();
 		Accumulator -= dt;
 	}
-	//DrawRainDrops();
-	DrawSnowFlakes();
+	DrawRainDrops();
+	//DrawSnowFlakes();
 }
 
 void DisplayWindow::InitNotifyIcon(const HWND hWnd)
@@ -478,7 +478,7 @@ void DisplayWindow::UpdateRainDrops()
 		}
 	}
 
-	const int noOfDropsToGenerate = GeneralSettings.MaxRainDrops - countOfFallingDrops;
+	const int noOfDropsToGenerate = GeneralSettings.MaxRainDrops * 2 - countOfFallingDrops;
 
 	// Generate new raindrops
 	for (int i = 0; i < noOfDropsToGenerate; ++i)
@@ -492,7 +492,7 @@ void DisplayWindow::UpdateSnowFlakes()
 {
 	if (SnowFlakes.empty())
 	{
-		for (int i = 0; i < 10000; i++)
+		for (int i = 0; i < 500; i++)
 		{
 			SnowFlake* pFlake = new SnowFlake(pDisplaySpecificData);
 			SnowFlakes.push_back(pFlake);

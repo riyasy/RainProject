@@ -14,7 +14,7 @@ Splatter::Splatter(DisplayData* pDispData, const Vector2 pos, const Vector2 vel)
 
 Splatter::~Splatter() = default;
 
-void Splatter::UpdatePosition(float deltaSeconds)
+void Splatter::UpdatePosition(const float deltaSeconds)
 {
 	// Update the position of the raindrop
 	Pos.x += Vel.x * deltaSeconds;
@@ -50,7 +50,7 @@ void Splatter::Draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const
 		SplatterBounceCount < MAX_SPLATTER_BOUNCE_COUNT_)
 	{
 		// Define the ellipse with center at (posX, posY) and radius 5px
-		D2D1_ELLIPSE ellipse = D2D1::Ellipse(D2D1::Point2F(Pos.x, Pos.y), Radius, Radius);
+		const D2D1_ELLIPSE ellipse = D2D1::Ellipse(D2D1::Point2F(Pos.x, Pos.y), Radius, Radius);
 		dc->FillEllipse(ellipse, pBrush);
 	}
 }

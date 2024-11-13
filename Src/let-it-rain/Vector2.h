@@ -1,9 +1,7 @@
 #pragma once
+
 #include <cmath>
-#include <cstdlib>
-#include <ctime>
 #include <d2d1_1.h>
-#include <wrl/client.h>
 
 class Vector2
 {
@@ -14,7 +12,7 @@ public:
 	{
 	}
 
-	Vector2(float x, float y) : x(x), y(y)
+	Vector2(const float x, const float y) : x(x), y(y)
 	{
 	}
 
@@ -23,9 +21,9 @@ public:
 		return x * x + y * y;
 	}
 
-	void setMag(float mag)
+	void setMag(const float mag)
 	{
-		float currentMag = std::sqrt(magSq());
+		const float currentMag = std::sqrt(magSq());
 		if (currentMag > 0)
 		{
 			x = (x / currentMag) * mag;

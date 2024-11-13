@@ -114,7 +114,7 @@ public:
 
 	static RECT NormalizeRect(const RECT& monitorRect, const int top, const int left)
 	{
-		RECT result = {
+		const RECT result = {
 			monitorRect.left - left, // left
 			monitorRect.top - top, // top
 			monitorRect.right - left, // right
@@ -123,14 +123,14 @@ public:
 		return result;
 	}
 
-	static Vector2 FindFirstPoint(double length, Vector2 secondPoint, Vector2 vel)
+	static Vector2 FindFirstPoint(const float length, const Vector2 secondPoint, const Vector2 vel)
 	{
 		// Calculate the magnitude of the velocity vector
-		double magnitude = std::sqrt(vel.x * vel.x + vel.y * vel.y);
+		const float magnitude = std::sqrt(vel.x * vel.x + vel.y * vel.y);
 
 		// Normalize the velocity components to get the unit direction vector
-		double unitVx = vel.x / magnitude;
-		double unitVy = vel.y / magnitude;
+		const float unitVx = vel.x / magnitude;
+		const float unitVy = vel.y / magnitude;
 
 		// Calculate the first point (x1, y1) using the length and direction
 		Vector2 firstPoint;

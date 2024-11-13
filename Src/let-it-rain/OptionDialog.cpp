@@ -7,13 +7,13 @@
 OptionsDialog* OptionsDialog::pThis;
 std::vector<CallBackWindow*> OptionsDialog::subscribers;
 
-OptionsDialog::OptionsDialog(HINSTANCE hInstance, int maxRainDrops,
-                             int rainDirection,
-                             COLORREF rainColor) : hInstance(hInstance),
-                                                   hDialog(nullptr),
-                                                   MaxRainDrops(maxRainDrops),
-                                                   RainDirection(rainDirection),
-                                                   RainColor(rainColor)
+OptionsDialog::OptionsDialog(const HINSTANCE hInstance, const int maxRainDrops,
+                             const int rainDirection,
+                             const COLORREF rainColor) : hInstance(hInstance),
+                                                         hDialog(nullptr),
+                                                         MaxRainDrops(maxRainDrops),
+                                                         RainDirection(rainDirection),
+                                                         RainColor(rainColor)
 {
 	pThis = this;
 }
@@ -43,7 +43,7 @@ void OptionsDialog::Show() const
 	ShowWindow(hDialog, SW_SHOW);
 }
 
-LRESULT CALLBACK OptionsDialog::DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam)
 {
 	switch (message)
 	{

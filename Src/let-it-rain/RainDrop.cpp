@@ -56,7 +56,7 @@ bool RainDrop::IsReadyForErase() const
 	return IsDead;
 }
 
-void RainDrop::UpdatePosition(float deltaSeconds)
+void RainDrop::UpdatePosition(const float deltaSeconds)
 {
 	if (IsDead) return;
 
@@ -97,11 +97,11 @@ void RainDrop::CreateSplatters()
 	for (int i = 0; i < MAX_SPLATTER_PER_RAINDROP_; i++)
 	{
 		const int angleBounce = RandomGenerator::GetInstance().GenerateInt(20, 70, 110, 160);
-		float angleBounceRadians = angleBounce * (3.14f / 180.0f);
+		const float angleBounceRadians = angleBounce * (3.14f / 180.0f);
 
 		// Calculate velocity components
-		Vector2 velSplatter(SPLATTER_STARTING_VELOCITY * std::cos(angleBounceRadians) * pDisplayData->ScaleFactor,
-		                    -SPLATTER_STARTING_VELOCITY * std::sin(angleBounceRadians) * pDisplayData->ScaleFactor);
+		const Vector2 velSplatter(SPLATTER_STARTING_VELOCITY * std::cos(angleBounceRadians) * pDisplayData->ScaleFactor,
+		                          -SPLATTER_STARTING_VELOCITY * std::sin(angleBounceRadians) * pDisplayData->ScaleFactor);
 
 		auto splatter = new Splatter(pDisplayData, Pos, velSplatter);
 		Splatters.push_back(splatter);
@@ -110,7 +110,7 @@ void RainDrop::CreateSplatters()
 
 void RainDrop::Draw(ID2D1DeviceContext* dc) const
 {
-	Vector2 prevPoint = MathUtil::FindFirstPoint(DropTrailLength, Pos, Vel);
+	const Vector2 prevPoint = MathUtil::FindFirstPoint(DropTrailLength, Pos, Vel);
 
 	if (MathUtil::IsPointInRect(pDisplayData->WindowRect, Pos) && MathUtil::IsPointInRect(
 		pDisplayData->WindowRect, prevPoint))
@@ -120,10 +120,10 @@ void RainDrop::Draw(ID2D1DeviceContext* dc) const
 	else if (MathUtil::IsPointInRect(pDisplayData->WindowRect, Pos) || MathUtil::IsPointInRect(
 		pDisplayData->WindowRect, prevPoint))
 	{
-		D2D1_POINT_2F adjustedPoint1, adjustedPoint2;
-		MathUtil::TrimLineSegment(pDisplayData->WindowRect, prevPoint.ToD2DPoint(), Pos.ToD2DPoint(), adjustedPoint1,
-		                          adjustedPoint2);
-		dc->DrawLine(adjustedPoint1, adjustedPoint2, pDisplayData->DropColorBrush.Get(), Radius);
+		D2D1_POINT_2F startPoint, endPoint;
+		MathUtil::TrimLineSegment(pDisplayData->WindowRect, prevPoint.ToD2DPoint(), Pos.ToD2DPoint(), startPoint,
+		                          endPoint);
+		dc->DrawLine(startPoint, endPoint, pDisplayData->DropColorBrush.Get(), Radius);
 	}
 
 	if (!Splatters.empty())

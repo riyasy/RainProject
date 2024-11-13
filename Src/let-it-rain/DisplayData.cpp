@@ -29,7 +29,7 @@ void DisplayData::SetRainColor(const COLORREF color)
 	}
 }
 
-void DisplayData::SetWindowBounds(RECT windowRect, float scaleFactor)
+void DisplayData::SetWindowBounds(const RECT windowRect, const float scaleFactor)
 {
 	WindowRect = windowRect;
 	ScaleFactor = scaleFactor;

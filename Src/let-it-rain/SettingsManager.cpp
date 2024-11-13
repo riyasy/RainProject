@@ -19,7 +19,7 @@ std::wstring SettingsManager::GetAppDataPath()
 	wchar_t path[MAX_PATH];
 	if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, path)))
 	{
-		return std::wstring(path);
+		return { std::wstring(path) };
 	}
 	return L"";
 }

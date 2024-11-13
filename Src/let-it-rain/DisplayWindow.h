@@ -27,7 +27,7 @@ struct MonitorData
 	std::wstring Name; // The display name, if available
 	bool IsDefaultDisplay; // True if the display is the primary one
 
-	MonitorData() : DisplayRect{0, 0, 0, 0}, Name(L""), IsDefaultDisplay(false)
+	MonitorData() : DisplayRect{0, 0, 0, 0}, IsDefaultDisplay(false)
 	{
 	}
 };
@@ -71,7 +71,7 @@ private:
 
 	static Setting GeneralSettings;
 
-	DisplayData* pDisplaySpecificData;
+	DisplayData* pDisplaySpecificData = nullptr;
 	MonitorData MonitorDat;
 
 	static LRESULT CALLBACK WndProc(

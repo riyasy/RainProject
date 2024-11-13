@@ -12,8 +12,8 @@ public:
 	void SetRainColor(COLORREF color);
 	void SetWindowBounds(RECT windowRect, float scaleFactor);
 
-	long Width = 100;
-	long Height = 100;
+	int Width = 100;
+	int Height = 100;
 	float ScaleFactor = 1.0f; // FullHD is considered as 1. 4K will be 2(twice height and width change).
 
 	RECT WindowRect = {0, 0, 100, 100};

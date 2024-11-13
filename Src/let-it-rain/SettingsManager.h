@@ -11,7 +11,7 @@ public:
 	int RainDirection;
 	COLORREF RainColor;
 
-	Setting(int maxRainDrops = 10, int rainDirection = 3, COLORREF rainColor = 0x00AAAAAA)
+	Setting(const int maxRainDrops = 10, const int rainDirection = 3, const COLORREF rainColor = 0x00AAAAAA)
 		: MaxRainDrops(maxRainDrops), RainDirection(rainDirection), RainColor(rainColor)
 	{
 	}

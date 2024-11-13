@@ -121,7 +121,7 @@ namespace db
 	}
 
 	template <typename T>
-	static constexpr T dot_grad(int hash, T xf)
+	static constexpr T dot_grad(const int hash, T xf)
 	{
 		// In 1D case, the gradient may be either 1 or -1.
 		// The distance vector is the input offset (relative to the smallest bound).
@@ -129,7 +129,7 @@ namespace db
 	}
 
 	template <typename T>
-	static constexpr T dot_grad(int hash, T xf, T yf)
+	static constexpr T dot_grad(const int hash, T xf, T yf)
 	{
 		// In 2D case, the gradient may be any of 8 direction vectors pointing to the
 		// edges of a unit-square. The distance vector is the input offset (relative to
@@ -149,7 +149,7 @@ namespace db
 	}
 
 	template <typename T>
-	static constexpr T dot_grad(int hash, T xf, T yf, T zf)
+	static constexpr T dot_grad(const int hash, T xf, T yf, T zf)
 	{
 		// In 3D case, the gradient may be any of 12 direction vectors pointing to the edges
 		// of a unit-cube (rounded to 16 with duplications). The distance vector is the input

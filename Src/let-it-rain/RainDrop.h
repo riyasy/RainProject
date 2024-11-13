@@ -23,8 +23,8 @@ private:
 	static constexpr int MAX_SPLATTER_BOUNCE_COUNT_ = 2;
 	static constexpr int MAX_SPLATTER_PER_RAINDROP_ = 3;
 
-	static constexpr float TERMINAL_VELOCITY_Y = 1500; //pixels per second
-	static constexpr float WIND_MULTIPLIER = 100; // pixels per second
+	static constexpr float TERMINAL_VELOCITY_Y = 1000; //pixels per second
+	static constexpr float WIND_MULTIPLIER = 75; // pixels per second
 
 	static constexpr float SPLATTER_STARTING_VELOCITY = 200.0f;
 

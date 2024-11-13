@@ -16,13 +16,13 @@ public:
 		return instance;
 	}
 
-	int GenerateInt(int min, int max)
+	int GenerateInt(const int min, const int max)
 	{
 		disRange1 = std::uniform_int_distribution<>(min, max);
 		return disRange1(gen);
 	}
 
-	int GenerateInt(int range1Min, int range1Max, int range2Min, int range2Max)
+	int GenerateInt(const int range1Min, const int range1Max, const int range2Min, const int range2Max)
 	{
 		const int totalRangeSize = (range1Max - range1Min) + (range2Max - range2Min);
 		disRange1 = std::uniform_int_distribution<>(range1Min, range1Max);
