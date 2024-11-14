@@ -512,7 +512,7 @@ void DisplayWindow::UpdateSnowFlakes()
 
 	if (noOfFlakesToGenerate > 0)
 	{
-		for (int i = 0; i < 500; i++)
+		for (int i = 0; i < noOfFlakesToGenerate; i++)
 		{
 			SnowFlake* pFlake = new SnowFlake(pDisplaySpecificData);
 			SnowFlakes.push_back(pFlake);
