@@ -207,7 +207,7 @@
   <ItemGroup>
     <ClInclude Include="CallBackWindow.h" />
     <ClInclude Include="CPUUsageTracker.h" />
-    <ClInclude Include="db_perlin.hpp" />
+    <ClInclude Include="FastNoiseLite.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MathUtil.h" />
     <ClInclude Include="OptionDialog.h" />

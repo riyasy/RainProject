@@ -139,4 +139,10 @@ public:
 
 		return firstPoint;
 	}
+
+	static bool IsSame(const RECT& l, const RECT& r)
+	{
+		return l.left == r.left && l.top == r.top &&
+			l.right == r.right && l.bottom == r.bottom;
+	}
 };

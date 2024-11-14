@@ -20,7 +20,6 @@ public:
 
 private:
 	static constexpr int MAX_SPLUTTER_FRAME_COUNT_ = 50;
-	static constexpr int MAX_SPLATTER_BOUNCE_COUNT_ = 2;
 	static constexpr int MAX_SPLATTER_PER_RAINDROP_ = 3;
 
 	static constexpr float TERMINAL_VELOCITY_Y = 1000; //pixels per second
@@ -29,7 +28,6 @@ private:
 	static constexpr float SPLATTER_STARTING_VELOCITY = 200.0f;
 
 	DisplayData* pDisplayData;
-
 	int WindDirectionFactor;
 
 	Vector2 Pos;

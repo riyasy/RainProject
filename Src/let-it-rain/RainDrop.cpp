@@ -40,9 +40,9 @@ void RainDrop::Initialize()
 
 RainDrop::~RainDrop()
 {
-	for (const auto drop : Splatters)
+	for (const auto splatter : Splatters)
 	{
-		delete drop;
+		delete splatter;
 	}
 }
 
@@ -84,9 +84,9 @@ void RainDrop::UpdatePosition(const float deltaSeconds)
 	}
 	else
 	{
-		for (const auto drop : Splatters)
+		for (const auto splatter : Splatters)
 		{
-			drop->UpdatePosition(deltaSeconds);
+			splatter->UpdatePosition(deltaSeconds);
 		}
 		IsDead = (++CurrentFrameCountForSplatter) >= MAX_SPLUTTER_FRAME_COUNT_;
 	}
@@ -128,9 +128,9 @@ void RainDrop::Draw(ID2D1DeviceContext* dc) const
 
 	if (!Splatters.empty())
 	{
-		for (const auto drop : Splatters)
+		for (const auto splatter : Splatters)
 		{
-			drop->Draw(dc, pDisplayData->PrebuiltSplatterOpacityBrushes[CurrentFrameCountForSplatter].Get());
+			splatter->Draw(dc, pDisplayData->PrebuiltSplatterOpacityBrushes[CurrentFrameCountForSplatter].Get());
 		}
 	}
 }

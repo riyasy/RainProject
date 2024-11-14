@@ -1,7 +1,19 @@
 #include "DisplayData.h"
+#include "FastNoiseLite.h"
 
 DisplayData::DisplayData(ID2D1DeviceContext* dc): DC(dc)
 {
+	if (pNoiseGen == nullptr)
+	{
+		pNoiseGen = new FastNoiseLite();
+		pNoiseGen->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+	}
+}
+
+DisplayData::~DisplayData()
+{
+	delete []pScenePixels;
+	delete pNoiseGen;
 }
 
 void DisplayData::SetRainColor(const COLORREF color)
@@ -31,6 +43,16 @@ void DisplayData::SetRainColor(const COLORREF color)
 
 void DisplayData::SetWindowBounds(const RECT windowRect, const float scaleFactor)
 {
+	if (!IsSame(WindowRect, windowRect) && pScenePixels != nullptr)
+	{
+		delete[] pScenePixels;
+		pScenePixels = nullptr;
+	}
+
+	//wchar_t buffer[100];
+	//swprintf_s(buffer, L"Width: %d, Height: %d\n", Width, Height);
+	//OutputDebugStringW(buffer);
+
 	WindowRect = windowRect;
 	ScaleFactor = scaleFactor;
 
@@ -42,9 +64,15 @@ void DisplayData::SetWindowBounds(const RECT windowRect, const float scaleFactor
 	Width = WindowRect.right - WindowRect.left;
 	Height = WindowRect.bottom - WindowRect.top;
 
-	if (scene == nullptr)
+	if (pScenePixels == nullptr)
 	{
-		scene = new bool[Height * Width]();
-		maxSnowHeight = Height - 2;
+		pScenePixels = new bool[Height * Width]();
+		MaxSnowHeight = Height - 2;
 	}
+}
+
+bool DisplayData::IsSame(const RECT& l, const RECT& r)
+{
+	return l.left == r.left && l.top == r.top &&
+		l.right == r.right && l.bottom == r.bottom;
 }

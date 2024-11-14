@@ -214,14 +214,22 @@ void DisplayWindow::Animate()
 
 	Accumulator += frameTime;
 
+	if (Accumulator > 1) 
+	{
+		// If there are large gaps in animation due to screen stuck
+		// If Accumulator value is not decreased, large number of
+		// Updates will be called in while loop
+		Accumulator = dt;
+	}
+
 	while (Accumulator >= dt)
 	{
-		UpdateRainDrops();
-		//UpdateSnowFlakes();
+		//UpdateRainDrops();
+		UpdateSnowFlakes();
 		Accumulator -= dt;
 	}
-	DrawRainDrops();
-	//DrawSnowFlakes();
+	//DrawRainDrops();
+	DrawSnowFlakes();
 }
 
 void DisplayWindow::InitNotifyIcon(const HWND hWnd)
@@ -344,14 +352,17 @@ void DisplayWindow::InitDirect2D(const HWND hWnd)
 
 void DisplayWindow::HandleWindowBoundsChange(const HWND window, const bool clearDrops)
 {
-	if (!RainDrops.empty() && clearDrops)
-	{
-		RainDrops.clear();
-	}
 	RECT rainableRect;
 	float scaleFactor = 1.0f;
 	FindRainableRect(rainableRect, scaleFactor);
-	pDisplaySpecificData->SetWindowBounds(rainableRect, scaleFactor);
+	if (rainableRect != pDisplaySpecificData->WindowRect)
+	{
+		if (!RainDrops.empty() && clearDrops)
+		{
+			RainDrops.clear();
+		}
+		pDisplaySpecificData->SetWindowBounds(rainableRect, scaleFactor);
+	}
 }
 
 void DisplayWindow::HandleTaskBarChange()
@@ -359,7 +370,10 @@ void DisplayWindow::HandleTaskBarChange()
 	RECT rainableRect;
 	float scaleFactor = 1.0f;
 	FindRainableRect(rainableRect, scaleFactor);
-	pDisplaySpecificData->SetWindowBounds(rainableRect, scaleFactor);
+	if (rainableRect != pDisplaySpecificData->WindowRect)
+	{
+		pDisplaySpecificData->SetWindowBounds(rainableRect, scaleFactor);
+	}
 }
 
 void DisplayWindow::FindRainableRect(RECT& rainableRect, float& scaleFactor)
@@ -403,7 +417,11 @@ void DisplayWindow::FindRainableRect(RECT& rainableRect, float& scaleFactor)
 	else
 	{
 		rainableRect = MathUtil::SubtractRect(desktopRect, taskBarRect);
-	}
+		if (rainableRect.left - rainableRect.right == 0) // in case of any error
+		{
+			rainableRect = desktopRect;
+		}
+	}	
 
 	rainableRect = MathUtil::NormalizeRect(rainableRect, top, left);
 
@@ -490,7 +508,9 @@ void DisplayWindow::UpdateRainDrops()
 
 void DisplayWindow::UpdateSnowFlakes()
 {
-	if (SnowFlakes.empty())
+	const int noOfFlakesToGenerate = GeneralSettings.MaxRainDrops * 20 - SnowFlakes.size();
+
+	if (noOfFlakesToGenerate > 0)
 	{
 		for (int i = 0; i < 500; i++)
 		{
@@ -498,6 +518,19 @@ void DisplayWindow::UpdateSnowFlakes()
 			SnowFlakes.push_back(pFlake);
 		}
 	}
+
+	if (noOfFlakesToGenerate < 0)
+	{
+		const int noOfFlakesToErase = -noOfFlakesToGenerate;
+		for (int i = 0; i < noOfFlakesToErase; i++)
+		{
+			delete SnowFlakes[i];
+		}
+		// Remove the first n elements
+		SnowFlakes.erase(SnowFlakes.begin(), SnowFlakes.begin() + noOfFlakesToErase);
+	}
+
+
 	// Move each raindrop to the next point
 	for (SnowFlake* const pFlake : SnowFlakes)
 	{
@@ -517,4 +550,7 @@ DisplayWindow* DisplayWindow::GetInstanceFromHwnd(const HWND hWnd)
 	return reinterpret_cast<DisplayWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 }
 
-DisplayWindow::~DisplayWindow() = default;
+DisplayWindow::~DisplayWindow()
+{
+	delete pDisplaySpecificData;
+};

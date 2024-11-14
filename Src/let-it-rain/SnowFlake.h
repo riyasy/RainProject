@@ -15,6 +15,7 @@ public:
 	void Draw(ID2D1DeviceContext* dc) const;
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
 	static void DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDispData);
+	
 
 private:
 	static constexpr float MAX_SPEED = 75.0f;
@@ -26,13 +27,13 @@ private:
 	static constexpr bool AIR_COLOR = false;
 	static constexpr int SNOW_FLOW_RATE = 3;
 
-	Vector2 pos;
-	Vector2 vel;
+	Vector2 Pos;
+	Vector2 Vel;
 
 	DisplayData* pDisplayData;
 
 	static bool CanSnowFlowInto(int x, int y, const DisplayData* pDispData);
 	bool IsSceneryPixelSet(int x, int y) const;
 	void Spawn();
-	void ReSpawn();
+	void ReSpawn();	
 };

@@ -1,8 +1,9 @@
 Todo
 
 	when drawing the ellipses on snow and heap, using scale factor.
-	release all created memory.
-	optimize the snow heap drawing. Currenlty very bad performance.
+	Dynamic addition and removal of Monitors (Very hard to do)
+	Done - release all created memory.
+	Done - optimize the snow heap drawing. Currenlty very bad performance.
 
 
 10 Aug
