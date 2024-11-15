@@ -513,7 +513,7 @@ void DisplayWindow::UpdateRainDrops()
 		}
 	}
 
-	const int noOfDropsToGenerate = GeneralSettings.MaxParticles * 2 - countOfFallingDrops;
+	const int noOfDropsToGenerate = GeneralSettings.MaxParticles * 3 - countOfFallingDrops;
 
 	// Generate new raindrops
 	for (int i = 0; i < noOfDropsToGenerate; ++i)
