@@ -154,12 +154,13 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 					const int normXStart = startX + pDispData->WindowRect.left;
 					const int normXEnd = x + pDispData->WindowRect.left;
 					const int normY = y + pDispData->WindowRect.top;
+					const float halfWidth = pDispData->ScaleFactor >= 1 ? pDispData->ScaleFactor : 1;
 
 					D2D1_RECT_F rect = D2D1::RectF(
-						static_cast<FLOAT>(normXStart - 1),
-						static_cast<FLOAT>(normY - 1),
-						static_cast<FLOAT>(normXEnd + 1),
-						static_cast<FLOAT>(normY + 1)
+						normXStart - halfWidth,
+						normY - halfWidth,
+						normXEnd + halfWidth,
+						normY + halfWidth
 					);
 
 					dc->FillRectangle(rect, pDispData->DropColorBrush.Get());
