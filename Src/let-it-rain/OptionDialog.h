@@ -10,8 +10,8 @@
 class OptionsDialog
 {
 public:
-	OptionsDialog(HINSTANCE hInstance, int maxRainDrops, int rainDirection,
-	              COLORREF rainColor);
+	OptionsDialog(HINSTANCE hInstance, int maxParticles, int windDirection,
+	              COLORREF particleColor, ParticleType partType);
 	static void SubscribeToChange(CallBackWindow* subscriber);
 	bool Create();
 	void Show() const;
@@ -21,8 +21,9 @@ private:
 	static std::vector<CallBackWindow*> subscribers;
 	HINSTANCE hInstance;
 	HWND hDialog;
-	int MaxRainDrops;
-	int RainDirection;
-	COLORREF RainColor;
+	int MaxParticles;
+	int WindDirection;
+	COLORREF ParticleColor;
+	ParticleType PartType;
 	static OptionsDialog* pThis;
 };

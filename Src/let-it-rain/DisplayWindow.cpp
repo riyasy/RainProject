@@ -76,33 +76,38 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	OptionsDialog::SubscribeToChange(this);
 	if (MonitorDat.IsDefaultDisplay)
 	{
-		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxRainDrops, GeneralSettings.RainDirection,
-		                                GeneralSettings.RainColor);
+		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxParticles, GeneralSettings.WindSpeed,
+		                                GeneralSettings.ParticleColor, GeneralSettings.PartType);
 		pOptionsDlg->Create();
 	}
 
 	InitDirect2D(window);
 	pDisplaySpecificData = new DisplayData(Dc.Get());
-	pDisplaySpecificData->SetRainColor(GeneralSettings.RainColor);
+	pDisplaySpecificData->SetRainColor(GeneralSettings.ParticleColor);
 	HandleWindowBoundsChange(window, false);
 
 	return 0;
 }
 
-void DisplayWindow::UpdateRainDropCount(const int val)
+void DisplayWindow::UpdateParticleCount(const int val)
 {
-	GeneralSettings.MaxRainDrops = val;
+	GeneralSettings.MaxParticles = val;
 }
 
-void DisplayWindow::UpdateRainDirection(const int val)
+void DisplayWindow::UpdateWindDirection(const int val)
 {
-	GeneralSettings.RainDirection = val;
+	GeneralSettings.WindSpeed = val;
 }
 
-void DisplayWindow::UpdateRainColor(const COLORREF color)
+void DisplayWindow::UpdateParticleColor(const COLORREF color)
 {
-	GeneralSettings.RainColor = color;
+	GeneralSettings.ParticleColor = color;
 	pDisplaySpecificData->SetRainColor(color);
+}
+
+void DisplayWindow::UpdateParticleType(const ParticleType partType)
+{
+	GeneralSettings.PartType = partType;
 }
 
 LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam)
@@ -224,12 +229,24 @@ void DisplayWindow::Animate()
 
 	while (Accumulator >= dt)
 	{
-		//UpdateRainDrops();
-		UpdateSnowFlakes();
+		if (GeneralSettings.PartType == RAIN)
+		{
+			UpdateRainDrops();
+		}
+		else if (GeneralSettings.PartType == SNOW)
+		{
+			UpdateSnowFlakes();
+		}
 		Accumulator -= dt;
 	}
-	//DrawRainDrops();
-	DrawSnowFlakes();
+	if (GeneralSettings.PartType == RAIN)
+	{
+		DrawRainDrops();
+	}
+	else if (GeneralSettings.PartType == SNOW)
+	{
+		DrawSnowFlakes();
+	}	
 }
 
 void DisplayWindow::InitNotifyIcon(const HWND hWnd)
@@ -496,19 +513,19 @@ void DisplayWindow::UpdateRainDrops()
 		}
 	}
 
-	const int noOfDropsToGenerate = GeneralSettings.MaxRainDrops * 2 - countOfFallingDrops;
+	const int noOfDropsToGenerate = GeneralSettings.MaxParticles * 2 - countOfFallingDrops;
 
 	// Generate new raindrops
 	for (int i = 0; i < noOfDropsToGenerate; ++i)
 	{
-		RainDrop* pDrop = new RainDrop(GeneralSettings.RainDirection, pDisplaySpecificData);
+		RainDrop* pDrop = new RainDrop(GeneralSettings.WindSpeed, pDisplaySpecificData);
 		RainDrops.push_back(pDrop);
 	}
 }
 
 void DisplayWindow::UpdateSnowFlakes()
 {
-	const int noOfFlakesToGenerate = GeneralSettings.MaxRainDrops * 20 - SnowFlakes.size();
+	const int noOfFlakesToGenerate = GeneralSettings.MaxParticles * 20 - SnowFlakes.size();
 
 	if (noOfFlakesToGenerate > 0)
 	{

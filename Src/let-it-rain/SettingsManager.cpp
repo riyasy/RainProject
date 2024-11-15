@@ -8,7 +8,7 @@
 // Initialize the singleton instance to nullptr
 SettingsManager* SettingsManager::instance = nullptr;
 
-SettingsManager::SettingsManager() : defaultSetting(10, 3, 0x00AAAAAA)
+SettingsManager::SettingsManager() : defaultSetting(10, 3, 0x00AAAAAA, RAIN)
 {
 	const std::wstring appDataPath = GetAppDataPath();
 	iniFilePath = appDataPath + L"\\let-it-rain.ini";
@@ -27,13 +27,16 @@ std::wstring SettingsManager::GetAppDataPath()
 void SettingsManager::CreateINIFile() const
 {
 	//CreateDirectory(GetAppDataPath().c_str(), NULL); // Create directory if it doesn't exist
-	WritePrivateProfileString(L"Settings", L"MaxRainDrops", std::to_wstring(defaultSetting.MaxRainDrops).c_str(),
+	WritePrivateProfileString(L"Settings", L"MaxParticles", std::to_wstring(defaultSetting.MaxParticles).c_str(),
 	                          iniFilePath.c_str());
-	WritePrivateProfileString(L"Settings", L"RainDirection", std::to_wstring(defaultSetting.RainDirection).c_str(),
+	WritePrivateProfileString(L"Settings", L"WindSpeed", std::to_wstring(defaultSetting.WindSpeed).c_str(),
 	                          iniFilePath.c_str());
 	wchar_t colorBuffer[10];
-	swprintf_s(colorBuffer, 10, L"%08X", defaultSetting.RainColor);
-	WritePrivateProfileString(L"Settings", L"RainColor", colorBuffer, iniFilePath.c_str());
+	swprintf_s(colorBuffer, 10, L"%08X", defaultSetting.ParticleColor);
+	WritePrivateProfileString(L"Settings", L"ParticleColor", colorBuffer, iniFilePath.c_str());
+
+	WritePrivateProfileString(L"Settings", L"ParticleType", std::to_wstring(defaultSetting.PartType).c_str(),
+		iniFilePath.c_str());
 }
 
 SettingsManager* SettingsManager::GetInstance()
@@ -52,14 +55,17 @@ void SettingsManager::ReadSettings(Setting& setting) const
 		CreateINIFile(); // File does not exist, create with defaults
 	}
 
-	setting.MaxRainDrops = GetPrivateProfileInt(L"Settings", L"MaxRainDrops", defaultSetting.MaxRainDrops,
+	setting.MaxParticles = GetPrivateProfileInt(L"Settings", L"MaxParticles", defaultSetting.MaxParticles,
 	                                            iniFilePath.c_str());
-	setting.RainDirection = GetPrivateProfileInt(L"Settings", L"RainDirection", defaultSetting.RainDirection,
+	setting.WindSpeed = GetPrivateProfileInt(L"Settings", L"WindSpeed", defaultSetting.WindSpeed,
 	                                             iniFilePath.c_str());
 
 	wchar_t colorBuffer[10];
-	GetPrivateProfileString(L"Settings", L"RainColor", nullptr, colorBuffer, 10, iniFilePath.c_str());
-	setting.RainColor = colorBuffer[0] ? wcstoul(colorBuffer, nullptr, 16) : defaultSetting.RainColor;
+	GetPrivateProfileString(L"Settings", L"ParticleColor", nullptr, colorBuffer, 10, iniFilePath.c_str());
+	setting.ParticleColor = colorBuffer[0] ? wcstoul(colorBuffer, nullptr, 16) : defaultSetting.ParticleColor;
+
+	setting.PartType = static_cast<ParticleType>(GetPrivateProfileInt(L"Settings", L"ParticleType", defaultSetting.PartType,
+	                                                                  iniFilePath.c_str()));
 
 	// Update missing values in INI file
 	WriteSettings(setting);
@@ -67,11 +73,13 @@ void SettingsManager::ReadSettings(Setting& setting) const
 
 void SettingsManager::WriteSettings(const Setting& setting) const
 {
-	WritePrivateProfileString(L"Settings", L"MaxRainDrops", std::to_wstring(setting.MaxRainDrops).c_str(),
+	WritePrivateProfileString(L"Settings", L"MaxParticles", std::to_wstring(setting.MaxParticles).c_str(),
 	                          iniFilePath.c_str());
-	WritePrivateProfileString(L"Settings", L"RainDirection", std::to_wstring(setting.RainDirection).c_str(),
+	WritePrivateProfileString(L"Settings", L"WindSpeed", std::to_wstring(setting.WindSpeed).c_str(),
 	                          iniFilePath.c_str());
 	wchar_t colorBuffer[10];
-	swprintf_s(colorBuffer, 10, L"%08X", setting.RainColor);
-	WritePrivateProfileString(L"Settings", L"RainColor", colorBuffer, iniFilePath.c_str());
+	swprintf_s(colorBuffer, 10, L"%08X", setting.ParticleColor);
+	WritePrivateProfileString(L"Settings", L"ParticleColor", colorBuffer, iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"ParticleType", std::to_wstring(setting.PartType).c_str(),
+		iniFilePath.c_str());
 }

@@ -39,9 +39,10 @@ public:
 	void Animate();
 
 	// CallBackWindow Overrides
-	void UpdateRainDropCount(int val) override;
-	void UpdateRainDirection(int val) override;
-	void UpdateRainColor(COLORREF color) override;
+	void UpdateParticleCount(int val) override;
+	void UpdateWindDirection(int val) override;
+	void UpdateParticleColor(COLORREF color) override;
+	void UpdateParticleType(ParticleType partType) override;
 
 	~DisplayWindow() override;
 

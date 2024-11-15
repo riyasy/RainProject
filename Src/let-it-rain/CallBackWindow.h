@@ -1,4 +1,5 @@
 #pragma once
+#include "SettingsManager.h"
 
 // An abstract class
 class CallBackWindow
@@ -6,7 +7,8 @@ class CallBackWindow
 	// Data members of class
 public:
 	virtual ~CallBackWindow() = default;
-	virtual void UpdateRainDropCount(int val) = 0;
-	virtual void UpdateRainDirection(int val) = 0;
-	virtual void UpdateRainColor(DWORD color) = 0;
+	virtual void UpdateParticleCount(int val) = 0;
+	virtual void UpdateWindDirection(int val) = 0;
+	virtual void UpdateParticleColor(DWORD color) = 0;
+	virtual void UpdateParticleType(ParticleType partType) = 0;
 };

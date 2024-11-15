@@ -95,7 +95,9 @@ void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 	{
 		// Define the ellipse with center at (posX, posY) and radius 5px
 		const D2D1_ELLIPSE ellipse = D2D1::Ellipse(
-			D2D1::Point2F(Pos.x + pDisplayData->WindowRect.left, Pos.y + pDisplayData->WindowRect.top), 2.0f, 2.0f);
+			D2D1::Point2F(Pos.x + pDisplayData->WindowRect.left, Pos.y + pDisplayData->WindowRect.top), 
+			2.0f * pDisplayData->ScaleFactor, 
+			2.0f * pDisplayData->ScaleFactor);
 		// Draw the ellipse
 		dc->FillEllipse(ellipse, pDisplayData->DropColorBrush.Get());
 	}
@@ -111,8 +113,13 @@ void SnowFlake::DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDis
 			{
 				const int normX = x + pDispData->WindowRect.left;
 				const int normY = y + pDispData->WindowRect.top;
+				const float halfWidth = pDispData->ScaleFactor >= 1 ? pDispData->ScaleFactor : 1;
 
-				D2D1_RECT_F rect = D2D1::RectF(normX - 1, normY - 1, normX + 1, normY + 1);
+				D2D1_RECT_F rect = D2D1::RectF(
+					normX - halfWidth,
+					normY - halfWidth,
+					normX + halfWidth,
+					normY + halfWidth);
 				dc->FillRectangle(rect, pDispData->DropColorBrush.Get());
 
 				//// Define the ellipse with center at (posX, posY) and radius 5px

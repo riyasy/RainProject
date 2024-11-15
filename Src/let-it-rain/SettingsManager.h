@@ -3,16 +3,26 @@
 #include <string>
 #include <windows.h>
 
+enum ParticleType
+{
+	RAIN = 0,
+	SNOW = 1,
+};
+
 class Setting
 {
 public:
 	bool loaded = false;
-	int MaxRainDrops;
-	int RainDirection;
-	COLORREF RainColor;
+	int MaxParticles;
+	int WindSpeed;
+	COLORREF ParticleColor;
+	ParticleType PartType;
 
-	Setting(const int maxRainDrops = 10, const int rainDirection = 3, const COLORREF rainColor = 0x00AAAAAA)
-		: MaxRainDrops(maxRainDrops), RainDirection(rainDirection), RainColor(rainColor)
+	explicit Setting(const int maxParticles = 10, 
+		const int windSpeed = 3, 
+		const COLORREF ParticleColor = 0x00AAAAAA, 
+		const ParticleType partType = RAIN)
+		: MaxParticles(maxParticles), WindSpeed(windSpeed), ParticleColor(ParticleColor), PartType(partType)
 	{
 	}
 };
