@@ -24,20 +24,20 @@ void Splatter::UpdatePosition(const float deltaSeconds)
 	Vel.x *= AIR_RESISTANCE; // Air Resistance
 
 	// Check for bouncing against sides
-	if (Pos.x + Radius > pDisplayData->WindowRect.right || Pos.x - Radius <
-		pDisplayData->WindowRect.left)
+	if (Pos.x + Radius > pDisplayData->SceneRect.right || Pos.x - Radius <
+		pDisplayData->SceneRect.left)
 	{
 		Vel.x = -Vel.x;
 	}
 	// Check for bouncing against bottom border
-	if (Pos.y + Radius > pDisplayData->WindowRect.bottom)
+	if (Pos.y + Radius > pDisplayData->SceneRect.bottom)
 	{
-		Pos.y = pDisplayData->WindowRect.bottom - Radius; // Keep the ellipse within bounds
+		Pos.y = pDisplayData->SceneRect.bottom - Radius; // Keep the ellipse within bounds
 		Vel.y = -Vel.y * BOUNCE_DAMPING; // Bounce with damping
 		SplatterBounceCount++;
 	}
 	// Check for bouncing against top
-	if (Pos.y - Radius < pDisplayData->WindowRect.top)
+	if (Pos.y - Radius < pDisplayData->SceneRect.top)
 	{
 		Pos.y = Radius; // Keep the ellipse within bounds
 		Vel.y = -Vel.y; // Reverse the direction if it hits the top edge
@@ -46,7 +46,7 @@ void Splatter::UpdatePosition(const float deltaSeconds)
 
 void Splatter::Draw(ID2D1DeviceContext* dc, ID2D1SolidColorBrush* pBrush) const
 {
-	if (MathUtil::IsPointInRect(pDisplayData->WindowRect, Pos) &&
+	if (MathUtil::IsPointInRect(pDisplayData->SceneRect, Pos) &&
 		SplatterBounceCount < MAX_SPLATTER_BOUNCE_COUNT_)
 	{
 		// Define the ellipse with center at (posX, posY) and radius 5px

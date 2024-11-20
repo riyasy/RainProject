@@ -41,9 +41,9 @@ void DisplayData::SetRainColor(const COLORREF color)
 	}
 }
 
-void DisplayData::SetWindowBounds(const RECT windowRect, const float scaleFactor)
+void DisplayData::SetSceneBounds(const RECT sceneRect, const float scaleFactor)
 {
-	if (!IsSame(WindowRect, windowRect) && pScenePixels != nullptr)
+	if (!IsSame(SceneRect, sceneRect) && pScenePixels != nullptr)
 	{
 		delete[] pScenePixels;
 		pScenePixels = nullptr;
@@ -53,16 +53,16 @@ void DisplayData::SetWindowBounds(const RECT windowRect, const float scaleFactor
 	//swprintf_s(buffer, L"Width: %d, Height: %d\n", Width, Height);
 	//OutputDebugStringW(buffer);
 
-	WindowRect = windowRect;
+	SceneRect = sceneRect;
 	ScaleFactor = scaleFactor;
 
-	WindowRectNorm.top = 0;
-	WindowRectNorm.left = 0;
-	WindowRectNorm.bottom = WindowRect.bottom - WindowRect.top;
-	WindowRectNorm.right = WindowRect.right - WindowRect.left;
+	SceneRectNorm.top = 0;
+	SceneRectNorm.left = 0;
+	SceneRectNorm.bottom = SceneRect.bottom - SceneRect.top;
+	SceneRectNorm.right = SceneRect.right - SceneRect.left;
 
-	Width = WindowRect.right - WindowRect.left;
-	Height = WindowRect.bottom - WindowRect.top;
+	Width = SceneRect.right - SceneRect.left;
+	Height = SceneRect.bottom - SceneRect.top;
 
 	if (pScenePixels == nullptr)
 	{

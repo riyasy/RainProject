@@ -1,21 +1,6 @@
 #include "DisplayWindow.h"
+#include "Global.h"
 
-// Callback function to be called for each display
-BOOL CALLBACK MonitorEnumProc(const HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, const LPARAM lParam)
-{
-	std::vector<MonitorData>* monitorDataList = reinterpret_cast<std::vector<MonitorData>*>(lParam);
-	MONITORINFOEX monitorInfo;
-	monitorInfo.cbSize = sizeof(monitorInfo);
-	if (GetMonitorInfo(hMonitor, &monitorInfo))
-	{
-		MonitorData monitorData;
-		monitorData.DisplayRect = monitorInfo.rcMonitor;
-		monitorData.Name = monitorInfo.szDevice;
-		monitorData.IsDefaultDisplay = (monitorInfo.dwFlags & MONITORINFOF_PRIMARY) != 0;
-		monitorDataList->push_back(monitorData);
-	}
-	return TRUE;
-}
 
 //
 // Provides the entry point to the application.

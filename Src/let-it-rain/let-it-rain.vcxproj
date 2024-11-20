@@ -207,8 +207,8 @@
   <ItemGroup>
     <ClInclude Include="CallBackWindow.h" />
     <ClInclude Include="CPUUsageTracker.h" />
-    <ClInclude Include="FastNoiseLite.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="Global.h" />
     <ClInclude Include="MathUtil.h" />
     <ClInclude Include="OptionDialog.h" />
     <ClInclude Include="DisplayWindow.h" />

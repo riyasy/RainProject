@@ -60,7 +60,7 @@
     <ClInclude Include="DisplayData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FastNoiseLite.h">
+    <ClInclude Include="Global.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

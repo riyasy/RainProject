@@ -91,11 +91,11 @@ void SnowFlake::UpdatePosition(const float deltaSeconds)
 
 void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 {
-	if (MathUtil::IsPointInRect(pDisplayData->WindowRectNorm, Pos))
+	if (MathUtil::IsPointInRect(pDisplayData->SceneRectNorm, Pos))
 	{
 		// Define the ellipse with center at (posX, posY) and radius 5px
 		const D2D1_ELLIPSE ellipse = D2D1::Ellipse(
-			D2D1::Point2F(Pos.x + pDisplayData->WindowRect.left, Pos.y + pDisplayData->WindowRect.top), 
+			D2D1::Point2F(Pos.x + pDisplayData->SceneRect.left, Pos.y + pDisplayData->SceneRect.top), 
 			2.0f * pDisplayData->ScaleFactor, 
 			2.0f * pDisplayData->ScaleFactor);
 		// Draw the ellipse
@@ -111,8 +111,8 @@ void SnowFlake::DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDis
 		{
 			if (pDispData->pScenePixels[x + y * pDispData->Width] == SNOW_COLOR)
 			{
-				const int normX = x + pDispData->WindowRect.left;
-				const int normY = y + pDispData->WindowRect.top;
+				const int normX = x + pDispData->SceneRect.left;
+				const int normY = y + pDispData->SceneRect.top;
 				const float halfWidth = pDispData->ScaleFactor >= 1 ? pDispData->ScaleFactor : 1;
 
 				D2D1_RECT_F rect = D2D1::RectF(
@@ -151,9 +151,9 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 				// If we reach the end of the row or the next pixel is not SNOW_COLOR
 				if (x == pDispData->Width - 1 || pDispData->pScenePixels[(x + 1) + y * pDispData->Width] != SNOW_COLOR)
 				{
-					const int normXStart = startX + pDispData->WindowRect.left;
-					const int normXEnd = x + pDispData->WindowRect.left;
-					const int normY = y + pDispData->WindowRect.top;
+					const int normXStart = startX + pDispData->SceneRect.left;
+					const int normXEnd = x + pDispData->SceneRect.left;
+					const int normY = y + pDispData->SceneRect.top;
 					const float halfWidth = pDispData->ScaleFactor >= 1 ? pDispData->ScaleFactor : 1;
 
 					D2D1_RECT_F rect = D2D1::RectF(

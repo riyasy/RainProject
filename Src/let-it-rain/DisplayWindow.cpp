@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "CPUUsageTracker.h"
+#include "Global.h"
 #include "MathUtil.h"
 #include "Resource.h"
 #include "SettingsManager.h"
@@ -60,10 +61,10 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	constexpr DWORD style = WS_POPUP | WS_VISIBLE;
 
 	const HWND window = CreateWindowEx(exstyle, wc.lpszClassName, L"let it rain", style,
-	                                   monitorData.DisplayRect.left,
-	                                   monitorData.DisplayRect.top,
-	                                   monitorData.DisplayRect.right - monitorData.DisplayRect.left,
-	                                   monitorData.DisplayRect.bottom - monitorData.DisplayRect.top,
+	                                   monitorData.MonitorRect.left,
+	                                   monitorData.MonitorRect.top,
+	                                   monitorData.MonitorRect.right - monitorData.MonitorRect.left,
+	                                   monitorData.MonitorRect.bottom - monitorData.MonitorRect.top,
 	                                   nullptr, nullptr, HINST_THISCOMPONENT, this);
 
 	ShowWindow(window, SW_SHOW);
@@ -74,7 +75,7 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	}
 
 	OptionsDialog::SubscribeToChange(this);
-	if (MonitorDat.IsDefaultDisplay)
+	if (MonitorDat.IsPrimaryDisplay)
 	{
 		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxParticles, GeneralSettings.WindSpeed,
 		                                GeneralSettings.ParticleColor, GeneralSettings.PartType);
@@ -124,7 +125,7 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 	case WM_CREATE:
 		{
 			const DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
-			if (pThis->MonitorDat.IsDefaultDisplay)
+			if (pThis->MonitorDat.IsPrimaryDisplay)
 			{
 				InitNotifyIcon(hWnd);
 			}
@@ -134,7 +135,7 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 	case WM_DESTROY:
 		{
 			const DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
-			if (pThis->MonitorDat.IsDefaultDisplay)
+			if (pThis->MonitorDat.IsPrimaryDisplay)
 			{
 				SettingsManager::GetInstance()->WriteSettings(GeneralSettings);
 			}
@@ -369,34 +370,116 @@ void DisplayWindow::InitDirect2D(const HWND hWnd)
 
 void DisplayWindow::HandleWindowBoundsChange(const HWND window, const bool clearDrops)
 {
-	RECT rainableRect;
+	RECT sceneRect;
 	float scaleFactor = 1.0f;
-	FindRainableRect(rainableRect, scaleFactor);
-	if (rainableRect != pDisplaySpecificData->WindowRect)
+	FindSceneRect(sceneRect, scaleFactor);
+	if (sceneRect != pDisplaySpecificData->SceneRect)
 	{
 		if (!RainDrops.empty() && clearDrops)
 		{
 			RainDrops.clear();
 		}
-		pDisplaySpecificData->SetWindowBounds(rainableRect, scaleFactor);
+		pDisplaySpecificData->SetSceneBounds(sceneRect, scaleFactor);
+
+		//std::wostringstream  oss;
+		//oss << "Monitor Name: " << MonitorDat.Name.c_str() << ", "
+		//	<< "SceneRect Bounds: "
+		//	<< "Left: " << sceneRect.left << ", "
+		//	<< "Top: " << sceneRect.top << ", "
+		//	<< "Right: " << sceneRect.right << ", "
+		//	<< "Bottom: " << sceneRect.bottom << "\n";;
+		//std::wstring logMessage = oss.str();
+		//OutputDebugStringW(logMessage.c_str());
 	}
 }
 
-void DisplayWindow::HandleTaskBarChange()
+void DisplayWindow::HandleTaskBarChange() const
 {
-	RECT rainableRect;
+	RECT sceneRect;
 	float scaleFactor = 1.0f;
-	FindRainableRect(rainableRect, scaleFactor);
-	if (rainableRect != pDisplaySpecificData->WindowRect)
+	FindSceneRect(sceneRect, scaleFactor);
+	if (sceneRect != pDisplaySpecificData->SceneRect)
 	{
-		pDisplaySpecificData->SetWindowBounds(rainableRect, scaleFactor);
+		pDisplaySpecificData->SetSceneBounds(sceneRect, scaleFactor);
+
+		//std::wostringstream  oss;
+		//oss << "Monitor Name: " << MonitorDat.Name.c_str() << ", "
+		//	<< "SceneRect Bounds: "
+		//	<< "Left: " << sceneRect.left << ", "
+		//	<< "Top: " << sceneRect.top << ", "
+		//	<< "Right: " << sceneRect.right << ", "
+		//	<< "Bottom: " << sceneRect.bottom << "\n";
+		//std::wstring logMessage = oss.str();
+		//OutputDebugStringW(logMessage.c_str());
 	}
 }
 
-void DisplayWindow::FindRainableRect(RECT& rainableRect, float& scaleFactor)
+void DisplayWindow::FindSceneRect(RECT& sceneRect, float& scaleFactor) const
+{
+	std::vector<MonitorData> monitorDataList;
+	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitorDataList));
+	for (const auto& monitorData : monitorDataList)
+	{
+		if (monitorData.Name == MonitorDat.Name)
+		{
+			HWND hTaskbarWnd = nullptr;
+			if (MonitorDat.IsPrimaryDisplay)
+			{
+				hTaskbarWnd = FindWindow(L"Shell_traywnd", nullptr);
+			}
+			else
+			{
+				//hTaskbarWnd = FindWindow(L"Shell_SecondaryTrayWnd", nullptr);
+
+				// Task bar name is same for all the non primary monitors. So we need to enumerate and find the correct one
+				// for each monitor.
+				while ((hTaskbarWnd = FindWindowEx(nullptr, hTaskbarWnd, L"Shell_SecondaryTrayWnd", nullptr)) != nullptr)
+				{
+					const HMONITOR hMonitor = MonitorFromWindow(hTaskbarWnd, MONITOR_DEFAULTTONEAREST);
+					MONITORINFOEX monitorInfo;
+					monitorInfo.cbSize = sizeof(monitorInfo);
+					if (GetMonitorInfo(hMonitor, &monitorInfo) && monitorInfo.szDevice == MonitorDat.Name)
+					{
+						break;
+					}
+				}
+			}
+
+			RECT taskBarRect;
+			GetWindowRect(hTaskbarWnd, &taskBarRect);
+
+			RECT desktopRect = monitorData.MonitorRect;
+
+			const int monitorHeight = desktopRect.bottom - desktopRect.top;
+			scaleFactor = static_cast<float>(monitorHeight) / 1080.0f;
+
+			// Check if task bar is hidden and act accordingly
+			if ((taskBarRect.top >= desktopRect.bottom - 4) ||
+				(taskBarRect.right <= desktopRect.left + 2) ||
+				(taskBarRect.bottom <= desktopRect.top + 4) ||
+				(taskBarRect.left >= desktopRect.right - 2))
+			{
+				sceneRect = desktopRect;
+			}
+			else
+			{
+				sceneRect = MathUtil::SubtractRect(desktopRect, taskBarRect);
+				if (sceneRect.left - sceneRect.right == 0) // in case of any error
+				{
+					sceneRect = desktopRect;
+				}
+			}
+
+			sceneRect = MathUtil::NormalizeRect(sceneRect, desktopRect.top, desktopRect.left);
+			break;
+		}
+	}
+}
+
+void DisplayWindow::FindSceneRect2(RECT& sceneRect, float& scaleFactor) const
 {
 	HWND hTaskbarWnd;
-	if (MonitorDat.IsDefaultDisplay)
+	if (MonitorDat.IsPrimaryDisplay)
 	{
 		hTaskbarWnd = FindWindow(L"Shell_traywnd", nullptr);
 	}
@@ -429,18 +512,18 @@ void DisplayWindow::FindRainableRect(RECT& rainableRect, float& scaleFactor)
 		(taskBarRect.bottom <= desktopRect.top + 4) ||
 		(taskBarRect.left >= desktopRect.right - 2))
 	{
-		rainableRect = desktopRect;
+		sceneRect = desktopRect;
 	}
 	else
 	{
-		rainableRect = MathUtil::SubtractRect(desktopRect, taskBarRect);
-		if (rainableRect.left - rainableRect.right == 0) // in case of any error
+		sceneRect = MathUtil::SubtractRect(desktopRect, taskBarRect);
+		if (sceneRect.left - sceneRect.right == 0) // in case of any error
 		{
-			rainableRect = desktopRect;
+			sceneRect = desktopRect;
 		}
 	}	
 
-	rainableRect = MathUtil::NormalizeRect(rainableRect, top, left);
+	sceneRect = MathUtil::NormalizeRect(sceneRect, top, left);
 
 	const int monitorHeight = info.rcMonitor.bottom - info.rcMonitor.top;
 	scaleFactor = static_cast<float>(monitorHeight) / 1080.0f;

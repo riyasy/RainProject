@@ -23,11 +23,11 @@ class __declspec(uuid("355F4E1D-8039-4078-BABD-8668FD2D1F7B")) RainIcon;
 
 struct MonitorData
 {
-	RECT DisplayRect; // The display's rectangle dimensions
+	RECT MonitorRect; // The display's rectangle dimensions
 	std::wstring Name; // The display name, if available
-	bool IsDefaultDisplay; // True if the display is the primary one
+	bool IsPrimaryDisplay; // True if the display is the primary one
 
-	MonitorData() : DisplayRect{0, 0, 0, 0}, IsDefaultDisplay(false)
+	MonitorData() : MonitorRect{0, 0, 0, 0}, IsPrimaryDisplay(false)
 	{
 	}
 };
@@ -85,8 +85,9 @@ private:
 	void InitDirect2D(HWND hWnd);
 
 	void HandleWindowBoundsChange(HWND window, bool clearDrops);
-	void HandleTaskBarChange();
-	void FindRainableRect(RECT& rainableRect, float& scaleFactor);
+	void HandleTaskBarChange() const;
+	void FindSceneRect2(RECT& sceneRect, float& scaleFactor) const;
+	void FindSceneRect(RECT& sceneRect, float& scaleFactor) const;
 
 	static void InitNotifyIcon(HWND hWnd);
 	static void ShowContextMenu(HWND hWnd);

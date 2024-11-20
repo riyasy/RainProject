@@ -1,9 +1,9 @@
 Todo
-
-	when drawing the ellipses on snow and heap, using scale factor.
 	Dynamic addition and removal of Monitors (Very hard to do)
+	FindSceneRect2 - remove it after few days
 	Done - release all created memory.
 	Done - optimize the snow heap drawing. Currenlty very bad performance.
+	Done - when drawing the ellipses on snow and heap, using scale factor.
 
 
 10 Aug

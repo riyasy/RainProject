@@ -19,12 +19,12 @@ void RainDrop::Initialize()
 	// Randomize x position
 	const int xWidenToAccountForSlant = pDisplayData->Width / 3;
 	Pos.x = static_cast<float>(RandomGenerator::GetInstance().GenerateInt(
-		pDisplayData->WindowRect.left - xWidenToAccountForSlant,
-		pDisplayData->WindowRect.right + xWidenToAccountForSlant));
+		pDisplayData->SceneRect.left - xWidenToAccountForSlant,
+		pDisplayData->SceneRect.right + xWidenToAccountForSlant));
 
 	// Randomize y position
-	const int y = (RandomGenerator::GetInstance().GenerateInt(pDisplayData->WindowRect.top - pDisplayData->Height / 2,
-	                                                          pDisplayData->WindowRect.top) / 10) * 10;
+	const int y = (RandomGenerator::GetInstance().GenerateInt(pDisplayData->SceneRect.top - pDisplayData->Height / 2,
+	                                                          pDisplayData->SceneRect.top) / 10) * 10;
 	Pos.y = static_cast<float>(y);
 
 	// Create drop with radius ranging from 0.2 to 0.7 pixels
@@ -66,12 +66,12 @@ void RainDrop::UpdatePosition(const float deltaSeconds)
 
 	if (!TouchedGround)
 	{
-		if (Pos.y + Radius >= pDisplayData->WindowRect.bottom)
+		if (Pos.y + Radius >= pDisplayData->SceneRect.bottom)
 		{
 			TouchedGround = true;
-			Pos.y = static_cast<float>(pDisplayData->WindowRect.bottom);
+			Pos.y = static_cast<float>(pDisplayData->SceneRect.bottom);
 
-			if (MathUtil::IsPointInRect(pDisplayData->WindowRect, Pos))
+			if (MathUtil::IsPointInRect(pDisplayData->SceneRect, Pos))
 			{
 				// if the rain touched ground inside bounds, create splatter.
 				CreateSplatters();
@@ -112,16 +112,16 @@ void RainDrop::Draw(ID2D1DeviceContext* dc) const
 {
 	const Vector2 prevPoint = MathUtil::FindFirstPoint(DropTrailLength, Pos, Vel);
 
-	if (MathUtil::IsPointInRect(pDisplayData->WindowRect, Pos) && MathUtil::IsPointInRect(
-		pDisplayData->WindowRect, prevPoint))
+	if (MathUtil::IsPointInRect(pDisplayData->SceneRect, Pos) && MathUtil::IsPointInRect(
+		pDisplayData->SceneRect, prevPoint))
 	{
 		dc->DrawLine(prevPoint.ToD2DPoint(), Pos.ToD2DPoint(), pDisplayData->DropColorBrush.Get(), Radius);
 	}
-	else if (MathUtil::IsPointInRect(pDisplayData->WindowRect, Pos) || MathUtil::IsPointInRect(
-		pDisplayData->WindowRect, prevPoint))
+	else if (MathUtil::IsPointInRect(pDisplayData->SceneRect, Pos) || MathUtil::IsPointInRect(
+		pDisplayData->SceneRect, prevPoint))
 	{
 		D2D1_POINT_2F startPoint, endPoint;
-		MathUtil::TrimLineSegment(pDisplayData->WindowRect, prevPoint.ToD2DPoint(), Pos.ToD2DPoint(), startPoint,
+		MathUtil::TrimLineSegment(pDisplayData->SceneRect, prevPoint.ToD2DPoint(), Pos.ToD2DPoint(), startPoint,
 		                          endPoint);
 		dc->DrawLine(startPoint, endPoint, pDisplayData->DropColorBrush.Get(), Radius);
 	}
