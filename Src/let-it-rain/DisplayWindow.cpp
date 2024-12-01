@@ -16,6 +16,8 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 #endif
 
+#define NOTIFICATION_TRAY_ICON_UID 786;
+
 struct ComException
 {
 	HRESULT Result;
@@ -138,6 +140,7 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 			if (pThis->MonitorDat.IsPrimaryDisplay)
 			{
 				SettingsManager::GetInstance()->WriteSettings(GeneralSettings);
+				RemoveNotifyIcon(hWnd);
 			}
 			PostQuitMessage(0);
 			return 0;
@@ -254,19 +257,28 @@ void DisplayWindow::InitNotifyIcon(const HWND hWnd)
 {
 	NOTIFYICONDATA nid = {sizeof(nid)};
 	nid.hWnd = hWnd;
-	// add the icon, setting the icon, tooltip, and callback message.
-	// the icon will be identified with the GUID
-	nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP | NIF_GUID;
-	nid.guidItem = __uuidof(RainIcon);
+
+	// NIF_GUID and nid.guidItem doesn't work properly in Windows 10.
+	// So used .uID parameter without NIF_GUID flag.
+	nid.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP; // | NIF_GUID;
+	//nid.guidItem = __uuidof(RainIcon); 
+	nid.uID = NOTIFICATION_TRAY_ICON_UID;
+
 	nid.uCallbackMessage = WM_TRAYICON;
 	LoadIconMetric(AppInstance, MAKEINTRESOURCE(IDI_SMALL), LIM_SMALL, &nid.hIcon);
-
-	//LoadString(appInstance, IDS_TOOLTIP, nid.szTip, ARRAYSIZE(nid.szTip));
 	Shell_NotifyIcon(NIM_ADD, &nid);
 
-	// NOTIFYICON_VERSION_4 is prefered
-	nid.uVersion = NOTIFYICON_VERSION_4;
+	// Context menu not working for NOTIFYICON_VERSION_4. So used NOTIFYICON_VERSION
+	nid.uVersion = NOTIFYICON_VERSION; 
 	Shell_NotifyIcon(NIM_SETVERSION, &nid);
+}
+
+void DisplayWindow::RemoveNotifyIcon(const HWND hWnd)
+{
+	NOTIFYICONDATA nid = { sizeof(nid) };
+	nid.hWnd = hWnd;
+	nid.uID = NOTIFICATION_TRAY_ICON_UID;
+	Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
 void DisplayWindow::ShowContextMenu(const HWND hWnd)

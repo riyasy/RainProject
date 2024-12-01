@@ -90,6 +90,7 @@ private:
 	void FindSceneRect(RECT& sceneRect, float& scaleFactor) const;
 
 	static void InitNotifyIcon(HWND hWnd);
+	static void RemoveNotifyIcon(HWND hWnd);
 	static void ShowContextMenu(HWND hWnd);
 
 	static double GetCurrentTimeInSeconds();
