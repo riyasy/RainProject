@@ -1,6 +1,6 @@
-# Let It Rain - Desktop Rain Simulation for Windows
+# Let It Rain - Desktop Rain Simulation for Windows (NOW WITH SNOW ALSO)
 
-Welcome to **Let It Rain**, an ASMR-inspired rain simulation for the Windows desktop. This lightweight app brings a soothing visual experience by simulating raindrops falling from the top of your screen and splattering as they reach the taskbar.
+Welcome to **Let It Rain**, an ASMR-inspired rain and snow simulation for the Windows desktop. This lightweight app brings a soothing visual experience by simulating raindrops falling from the top of your screen and splattering as they reach the taskbar. (OR snow flakes flying around and settling on your taskbar)
 
 Watch "let-it-rain" in action
 
@@ -8,10 +8,11 @@ Watch "let-it-rain" in action
 
 ## Features
 
-- 🌧️ **Realistic Raindrop Motion**: Watch raindrops gently descend from the top of the screen and interact with your desktop.
-- 💦 **Splattering Effect**: Raindrops splatter when they hit the taskbar, adding to the immersive experience.
-- **ASMR Visuals**: Calm your mind as you watch raindrops dance across your workspace, creating a visual ASMR atmosphere.
-- ⚙️ **Customizable Settings**: Adjust the raindrop count, direction, and rain color to suit your preferences.
+- 🌧️ **Realistic Raindrop Motion**: Watch raindrops gently descend from the top of the screen and splashing on your taks bar.
+- ❄️ **Realistic Snow Fall Motion**: Watch snow flakes gently descend from the top of the screen and settle on your task bar and heap up.
+- **ASMR Visuals**: Calm your mind as you watch raindrops or snowflakes dance across your workspace, creating a visual ASMR atmosphere.
+- ⚙️ **Customizable Settings**: Adjust the count, direction and color to suit your preferences.
+- Multi monitor support.
 
 ## Installation
 
@@ -32,14 +33,13 @@ Watch "let-it-rain" in action
 ## Settings
 
 Customize your rain experience with these options, available in the Preferences dialog:
-- **Max Raindrops**: Control the number of raindrops on the screen.
-- **Rain Direction**: Choose the angle at which the raindrops fall.
-- **Rain Color**: Select the color of the raindrops for a personalized look.
+- **Max Particles**: Control the number of raindrops/snow flakes on the screen.
+- **Wind Direction**: Choose the angle at which the raindrops fall.
+- **Particle Color**: Select the color of the raindrops/snow flakes for a personalized look.
 
 ## TODO
 
 - Test on older versions of Windows.
-- Multi Monitor support.
 - Make drop speed adjustable.
 - Pause while CPU is busy with any other tasks.
 
