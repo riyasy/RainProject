@@ -568,7 +568,8 @@ void DisplayWindow::DrawSnowFlakes() const
 
 	if (!SnowFlakes.empty())
 	{
-		SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData);
+		// SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData);
+		SnowFlake::DrawSettledSnow2(Dc.Get(), pDisplaySpecificData);
 	}
 
 	HR(Dc->EndDraw());
@@ -643,7 +644,7 @@ void DisplayWindow::UpdateSnowFlakes()
 	}
 
 
-	// Move each raindrop to the next point
+	// Move each snowflake to the next point
 	for (SnowFlake* const pFlake : SnowFlakes)
 	{
 		pFlake->UpdatePosition(0.01f);
