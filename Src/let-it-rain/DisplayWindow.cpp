@@ -621,7 +621,9 @@ void DisplayWindow::UpdateRainDrops()
 
 void DisplayWindow::UpdateSnowFlakes()
 {
-	const int noOfFlakesToGenerate = GeneralSettings.MaxParticles * 20 - SnowFlakes.size();
+	// Added 12/25/2024 - Todd D
+	// rate of snow fall *100 added
+	const int noOfFlakesToGenerate = GeneralSettings.MaxParticles * 100 - SnowFlakes.size();
 
 	if (noOfFlakesToGenerate > 0)
 	{

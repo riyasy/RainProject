@@ -8,7 +8,7 @@
 // Initialize the singleton instance to nullptr
 SettingsManager* SettingsManager::instance = nullptr;
 
-SettingsManager::SettingsManager() : defaultSetting(25, 3, 0x00AAAAAA, RAIN)
+SettingsManager::SettingsManager() : defaultSetting(75, 3, 0x00AAAAAA, RAIN)
 {
 	const std::wstring appDataPath = GetAppDataPath();
 	iniFilePath = appDataPath + L"\\let-it-rain.ini";

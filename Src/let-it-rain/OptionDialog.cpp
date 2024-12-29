@@ -54,7 +54,9 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 	{
 	case WM_INITDIALOG:
 		{
-			SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_SETRANGE, TRUE, MAKELONG(5, 50));
+			// setup slider max length for options dialog on init 250
+		    // 12/28/2024 - ToddD
+			SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_SETRANGE, TRUE, MAKELONG(5, 250));
 			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_SETRANGE, TRUE, MAKELONG(-5, 5));
 
 			SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_SETPOS, TRUE, pThis->MaxParticles);

@@ -18,7 +18,7 @@ public:
 	
 
 private:
-	static constexpr float MAX_SPEED = 75.0f;
+	static constexpr float MAX_SPEED = 175.0f;
 	static constexpr float NOISE_INTENSITY = 20.0f;
 	static constexpr float NOISE_SCALE = 0.01f;
 	static constexpr float NOISE_TIMESCALE = 0.001f;
