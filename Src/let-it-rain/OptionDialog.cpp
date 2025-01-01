@@ -85,7 +85,7 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 
 			// Set the image and the text
 			SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(hIcon));
-			SetWindowText(hButton, L"Github Repo");
+			SetWindowText(hButton, L"GitHub Repo");
 		}
 		return TRUE;
 	case WM_HSCROLL:

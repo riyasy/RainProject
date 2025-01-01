@@ -3,6 +3,9 @@
 #include <string>
 #include <windows.h>
 
+// setup default rate for Snow and Rain
+#define MAX_PARTICLES 75
+
 enum ParticleType
 {
 	RAIN = 0,

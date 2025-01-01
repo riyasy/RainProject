@@ -139,6 +139,7 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 			const DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
 			if (pThis->MonitorDat.IsPrimaryDisplay)
 			{
+				// saving settings in config ini file
 				SettingsManager::GetInstance()->WriteSettings(GeneralSettings);
 				RemoveNotifyIcon(hWnd);
 			}
@@ -568,7 +569,7 @@ void DisplayWindow::DrawSnowFlakes() const
 
 	if (!SnowFlakes.empty())
 	{
-		// SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData);
+		//SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData);
 		SnowFlake::DrawSettledSnow2(Dc.Get(), pDisplaySpecificData);
 	}
 
