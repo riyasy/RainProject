@@ -569,7 +569,7 @@ void DisplayWindow::DrawSnowFlakes() const
 
 	if (!SnowFlakes.empty())
 	{
-		//SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData);
+		// SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData);
 		SnowFlake::DrawSettledSnow2(Dc.Get(), pDisplaySpecificData);
 	}
 
