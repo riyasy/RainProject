@@ -97,7 +97,7 @@ void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 		const D2D1_ELLIPSE ellipse = D2D1::Ellipse(
 			D2D1::Point2F(Pos.x + pDisplayData->SceneRect.left, Pos.y + pDisplayData->SceneRect.top), 
 			2.0f * pDisplayData->ScaleFactor, 
-			2.0f * pDisplayData->ScaleFactor);
+			1.0f * pDisplayData->ScaleFactor);
 		// Draw the ellipse
 		dc->FillEllipse(ellipse, pDisplayData->DropColorBrush.Get());
 	}
@@ -155,7 +155,7 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 					const int normY = y + pDispData->SceneRect.top;
 					const float halfWidth = pDispData->ScaleFactor >= 1 ? pDispData->ScaleFactor : 1;
 
-					// rect on menubar top settle
+					// rect settle snow
 					D2D1_RECT_F rect = D2D1::RectF(
 						normXStart - halfWidth,
 						normY - halfWidth,

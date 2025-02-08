@@ -385,6 +385,7 @@ void DisplayWindow::HandleWindowBoundsChange(const HWND window, const bool clear
 {
 	RECT sceneRect;
 	float scaleFactor = 1.0f;
+	// find screen rect which removes the taskbar at the bottom
 	FindSceneRect(sceneRect, scaleFactor);
 	if (sceneRect != pDisplaySpecificData->SceneRect)
 	{
@@ -394,15 +395,15 @@ void DisplayWindow::HandleWindowBoundsChange(const HWND window, const bool clear
 		}
 		pDisplaySpecificData->SetSceneBounds(sceneRect, scaleFactor);
 
-		//std::wostringstream  oss;
-		//oss << "Monitor Name: " << MonitorDat.Name.c_str() << ", "
-		//	<< "SceneRect Bounds: "
-		//	<< "Left: " << sceneRect.left << ", "
-		//	<< "Top: " << sceneRect.top << ", "
-		//	<< "Right: " << sceneRect.right << ", "
-		//	<< "Bottom: " << sceneRect.bottom << "\n";;
-		//std::wstring logMessage = oss.str();
-		//OutputDebugStringW(logMessage.c_str());
+		std::wostringstream  oss;
+		oss << "Monitor Name: " << MonitorDat.Name.c_str() << ", "
+			<< "SceneRect Bounds: "
+			<< "Left: " << sceneRect.left << ", "
+			<< "Top: " << sceneRect.top << ", "
+			<< "Right: " << sceneRect.right << ", "
+			<< "Bottom: " << sceneRect.bottom << "\n";;
+		std::wstring logMessage = oss.str();
+		OutputDebugStringW(logMessage.c_str());
 	}
 }
 
@@ -415,15 +416,15 @@ void DisplayWindow::HandleTaskBarChange() const
 	{
 		pDisplaySpecificData->SetSceneBounds(sceneRect, scaleFactor);
 
-		//std::wostringstream  oss;
-		//oss << "Monitor Name: " << MonitorDat.Name.c_str() << ", "
-		//	<< "SceneRect Bounds: "
-		//	<< "Left: " << sceneRect.left << ", "
-		//	<< "Top: " << sceneRect.top << ", "
-		//	<< "Right: " << sceneRect.right << ", "
-		//	<< "Bottom: " << sceneRect.bottom << "\n";
-		//std::wstring logMessage = oss.str();
-		//OutputDebugStringW(logMessage.c_str());
+		std::wostringstream  oss;
+		oss << "Monitor Name: " << MonitorDat.Name.c_str() << ", "
+			<< "SceneRect Bounds: "
+			<< "Left: " << sceneRect.left << ", "
+			<< "Top: " << sceneRect.top << ", "
+			<< "Right: " << sceneRect.right << ", "
+			<< "Bottom: " << sceneRect.bottom << "\n";
+		std::wstring logMessage = oss.str();
+		OutputDebugStringW(logMessage.c_str());
 	}
 }
 
