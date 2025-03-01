@@ -94,11 +94,13 @@ void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 	if (MathUtil::IsPointInRect(pDisplayData->SceneRectNorm, Pos))
 	{
 		// Define the ellipse with center at (posX, posY) and radius 5px
-		const D2D1_ELLIPSE ellipse = D2D1::Ellipse(
-			D2D1::Point2F(Pos.x + pDisplayData->SceneRect.left, Pos.y + pDisplayData->SceneRect.top), 
-			2.0f * pDisplayData->ScaleFactor, 
-			1.0f * pDisplayData->ScaleFactor);
-		// Draw the ellipse
+        const float randomRadiusX = 1.0f + RandomGenerator::GetInstance().GenerateInt(0, 2) * pDisplayData->ScaleFactor;
+        const float randomRadiusY = 0.5f + RandomGenerator::GetInstance().GenerateInt(0, 1) * pDisplayData->ScaleFactor;
+        const D2D1_ELLIPSE ellipse = D2D1::Ellipse(
+        D2D1::Point2F(Pos.x + pDisplayData->SceneRect.left, Pos.y + pDisplayData->SceneRect.top), 
+        randomRadiusX, 
+        randomRadiusY);
+        // Draw the ellipse
 		dc->FillEllipse(ellipse, pDisplayData->DropColorBrush.Get());
 	}
 }
