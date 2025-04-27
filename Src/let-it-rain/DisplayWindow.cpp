@@ -10,13 +10,16 @@
 #include "MathUtil.h"
 #include "Resource.h"
 #include "SettingsManager.h"
+#include "SnowFlake.h"
+#include "RandomGenerator.h"
+#include "FastNoiseLite.h"
 
 #ifndef HINST_THISCOMPONENT
 EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 #define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
 #endif
 
-#define NOTIFICATION_TRAY_ICON_UID 786;
+#define NOTIFICATION_TRAY_ICON_UID 786
 
 struct ComException
 {
@@ -59,17 +62,34 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	RegisterClass(&wc);
 
 	constexpr DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
-	//DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
+	// DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
 	constexpr DWORD style = WS_POPUP | WS_VISIBLE;
 
+	// Calculate window dimensions
+	const int windowWidth = monitorData.MonitorRect.right - monitorData.MonitorRect.left;
+	const int windowHeight = monitorData.MonitorRect.bottom - monitorData.MonitorRect.top;
+
+	// Calculate centered position
+	const int xPos = monitorData.MonitorRect.left + ((windowWidth - windowWidth) / 2);
+	const int yPos = monitorData.MonitorRect.top + ((windowHeight - windowHeight) / 2);
+
+	// center windows with dimensions
 	const HWND window = CreateWindowEx(exstyle, wc.lpszClassName, L"let it rain", style,
+		xPos,
+		yPos,
+		windowWidth,
+		windowHeight,
+		nullptr, nullptr, HINST_THISCOMPONENT, this);
+
+	/* // Commented out to center window for the above 
+		const HWND window = CreateWindowEx(exstyle, wc.lpszClassName, L"let it rain", style,
 	                                   monitorData.MonitorRect.left,
 	                                   monitorData.MonitorRect.top,
 	                                   monitorData.MonitorRect.right - monitorData.MonitorRect.left,
 	                                   monitorData.MonitorRect.bottom - monitorData.MonitorRect.top,
 	                                   nullptr, nullptr, HINST_THISCOMPONENT, this);
-
-	ShowWindow(window, SW_SHOW);
+	*/
+	::ShowWindow(window, SW_SHOW);
 
 	if (!GeneralSettings.loaded)
 	{
@@ -592,7 +612,7 @@ void DisplayWindow::UpdateRainDrops()
 	{
 		if ((*pDropIterator)->IsReadyForErase())
 		{
-			delete*pDropIterator;
+			delete *pDropIterator;
 			pDropIterator = RainDrops.erase(pDropIterator);
 		}
 		else
@@ -647,7 +667,6 @@ void DisplayWindow::UpdateSnowFlakes()
 		SnowFlakes.erase(SnowFlakes.begin(), SnowFlakes.begin() + noOfFlakesToErase);
 	}
 
-
 	// Move each snowflake to the next point
 	for (SnowFlake* const pFlake : SnowFlakes)
 	{
@@ -670,4 +689,4 @@ DisplayWindow* DisplayWindow::GetInstanceFromHwnd(const HWND hWnd)
 DisplayWindow::~DisplayWindow()
 {
 	delete pDisplaySpecificData;
-};
+}

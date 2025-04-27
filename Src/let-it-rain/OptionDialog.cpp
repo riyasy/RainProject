@@ -39,6 +39,46 @@ bool OptionsDialog::Create()
 	{
 		return false;
 	}
+	
+	// Center the dialog on the primary monitor
+	// Get primary monitor dimensions
+	HWND mainWindow = FindWindow(L"window", L"let it rain"); // Use your main window class and title
+	RECT mainWindowRect;
+	
+	if (mainWindow != nullptr && GetWindowRect(mainWindow, &mainWindowRect))
+	{
+		// Get dialog dimensions
+		RECT dialogRect;
+		GetWindowRect(hDialog, &dialogRect);
+		int dialogWidth = dialogRect.right - dialogRect.left;
+		int dialogHeight = dialogRect.bottom - dialogRect.top;
+		
+		// Calculate center position relative to main window
+		int mainWindowWidth = mainWindowRect.right - mainWindowRect.left;
+		int mainWindowHeight = mainWindowRect.bottom - mainWindowRect.top;
+		int x = mainWindowRect.left + (mainWindowWidth - dialogWidth) / 2;
+		int y = mainWindowRect.top + (mainWindowHeight - dialogHeight) / 2;
+		
+		// Set window position
+		SetWindowPos(hDialog, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+	}
+	else
+	{
+		// Fallback to screen center if main window not found
+		int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+		int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+		
+		RECT dialogRect;
+		GetWindowRect(hDialog, &dialogRect);
+		int dialogWidth = dialogRect.right - dialogRect.left;
+		int dialogHeight = dialogRect.bottom - dialogRect.top;
+		
+		int x = (screenWidth - dialogWidth) / 2;
+		int y = (screenHeight - dialogHeight) / 2;
+		
+		SetWindowPos(hDialog, nullptr, x, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+	}
+	
 	return true;
 }
 
@@ -91,7 +131,8 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 	case WM_HSCROLL:
 		if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER))
 		{
-			const int pos = SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_GETPOS, 0, 0);
+			// Fix for C4244 warning: explicit cast from LRESULT to int
+			const int pos = static_cast<int>(SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_GETPOS, 0, 0));
 			for (CallBackWindow* subscriber : subscribers)
 			{
 				subscriber->UpdateParticleCount(pos);
@@ -99,7 +140,8 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 		}
 		else if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER2))
 		{
-			const int pos = SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_GETPOS, 0, 0);
+			// Fix for C4244 warning: explicit cast from LRESULT to int
+			const int pos = static_cast<int>(SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_GETPOS, 0, 0));
 			for (CallBackWindow* subscriber : subscribers)
 			{
 				subscriber->UpdateWindDirection(pos);
