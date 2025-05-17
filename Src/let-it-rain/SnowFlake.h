@@ -15,7 +15,16 @@ public:
 	void Draw(ID2D1DeviceContext* dc) const;
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
 	static void DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDispData);
-	
+
+	// Setter for snow accumulation chance
+	static void SetSnowAccumulationChance(float chance) {
+		s_snowAccumulationChance = chance;
+	}
+
+	// Getter for snow accumulation chance
+	static float GetSnowAccumulationChance() {
+		return s_snowAccumulationChance;
+	}
 
 private:
 	static constexpr float MAX_SPEED = 175.0f;
@@ -26,6 +35,9 @@ private:
 	static constexpr bool SNOW_COLOR = true;
 	static constexpr bool AIR_COLOR = false;
 	static constexpr int SNOW_FLOW_RATE = 3;
+
+	// Static member for snow accumulation chance
+	static float s_snowAccumulationChance;
 
 	Vector2 Pos;
 	Vector2 Vel;

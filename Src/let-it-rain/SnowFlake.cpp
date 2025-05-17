@@ -4,12 +4,13 @@
 
 #include "FastNoiseLite.h"
 
+// snow accum change settling
+const float SNOW_ACCUM_CHANCE = 0.05;
 
 SnowFlake::SnowFlake(DisplayData* pDispData) :
 	pDisplayData(pDispData)
 {	
 	Spawn();
-
 }
 
 void SnowFlake::Spawn()
@@ -229,6 +230,26 @@ void SnowFlake::SettleSnow(const DisplayData* pDispData)
 				{
 					pDispData->pScenePixels[x + secondDirection + (y + 1) * pDispData->Width] = SNOW_COLOR;
 					pDispData->pScenePixels[x + y * pDispData->Width] = AIR_COLOR;
+					// Add a small chance to create additional snow - snow multiplication effect
+				}
+				else if (RandomGenerator::GetInstance().GenerateInt(0, 100) < SNOW_ACCUM_CHANCE) // snow change % see top
+				{
+					// Try to add snow to adjacent spots - this creates a small snow multiplication effect
+					// which helps build up snow accumulation in certain areas
+					for (int nx = -1; nx <= 1; nx++)
+					{
+						for (int ny = -1; ny <= 1; ny++)
+						{
+							if (nx == 0 && ny == 0) continue; // Skip self position
+							if (CanSnowFlowInto(x + nx, y + ny, pDispData))
+							{
+								// Add a new snow pixel to an adjacent empty space
+								pDispData->pScenePixels[(x + nx) + (y + ny) * pDispData->Width] = SNOW_COLOR;
+								// Only add one extra snow pixel per iteration to prevent excessive growth
+								nx = 2; ny = 2; // Break out of both loops by setting indices beyond their bounds
+							}
+						}
+					}
 				}
 			}
 		}
