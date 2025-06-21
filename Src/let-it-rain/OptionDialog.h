@@ -18,6 +18,17 @@ public:
 	static LRESULT CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:
+	// Helper methods for notifications
+	static void NotifyParticleCountChange(int newValue);
+	static void NotifyWindDirectionChange(int newValue);
+	static void NotifyParticleColorChange(COLORREF newColor);
+	static void NotifyParticleTypeChange(ParticleType newType);
+	
+	// UI helper methods
+	void CenterDialog() const;
+	static void ShowColorChooserDialog(HWND hWnd);
+	
+	// Member variables
 	static std::vector<CallBackWindow*> subscribers;
 	HINSTANCE hInstance;
 	HWND hDialog;
