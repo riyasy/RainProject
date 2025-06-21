@@ -4,8 +4,8 @@
 
 #include "FastNoiseLite.h"
 
-// snow accum change settling
-const float SNOW_ACCUM_CHANCE = 0.05;
+// Define the static member variable
+float SnowFlake::s_snowAccumulationChance = 0.05f;
 
 SnowFlake::SnowFlake(DisplayData* pDispData) :
 	pDisplayData(pDispData)
@@ -232,7 +232,7 @@ void SnowFlake::SettleSnow(const DisplayData* pDispData)
 					pDispData->pScenePixels[x + y * pDispData->Width] = AIR_COLOR;
 					// Add a small chance to create additional snow - snow multiplication effect
 				}
-				else if (RandomGenerator::GetInstance().GenerateInt(0, 100) < SNOW_ACCUM_CHANCE) // snow change % see top
+				else if (RandomGenerator::GetInstance().GenerateInt(0, 100) < s_snowAccumulationChance * 100) // Use the adjustable value
 				{
 					// Try to add snow to adjacent spots - this creates a small snow multiplication effect
 					// which helps build up snow accumulation in certain areas
