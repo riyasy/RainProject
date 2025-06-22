@@ -5,7 +5,11 @@
       "Bash(\"/mnt/c/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe\" let-it-rain.vcxproj /p:Configuration=Debug /p:Platform=x64 /verbosity:minimal)",
       "Bash(\"/mnt/c/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe\" let-it-rain.vcxproj /p:Configuration=Release /p:Platform=x64 /verbosity:minimal)",
       "Bash(msbuild:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(\"/mnt/c/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe\" let-it-rain.vcxproj /p:Configuration=Debug /p:Platform=x64)",
+      "Bash(\"/mnt/c/Program Files/Microsoft Visual Studio/2022/Community/MSBuild/Current/Bin/MSBuild.exe\" let-it-rain.vcxproj /p:Configuration=Debug /p:Platform=x64 /p:WarningLevel=1)"
     ],
     "deny": []
   }

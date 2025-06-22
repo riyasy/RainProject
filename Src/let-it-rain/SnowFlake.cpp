@@ -27,7 +27,7 @@ void SnowFlake::Spawn()
 	
 	// Velocity randomization - increased speed for more dynamic movement
 	Vel.x = rng.GenerateInt(-15, 15); // Add initial horizontal velocity variation
-	Vel.y = rng.GenerateInt(25.0f, 75.0f); // Increased speed range for more dynamic movement
+	Vel.y = rng.GenerateFloat(25.0f, 75.0f); // Increased speed range for more dynamic movement
 	
 	// Visual properties
 	Size = 0.5f + (rng.GenerateInt(0, 80) / 100.0f); // 0.5 to 1.3 base size for more variation
@@ -57,12 +57,12 @@ void SnowFlake::ReSpawn()
 	auto& rng = RandomGenerator::GetInstance();
 	
 	// Position randomization (above the screen)
-	Pos.x = rng.GenerateInt(-pDisplayData->Width * 0.5f, pDisplayData->Width * 1.5f);
+	Pos.x = rng.GenerateFloat(-pDisplayData->Width * 0.5f, pDisplayData->Width * 1.5f);
 	Pos.y = -5.0f;
 	
 	// Velocity randomization
 	Vel.x = rng.GenerateInt(-15, 15); // Increased horizontal velocity variation
-	Vel.y = rng.GenerateInt(25.0f, 75.0f); // Increased speed range for more dynamic movement
+	Vel.y = rng.GenerateFloat(25.0f, 75.0f); // Increased speed range for more dynamic movement
 	
 	// Visual properties
 	Size = 0.5f + (rng.GenerateInt(0, 80) / 100.0f); // 0.5 to 1.3 base size for more variation
@@ -114,9 +114,9 @@ void SnowFlake::UpdatePosition(const float deltaSeconds)
 	// Dampen horizontal velocity slightly for more realistic movement
 	Vel.x *= 0.99f;
 
-	if (Vel.magSq() > MAX_SPEED * MAX_SPEED)
+	if (Vel.MagnitudeSquared() > MAX_SPEED * MAX_SPEED)
 	{
-		Vel.setMag(MAX_SPEED);
+		Vel.SetMagnitude(MAX_SPEED);
 	}
 
 	Pos.x += Vel.x * deltaSeconds;
