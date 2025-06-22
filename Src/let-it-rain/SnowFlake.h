@@ -35,15 +35,15 @@ private:
 		Star        // Star shape with more branches
 	};
 
-	static constexpr float MAX_SPEED = 175.0f;
-	static constexpr float NOISE_INTENSITY = 20.0f;
+	static constexpr float MAX_SPEED = 300.0f; // Increased max speed
+	static constexpr float NOISE_INTENSITY = 40.0f; // Doubled noise intensity for more chaotic movement
 	static constexpr float NOISE_SCALE = 0.01f;
-	static constexpr float NOISE_TIMESCALE = 0.001f;
-	static constexpr float GRAVITY = 10.0f;
+	static constexpr float NOISE_TIMESCALE = 0.002f; // Increased timescale for faster noise changes
+	static constexpr float GRAVITY = 15.0f; // Slightly increased gravity
 	static constexpr bool SNOW_COLOR = true;
 	static constexpr bool AIR_COLOR = false;
 	static constexpr int SNOW_FLOW_RATE = 1; // Reduced from 3 to 1 to slow down settling rate
-	static constexpr float MAX_WOBBLE = 0.8f;
+	static constexpr float MAX_WOBBLE = 1.5f; // Increased wobble for more erratic movement
 
 	// Static member for snow accumulation chance
 	static float s_snowAccumulationChance;

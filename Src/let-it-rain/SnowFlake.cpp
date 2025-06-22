@@ -25,19 +25,19 @@ void SnowFlake::Spawn()
 	Pos.x = rng.GenerateInt(-pDisplayData->Width / 2, (pDisplayData->Width * 3) / 2);
 	Pos.y = rng.GenerateInt(-pDisplayData->Height / 2, pDisplayData->Height);
 	
-	// Velocity randomization - slower downward movement for realism
-	Vel.x = 0.0f;
-	Vel.y = rng.GenerateInt(5.0f, 15.0f); // Slightly lower speed range for more realism
+	// Velocity randomization - increased speed for more dynamic movement
+	Vel.x = rng.GenerateInt(-15, 15); // Add initial horizontal velocity variation
+	Vel.y = rng.GenerateInt(25.0f, 75.0f); // Increased speed range for more dynamic movement
 	
 	// Visual properties
-	Size = 0.8f + (rng.GenerateInt(0, 40) / 100.0f); // 0.8 to 1.2 base size
+	Size = 0.5f + (rng.GenerateInt(0, 80) / 100.0f); // 0.5 to 1.3 base size for more variation
 	Rotation = rng.GenerateInt(0, 360) * (PI / 180.0f); // Random initial rotation
-	RotationSpeed = (rng.GenerateInt(-20, 20) / 500.0f); // Small random rotation speed
-	Opacity = 0.7f + (rng.GenerateInt(0, 30) / 100.0f); // 0.7 to 1.0 opacity
+	RotationSpeed = (rng.GenerateInt(-60, 60) / 300.0f); // Increased rotation speed variation
+	Opacity = 0.5f + (rng.GenerateInt(0, 50) / 100.0f); // 0.5 to 1.0 opacity for more variation
 	
 	// Wobble effect for more natural movement
 	WobblePhase = rng.GenerateInt(0, 100) / 100.0f * TWO_PI;
-	WobbleAmplitude = rng.GenerateInt(10, 100) / 100.0f * MAX_WOBBLE;
+	WobbleAmplitude = rng.GenerateInt(20, 200) / 100.0f * MAX_WOBBLE; // Increased wobble variation
 	
 	// Randomly choose a snowflake shape
 	int shapeType = rng.GenerateInt(0, 100);
@@ -61,18 +61,18 @@ void SnowFlake::ReSpawn()
 	Pos.y = -5.0f;
 	
 	// Velocity randomization
-	Vel.x = rng.GenerateInt(-2, 2); // Small initial horizontal velocity
-	Vel.y = rng.GenerateInt(5.0f, 15.0f);
+	Vel.x = rng.GenerateInt(-15, 15); // Increased horizontal velocity variation
+	Vel.y = rng.GenerateInt(25.0f, 75.0f); // Increased speed range for more dynamic movement
 	
 	// Visual properties
-	Size = 0.8f + (rng.GenerateInt(0, 40) / 100.0f);
+	Size = 0.5f + (rng.GenerateInt(0, 80) / 100.0f); // 0.5 to 1.3 base size for more variation
 	Rotation = rng.GenerateInt(0, 360) * (PI / 180.0f);
-	RotationSpeed = (rng.GenerateInt(-20, 20) / 500.0f);
-	Opacity = 0.7f + (rng.GenerateInt(0, 30) / 100.0f);
+	RotationSpeed = (rng.GenerateInt(-60, 60) / 300.0f); // Increased rotation speed variation
+	Opacity = 0.5f + (rng.GenerateInt(0, 50) / 100.0f); // 0.5 to 1.0 opacity for more variation
 	
 	// Wobble effect
 	WobblePhase = rng.GenerateInt(0, 100) / 100.0f * TWO_PI;
-	WobbleAmplitude = rng.GenerateInt(10, 100) / 100.0f * MAX_WOBBLE;
+	WobbleAmplitude = rng.GenerateInt(20, 200) / 100.0f * MAX_WOBBLE; // Increased wobble variation
 	
 	// Randomly choose a snowflake shape (same distribution as in Spawn)
 	int shapeType = rng.GenerateInt(0, 100);

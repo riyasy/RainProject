@@ -102,8 +102,8 @@ private:
 	static void ShowContextMenu(HWND hWnd);
 
 	static double GetCurrentTimeInSeconds();
-	void UpdateRainDrops();
-	void UpdateSnowFlakes();
+	void UpdateRainDrops(float deltaTime);
+	void UpdateSnowFlakes(float deltaTime);
 	void DrawRainDrops() const;
 	void DrawSnowFlakes() const;
 

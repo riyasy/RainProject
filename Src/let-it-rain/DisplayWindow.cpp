@@ -268,11 +268,11 @@ void DisplayWindow::Animate()
 	{
 		if (GeneralSettings.PartType == RAIN)
 		{
-			UpdateRainDrops();
+			UpdateRainDrops(dt);
 		}
 		else if (GeneralSettings.PartType == SNOW)
 		{
-			UpdateSnowFlakes();
+			UpdateSnowFlakes(dt);
 		}
 		
 		// Update lightning flash system
@@ -621,12 +621,12 @@ void DisplayWindow::DrawSnowFlakes() const
 	HR(SwapChain->Present(1, 0));
 }
 
-void DisplayWindow::UpdateRainDrops()
+void DisplayWindow::UpdateRainDrops(const float deltaTime)
 {
 	// Move each raindrop to the next point
 	for (RainDrop* const pDrop : RainDrops)
 	{
-		pDrop->UpdatePosition(0.01f);
+		pDrop->UpdatePosition(deltaTime); // Use proper delta time
 	}
 
 	// Remove all raindrops that have expired
@@ -663,7 +663,7 @@ void DisplayWindow::UpdateRainDrops()
 	}
 }
 
-void DisplayWindow::UpdateSnowFlakes()
+void DisplayWindow::UpdateSnowFlakes(const float deltaTime)
 {
 	// Added 12/25/2024 - Todd D
 	// rate of snow fall *100 added
@@ -692,7 +692,7 @@ void DisplayWindow::UpdateSnowFlakes()
 	// Move each snowflake to the next point
 	for (SnowFlake* const pFlake : SnowFlakes)
 	{
-		pFlake->UpdatePosition(0.01f);
+		pFlake->UpdatePosition(deltaTime); // Use proper delta time instead of hard-coded 0.01f
 	}
 	SnowFlake::SettleSnow(pDisplaySpecificData);
 }
