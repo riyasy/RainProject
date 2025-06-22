@@ -2,6 +2,7 @@
 #include "windef.h"
 #include <d2d1.h>
 #include <algorithm>
+#include "Vector2.h"
 
 class MathUtil
 {

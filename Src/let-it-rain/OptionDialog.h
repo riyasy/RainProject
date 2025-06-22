@@ -11,7 +11,7 @@ class OptionsDialog
 {
 public:
 	OptionsDialog(HINSTANCE hInstance, int maxParticles, int windDirection,
-	              COLORREF particleColor, ParticleType partType);
+	              COLORREF particleColor, ParticleType partType, int lightningFreq, int lightningIntensity);
 	static void SubscribeToChange(CallBackWindow* subscriber);
 	bool Create();
 	void Show() const;
@@ -23,6 +23,8 @@ private:
 	static void NotifyWindDirectionChange(int newValue);
 	static void NotifyParticleColorChange(COLORREF newColor);
 	static void NotifyParticleTypeChange(ParticleType newType);
+	static void NotifyLightningFrequencyChange(int newValue);
+	static void NotifyLightningIntensityChange(int newValue);
 	
 	// UI helper methods
 	void CenterDialog() const;
@@ -36,5 +38,7 @@ private:
 	int WindDirection;
 	COLORREF ParticleColor;
 	ParticleType PartType;
+	int LightningFrequency;
+	int LightningIntensity;
 	static OptionsDialog* pThis;
 };

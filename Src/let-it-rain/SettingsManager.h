@@ -20,12 +20,19 @@ public:
 	int WindSpeed;
 	COLORREF ParticleColor;
 	ParticleType PartType;
+	
+	// Lightning settings
+	int LightningFrequency;  // 0-100 scale, 50 = default
+	int LightningIntensity;  // 0-100 scale, 50 = default
 
 	explicit Setting(const int maxParticles = 10, 
 		const int windSpeed = 3, 
 		const COLORREF ParticleColor = 0x00AAAAAA, 
-		const ParticleType partType = RAIN)
-		: MaxParticles(maxParticles), WindSpeed(windSpeed), ParticleColor(ParticleColor), PartType(partType)
+		const ParticleType partType = RAIN,
+		const int lightningFrequency = 50,
+		const int lightningIntensity = 50)
+		: MaxParticles(maxParticles), WindSpeed(windSpeed), ParticleColor(ParticleColor), PartType(partType),
+		  LightningFrequency(lightningFrequency), LightningIntensity(lightningIntensity)
 	{
 	}
 };

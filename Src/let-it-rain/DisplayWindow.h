@@ -43,6 +43,8 @@ public:
 	void UpdateWindDirection(int val) override;
 	void UpdateParticleColor(COLORREF color) override;
 	void UpdateParticleType(ParticleType partType) override;
+	void UpdateLightningFrequency(int val) override;
+	void UpdateLightningIntensity(int val) override;
 
 	~DisplayWindow() override;
 
@@ -69,6 +71,12 @@ private:
 	// For animation
 	double CurrentTime = -1.0;
 	double Accumulator = 0.0;
+
+	// Lightning flash system
+	double LastLightningTime = 0.0;
+	double NextLightningTime = 0.0;
+	float LightningFlashIntensity = 0.0f;
+	int LightningFlashFramesRemaining = 0;
 
 	static Setting GeneralSettings;
 
@@ -98,6 +106,10 @@ private:
 	void UpdateSnowFlakes();
 	void DrawRainDrops() const;
 	void DrawSnowFlakes() const;
+
+	// Lightning flash methods
+	void UpdateLightning();
+	void DrawLightningFlash() const;
 
 	static void SetInstanceToHwnd(HWND hWnd, LPARAM lParam);
 	static DisplayWindow* GetInstanceFromHwnd(HWND hWnd);

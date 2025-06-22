@@ -1,0 +1,28 @@
+IDD_DIALOGB DIALOGEX 0, 0, 277, 250
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "let it rain [v 2.0.2] - options"
+FONT 8, "MS Shell Dlg", 0, 0, 0x1
+BEGIN
+    LTEXT           "No of Rain Drops / Snow Flakes",IDC_STATIC,10,43,122,8
+    CONTROL         "",IDC_SLIDER,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,36,59,204,24
+    CTEXT           "Low",IDC_STATIC,15,60,18,8
+    CTEXT           "High",IDC_STATIC,246,60,18,8
+    LTEXT           "Wind Direction",IDC_STATIC,10,87,122,8
+    CONTROL         "",IDC_SLIDER2,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,35,103,204,24
+    CTEXT           "Left",IDC_STATIC,15,106,18,8
+    CTEXT           "Right",IDC_STATIC,245,106,18,8
+    LTEXT           "Lightning Frequency",IDC_STATIC,10,131,122,8
+    CONTROL         "",IDC_SLIDER_LIGHTNING_FREQ,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,35,147,204,24
+    CTEXT           "Rare",IDC_STATIC,15,150,18,8
+    CTEXT           "Frequent",IDC_STATIC,245,150,25,8
+    LTEXT           "Lightning Intensity",IDC_STATIC,10,175,122,8
+    CONTROL         "",IDC_SLIDER_LIGHTNING_INTENSITY,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,35,191,204,24
+    CTEXT           "Dim",IDC_STATIC,15,194,18,8
+    CTEXT           "Bright",IDC_STATIC,245,194,22,8
+    LTEXT           "Color of Rain Drops / Snow Flakes",IDC_STATIC,10,172,122,8
+    PUSHBUTTON      "Select Color",IDC_BUTTON_SHOW_COLOR,13,187,59,14
+    PUSHBUTTON      "Github Repo",IDC_BUTTON_GITHUB,10,213,82,25
+    LTEXT           "Created by ryftools@outlook.com",IDC_STATIC,120,222,137,8
+    CONTROL         "Rain",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,94,15,30,10
+    CONTROL         "Snow",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,144,15,33,10
+END

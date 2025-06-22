@@ -8,7 +8,7 @@
 // Initialize the singleton instance to nullptr
 SettingsManager* SettingsManager::instance = nullptr;
 
-SettingsManager::SettingsManager() : defaultSetting(MAX_PARTICLES, 3, 0x00AAAAAA, RAIN)
+SettingsManager::SettingsManager() : defaultSetting(MAX_PARTICLES, 3, 0x00AAAAAA, RAIN, 50, 50)
 {
 	const std::wstring appDataPath = GetAppDataPath();
 	iniFilePath = appDataPath + L"\\let-it-rain.ini";
@@ -36,6 +36,12 @@ void SettingsManager::CreateINIFile() const
 	WritePrivateProfileString(L"Settings", L"ParticleColor", colorBuffer, iniFilePath.c_str());
 
 	WritePrivateProfileString(L"Settings", L"ParticleType", std::to_wstring(defaultSetting.PartType).c_str(),
+		iniFilePath.c_str());
+	
+	// Lightning settings
+	WritePrivateProfileString(L"Settings", L"LightningFrequency", std::to_wstring(defaultSetting.LightningFrequency).c_str(),
+		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"LightningIntensity", std::to_wstring(defaultSetting.LightningIntensity).c_str(),
 		iniFilePath.c_str());
 }
 
@@ -67,6 +73,12 @@ void SettingsManager::ReadSettings(Setting& setting) const
 	setting.PartType = static_cast<ParticleType>(GetPrivateProfileInt(L"Settings", L"ParticleType", defaultSetting.PartType,
 	                                                                  iniFilePath.c_str()));
 
+	// Lightning settings
+	setting.LightningFrequency = GetPrivateProfileInt(L"Settings", L"LightningFrequency", defaultSetting.LightningFrequency,
+	                                                   iniFilePath.c_str());
+	setting.LightningIntensity = GetPrivateProfileInt(L"Settings", L"LightningIntensity", defaultSetting.LightningIntensity,
+	                                                   iniFilePath.c_str());
+
 	// Update missing values in INI file
 	WriteSettings(setting);
 }
@@ -81,5 +93,11 @@ void SettingsManager::WriteSettings(const Setting& setting) const
 	swprintf_s(colorBuffer, 10, L"%08X", setting.ParticleColor);
 	WritePrivateProfileString(L"Settings", L"ParticleColor", colorBuffer, iniFilePath.c_str());
 	WritePrivateProfileString(L"Settings", L"ParticleType", std::to_wstring(setting.PartType).c_str(),
+		iniFilePath.c_str());
+	
+	// Lightning settings
+	WritePrivateProfileString(L"Settings", L"LightningFrequency", std::to_wstring(setting.LightningFrequency).c_str(),
+		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"LightningIntensity", std::to_wstring(setting.LightningIntensity).c_str(),
 		iniFilePath.c_str());
 }

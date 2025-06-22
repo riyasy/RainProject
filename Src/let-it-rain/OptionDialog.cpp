@@ -14,13 +14,17 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
                              const int maxParticles,
                              const int windDirection,
                              const COLORREF particleColor,
-                             const ParticleType partType)
+                             const ParticleType partType,
+                             const int lightningFreq,
+                             const int lightningIntensity)
 	: hInstance{hInstance},
 	  hDialog{nullptr},
 	  MaxParticles{maxParticles},
 	  WindDirection{windDirection},
 	  ParticleColor{particleColor},
-	  PartType{partType}
+	  PartType{partType},
+	  LightningFrequency{lightningFreq},
+	  LightningIntensity{lightningIntensity}
 {
 	pThis = this;
 }
@@ -118,16 +122,41 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_SETRANGE, TRUE, MAKELONG(WIND_MIN, WIND_MAX));
 			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_SETPOS, TRUE, pThis->WindDirection);
 
+			// Lightning frequency slider (0-100) - control should exist in RC file
+			HWND hLightningFreqSlider = GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_FREQ);
+			if (hLightningFreqSlider)
+			{
+				constexpr int LIGHTNING_FREQ_MIN = 0;
+				constexpr int LIGHTNING_FREQ_MAX = 100;
+				SendMessage(hLightningFreqSlider, TBM_SETRANGE, TRUE, MAKELONG(LIGHTNING_FREQ_MIN, LIGHTNING_FREQ_MAX));
+				SendMessage(hLightningFreqSlider, TBM_SETPOS, TRUE, pThis->LightningFrequency);
+			}
+
+			// Lightning intensity slider (0-100) - control should exist in RC file
+			HWND hLightningIntensitySlider = GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_INTENSITY);
+			if (hLightningIntensitySlider)
+			{
+				constexpr int LIGHTNING_INTENSITY_MIN = 0;
+				constexpr int LIGHTNING_INTENSITY_MAX = 100;
+				SendMessage(hLightningIntensitySlider, TBM_SETRANGE, TRUE, MAKELONG(LIGHTNING_INTENSITY_MIN, LIGHTNING_INTENSITY_MAX));
+				SendMessage(hLightningIntensitySlider, TBM_SETPOS, TRUE, pThis->LightningIntensity);
+			}
+
 			// Set initial radio button state based on particle type
 			if (pThis->PartType == RAIN)
 			{
 				SendMessage(GetDlgItem(hWnd, IDC_RADIO1), BM_SETCHECK, BST_CHECKED, 0);
+				// Enable lightning controls for rain
+				if (hLightningFreqSlider) EnableWindow(hLightningFreqSlider, TRUE);
+				if (hLightningIntensitySlider) EnableWindow(hLightningIntensitySlider, TRUE);
 			}
 			else
 			{
 				SendMessage(GetDlgItem(hWnd, IDC_RADIO2), BM_SETCHECK, BST_CHECKED, 0);
-				// Disable wind direction slider for snow
+				// Disable wind direction and lightning sliders for snow
 				EnableWindow(GetDlgItem(hWnd, IDC_SLIDER2), FALSE);
+				if (hLightningFreqSlider) EnableWindow(hLightningFreqSlider, FALSE);
+				if (hLightningIntensitySlider) EnableWindow(hLightningIntensitySlider, FALSE);
 			}
 
 			// Set up GitHub button with icon
@@ -166,6 +195,18 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 				const int pos = static_cast<int>(SendMessage(hControl, TBM_GETPOS, 0, 0));
 				NotifyWindDirectionChange(pos);
 			}
+			else if (hControl == GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_FREQ))
+			{
+				// Lightning frequency slider
+				const int pos = static_cast<int>(SendMessage(hControl, TBM_GETPOS, 0, 0));
+				NotifyLightningFrequencyChange(pos);
+			}
+			else if (hControl == GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_INTENSITY))
+			{
+				// Lightning intensity slider
+				const int pos = static_cast<int>(SendMessage(hControl, TBM_GETPOS, 0, 0));
+				NotifyLightningIntensityChange(pos);
+			}
 		}
 		return TRUE;
 
@@ -189,8 +230,10 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			case IDC_RADIO1:
 				if (notificationCode == BN_CLICKED)
 				{
-					// Enable wind direction slider for rain
+					// Enable wind direction and lightning sliders for rain
 					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER2), TRUE);
+					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_FREQ), TRUE);
+					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_INTENSITY), TRUE);
 					pThis->PartType = RAIN;
 					NotifyParticleTypeChange(pThis->PartType);
 				}
@@ -199,8 +242,10 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			case IDC_RADIO2:
 				if (notificationCode == BN_CLICKED)
 				{
-					// Disable wind direction slider for snow
+					// Disable wind direction and lightning sliders for snow
 					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER2), FALSE);
+					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_FREQ), FALSE);
+					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_INTENSITY), FALSE);
 					pThis->PartType = SNOW;
 					NotifyParticleTypeChange(pThis->PartType);
 				}
@@ -272,6 +317,26 @@ void OptionsDialog::NotifyParticleTypeChange(const ParticleType newType)
 	{
 		if (subscriber != nullptr) {
 			subscriber->UpdateParticleType(newType);
+		}
+	}
+}
+
+void OptionsDialog::NotifyLightningFrequencyChange(const int newValue)
+{
+	for (auto* subscriber : subscribers)
+	{
+		if (subscriber != nullptr) {
+			subscriber->UpdateLightningFrequency(newValue);
+		}
+	}
+}
+
+void OptionsDialog::NotifyLightningIntensityChange(const int newValue)
+{
+	for (auto* subscriber : subscribers)
+	{
+		if (subscriber != nullptr) {
+			subscriber->UpdateLightningIntensity(newValue);
 		}
 	}
 }

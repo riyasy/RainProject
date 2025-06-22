@@ -20,6 +20,8 @@
 #define IDC_SLIDER                      1002
 #define IDC_SLIDER2                     1003
 #define IDC_RADIO2                      1004
+#define IDC_SLIDER_LIGHTNING_FREQ       1005
+#define IDC_SLIDER_LIGHTNING_INTENSITY  1006
 #define ID_TRAY_EXIT_CONTEXT_MENU_ITEM  3000
 #define ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM 3001
 #define ID_TRAY_APP_ICON                5000

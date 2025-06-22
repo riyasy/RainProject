@@ -8,6 +8,9 @@
 // Define the static member variable
 float SnowFlake::s_snowAccumulationChance = 0.05f;
 
+// Static variable to track frames for settling snow
+static int s_snowSettleFrameCounter = 0;
+
 SnowFlake::SnowFlake(DisplayData* pDispData) :
 	pDisplayData(pDispData)
 {	
@@ -479,6 +482,13 @@ bool SnowFlake::IsSceneryPixelSet(const int x, const int y) const
 
 void SnowFlake::SettleSnow(const DisplayData* pDispData)
 {
+	// Frame skipping for slower snow settling
+	// Only process snow settling every other frame
+	s_snowSettleFrameCounter++;
+	if (s_snowSettleFrameCounter % 2 != 0) {
+		return; // Skip this frame
+	}
+
 	// Settled snow physics
 	// Iterate from bottom-up, to avoid updating falling pixels multiple times per-frame, which would cause them to "teleport"
 	for (int y = pDispData->Height - 1; y >= pDispData->MaxSnowHeight; --y)

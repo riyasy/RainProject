@@ -1,6 +1,7 @@
 #include "DisplayWindow.h"
 
 #include <chrono>
+#include <cstdlib>
 #include <shellapi.h>
 #include <commctrl.h>
 #include <sstream>
@@ -100,7 +101,8 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	if (MonitorDat.IsPrimaryDisplay)
 	{
 		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxParticles, GeneralSettings.WindSpeed,
-		                                GeneralSettings.ParticleColor, GeneralSettings.PartType);
+		                                GeneralSettings.ParticleColor, GeneralSettings.PartType,
+		                                GeneralSettings.LightningFrequency, GeneralSettings.LightningIntensity);
 		pOptionsDlg->Create();
 	}
 
@@ -131,6 +133,16 @@ void DisplayWindow::UpdateParticleColor(const COLORREF color)
 void DisplayWindow::UpdateParticleType(const ParticleType partType)
 {
 	GeneralSettings.PartType = partType;
+}
+
+void DisplayWindow::UpdateLightningFrequency(const int val)
+{
+	GeneralSettings.LightningFrequency = val;
+}
+
+void DisplayWindow::UpdateLightningIntensity(const int val)
+{
+	GeneralSettings.LightningIntensity = val;
 }
 
 LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam)
@@ -262,6 +274,10 @@ void DisplayWindow::Animate()
 		{
 			UpdateSnowFlakes();
 		}
+		
+		// Update lightning flash system
+		UpdateLightning();
+		
 		Accumulator -= dt;
 	}
 	if (GeneralSettings.PartType == RAIN)
@@ -568,6 +584,9 @@ void DisplayWindow::DrawRainDrops() const
 	Dc->BeginDraw();
 	Dc->Clear();
 
+	// Draw lightning flash effect first (background layer)
+	DrawLightningFlash();
+
 	for (const auto pDrop : RainDrops)
 	{
 		pDrop->Draw(Dc.Get());
@@ -582,6 +601,9 @@ void DisplayWindow::DrawSnowFlakes() const
 {
 	Dc->BeginDraw();
 	Dc->Clear();
+
+	// Draw lightning flash effect first (background layer)
+	DrawLightningFlash();
 
 	for (const auto pFlake : SnowFlakes)
 	{
@@ -689,4 +711,80 @@ DisplayWindow* DisplayWindow::GetInstanceFromHwnd(const HWND hWnd)
 DisplayWindow::~DisplayWindow()
 {
 	delete pDisplaySpecificData;
+}
+
+void DisplayWindow::UpdateLightning()
+{
+	// Only enable lightning during rain, not snow
+	if (GeneralSettings.PartType != RAIN)
+	{
+		LightningFlashIntensity = 0.0f;
+		LightningFlashFramesRemaining = 0;
+		return;
+	}
+
+	const double currentTime = GetCurrentTimeInSeconds();
+
+	// Initialize lightning timing on first run
+	if (NextLightningTime == 0.0)
+	{
+		// First lightning strike between 5-15 seconds, adjusted by frequency setting
+		const double frequencyMultiplier = (101 - GeneralSettings.LightningFrequency) / 100.0; // Higher setting = more frequent
+		NextLightningTime = currentTime + (5.0 + (rand() % 10)) * frequencyMultiplier;
+	}
+
+	// Check if it's time for lightning
+	if (currentTime >= NextLightningTime)
+	{
+		// Trigger lightning flash with user-configurable intensity
+		const float baseIntensity = 0.05f + (GeneralSettings.LightningIntensity / 100.0f) * 0.3f; // 0.05-0.35 range
+		LightningFlashIntensity = baseIntensity + (rand() % 5) * 0.01f; // Add small random variation
+		LightningFlashFramesRemaining = 3 + (rand() % 4); // 3-6 frames duration
+
+		// Schedule next lightning with frequency setting (5-60 seconds range)
+		const double frequencyMultiplier = (101 - GeneralSettings.LightningFrequency) / 100.0; // Higher setting = more frequent
+		const double baseInterval = 5.0 + (rand() % 25); // 5-30 seconds base
+		LastLightningTime = currentTime;
+		NextLightningTime = currentTime + baseInterval * frequencyMultiplier;
+	}
+
+	// Fade out lightning flash
+	if (LightningFlashFramesRemaining > 0)
+	{
+		LightningFlashFramesRemaining--;
+		if (LightningFlashFramesRemaining == 0)
+		{
+			LightningFlashIntensity = 0.0f;
+		}
+		else
+		{
+			// Exponential fade out
+			LightningFlashIntensity *= 0.7f;
+		}
+	}
+}
+
+void DisplayWindow::DrawLightningFlash() const
+{
+	if (LightningFlashIntensity <= 0.0f || GeneralSettings.PartType != RAIN)
+	{
+		return;
+	}
+
+	// Create a semi-transparent white brush for the flash
+	const D2D1_COLOR_F flashColor = D2D1::ColorF(D2D1::ColorF::White, LightningFlashIntensity);
+	ComPtr<ID2D1SolidColorBrush> flashBrush;
+	
+	if (SUCCEEDED(Dc->CreateSolidColorBrush(flashColor, &flashBrush)))
+	{
+		// Fill the entire screen with the flash
+		const D2D1_RECT_F screenRect = D2D1::RectF(
+			static_cast<float>(pDisplaySpecificData->SceneRect.left),
+			static_cast<float>(pDisplaySpecificData->SceneRect.top),
+			static_cast<float>(pDisplaySpecificData->SceneRect.right),
+			static_cast<float>(pDisplaySpecificData->SceneRect.bottom)
+		);
+		
+		Dc->FillRectangle(screenRect, flashBrush.Get());
+	}
 }

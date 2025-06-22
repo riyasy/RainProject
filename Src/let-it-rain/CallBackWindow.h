@@ -11,4 +11,6 @@ public:
 	virtual void UpdateWindDirection(int val) = 0;
 	virtual void UpdateParticleColor(DWORD color) = 0;
 	virtual void UpdateParticleType(ParticleType partType) = 0;
+	virtual void UpdateLightningFrequency(int val) = 0;
+	virtual void UpdateLightningIntensity(int val) = 0;
 };

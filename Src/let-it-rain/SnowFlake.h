@@ -42,7 +42,7 @@ private:
 	static constexpr float GRAVITY = 10.0f;
 	static constexpr bool SNOW_COLOR = true;
 	static constexpr bool AIR_COLOR = false;
-	static constexpr int SNOW_FLOW_RATE = 3;
+	static constexpr int SNOW_FLOW_RATE = 1; // Reduced from 3 to 1 to slow down settling rate
 	static constexpr float MAX_WOBBLE = 0.8f;
 
 	// Static member for snow accumulation chance
