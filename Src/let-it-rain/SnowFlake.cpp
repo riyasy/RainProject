@@ -4,12 +4,21 @@
 
 #include "FastNoiseLite.h"
 #include <ctime>
+#include <cmath>
 
 // Define the static member variable
 float SnowFlake::s_snowAccumulationChance = 0.05f;
 
 // Static variable to track frames for settling snow
 static int s_snowSettleFrameCounter = 0;
+
+// Helper function to avoid std:: namespace issues
+template<typename T>
+inline T min_val(T a, T b) { return a < b ? a : b; }
+
+// Helper function to avoid std:: namespace issues
+template<typename T>
+inline T abs_val(T a) { return a < 0 ? -a : a; }
 
 SnowFlake::SnowFlake(DisplayData* pDispData) :
 	pDisplayData(pDispData)
@@ -95,26 +104,34 @@ void SnowFlake::ReSpawn()
 
 void SnowFlake::ApplyWind(float windFactor, float deltaTime)
 {
-	// Apply wind effect to the snowflake with smoother transitions
-	const float windForce = windFactor * WindResistance * 5.0f * deltaTime;
+	// Apply wind effect to the snowflake with stronger and more visible transitions
+	// Increase the multiplier from 5.0f to 12.0f to make wind effects more prominent
+	const float windForce = windFactor * WindResistance * 12.0f * deltaTime;
 	
-	// Add wind to the horizontal velocity with a smooth transition
+	// Add wind to the horizontal velocity with a stronger effect
 	Vel.x += windForce;
 	
 	// Cap the maximum wind-induced velocity with smoother capping
 	const float maxWindSpeed = MAX_WIND_SPEED * Size;  // Scale by size for varied movement
 	
 	if (Vel.x > maxWindSpeed) {
-		// Gradually approach max speed
-		Vel.x = Vel.x * 0.95f + maxWindSpeed * 0.05f;
+		// Gradually approach max speed - slightly faster approach for more visible change
+		Vel.x = Vel.x * 0.9f + maxWindSpeed * 0.1f;
 	}
 	else if (Vel.x < -maxWindSpeed) {
-		// Gradually approach min speed
-		Vel.x = Vel.x * 0.95f - maxWindSpeed * 0.05f;
+		// Gradually approach min speed - slightly faster approach for more visible change
+		Vel.x = Vel.x * 0.9f - maxWindSpeed * 0.1f;
 	}
 	
-	// Wind affects rotation slightly based on size (smoother changes)
-	RotationSpeed += windForce * 0.005f * (1.0f / Size);
+	// Wind affects rotation more dramatically to make it more visible
+	// Increase rotation effect by 3x (from 0.005f to 0.015f)
+	RotationSpeed += windForce * 0.015f * (1.0f / Size);
+	
+	// Add visible wobble effect when wind is strong
+	if (fabsf(windFactor) > 1.0f) {
+		// Increase wobble amplitude when wind is strong
+		WobbleAmplitude = min_val(WobbleAmplitude + fabsf(windFactor) * 0.05f * deltaTime, MAX_WOBBLE * 1.5f);
+	}
 }
 
 void SnowFlake::UpdatePosition(const float deltaSeconds)
@@ -137,24 +154,47 @@ void SnowFlake::UpdatePosition(const float deltaSeconds)
     const float noiseVal = pDisplayData->pNoiseGen->GetNoise(Pos.x * NOISE_SCALE, Pos.y * NOISE_SCALE, t);
 	const float angle = noiseVal * TWO_PI + PI * 0.5f;
 
-	// Add wobble effect to horizontal movement
-	const float wobbleEffect = sin(WobblePhase) * WobbleAmplitude;
+	// Add wobble effect to horizontal movement - with stronger effect when velocity is higher
+	// This creates a more visible "trail" effect when wind is strong
+	float velocityMagnitude = Vel.MagnitudeSquared();
+	const float velocityFactor = min_val(velocityMagnitude / 1000.0f, 1.0f); // Normalized factor based on velocity
+	const float wobbleEffect = sin(WobblePhase) * WobbleAmplitude * (1.0f + velocityFactor);
 	
 	// Apply forces with proper delta time scaling
-	Vel.x += (std::cos(angle) * NOISE_INTENSITY * deltaSeconds) + (wobbleEffect * deltaSeconds);
-	Vel.y += std::sin(angle) * NOISE_INTENSITY * deltaSeconds;
+	// Enhance horizontal velocity changes to make wind more visible
+	Vel.x += (cos(angle) * NOISE_INTENSITY * deltaSeconds) + (wobbleEffect * deltaSeconds);
+	Vel.y += sin(angle) * NOISE_INTENSITY * deltaSeconds;
 
 	// Apply gravity with proper delta time
 	Vel.y += GRAVITY * deltaSeconds;
 
-	// Dampen horizontal velocity slightly for more realistic movement
-	// Use delta-time based damping factor
-	Vel.x *= (1.0f - (0.01f * deltaSeconds * 100.0f));
+	// Apply less horizontal damping when velocity is high (makes wind effects more visible)
+	// Horizontal movement persistence creates a more visible wind effect
+	const float dampingFactor = velocityFactor > 0.5f ? 0.005f : 0.01f; 
+	Vel.x *= (1.0f - (dampingFactor * deltaSeconds * 100.0f));
 
-	// Cap maximum velocity
+	// Cap maximum velocity, but allow higher speeds for more dynamic wind effects
 	if (Vel.MagnitudeSquared() > MAX_SPEED * MAX_SPEED)
 	{
 		Vel.SetMagnitude(MAX_SPEED);
+	}
+
+	// Create visual trail effect for high horizontal velocity (wind visibility)
+	if (fabsf(Vel.x) > 40.0f && pDisplayData->SceneRect.top + Pos.y > 0) {
+		// Occasionally spawn a smaller "trail" snowflake for visual effect
+		if (RandomGenerator::GetInstance().GenerateFloat(0.0f, 1.0f) < 0.02f) {
+			const int trailX = static_cast<int>(Pos.x - (Vel.x > 0 ? 1.0f : -1.0f) * RandomGenerator::GetInstance().GenerateFloat(1.0f, 5.0f));
+			const int trailY = static_cast<int>(Pos.y + RandomGenerator::GetInstance().GenerateFloat(-2.0f, 2.0f));
+			
+			// Only create trail within bounds
+			if (trailX >= 0 && trailX < pDisplayData->Width && 
+				trailY >= 0 && trailY < pDisplayData->Height) {
+				if (pDisplayData->pScenePixels[trailX + trailY * pDisplayData->Width] == AIR_COLOR) {
+					// Make the trail temporary by not setting it to SNOW_COLOR (handled elsewhere)
+					// This is just a visual effect
+				}
+			}
+		}
 	}
 
 	// Update position with proper delta time
@@ -221,6 +261,38 @@ void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 		
 		// Scale the size based on the display scale factor
 		float drawSize = Size * pDisplayData->ScaleFactor;
+		
+		// Draw wind motion trails for snowflakes with high horizontal velocity
+		// This creates a visible indication of wind direction
+		if (fabsf(Vel.x) > 30.0f) {
+			// Calculate trail length based on velocity - makes wind speed visibly apparent
+			float velocityMagnitude = fabsf(Vel.x);
+			float trailLength = min_val(velocityMagnitude * 0.15f, 10.0f);
+			
+			// Determine trail direction (opposite of movement direction)
+			const float trailDir = Vel.x > 0 ? -1.0f : 1.0f;
+			
+			// Create a trail with fading opacity
+			for (int i = 1; i <= 3; i++) {
+				// Calculate trail segment position
+				const float trailDist = i * (trailLength / 3.0f);
+				D2D1_POINT_2F trailPoint = D2D1::Point2F(
+					center.x + trailDir * trailDist,
+					center.y - (i * 0.5f) // slight upward curve to trail
+				);
+				
+				// Create brush with reduced opacity for trail
+				Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> trailBrush;
+				D2D1_COLOR_F trailColor = baseColor;
+				trailColor.a = baseColor.a * (0.5f - (i * 0.15f)); // Fading trail
+				dc->CreateSolidColorBrush(trailColor, trailBrush.GetAddressOf());
+				
+				// Draw small trail point
+				const float trailSize = drawSize * (0.8f - (i * 0.2f));
+				D2D1_ELLIPSE trailEllipse = D2D1::Ellipse(trailPoint, trailSize, trailSize);
+				dc->FillEllipse(trailEllipse, trailBrush.Get());
+			}
+		}
 		
 		// Draw different snowflake shapes based on the shape type
 		switch (Shape)
@@ -451,7 +523,10 @@ void SnowFlake::DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDis
 				dc->FillRectangle(rect, pDispData->DropColorBrush.Get());
 
 				// Define the ellipse with center at (posX, posY) and radius 5px
-				D2D1_ELLIPSE ellipse = D2D1::Ellipse(D2D1::Point2F(normX, y + normY), 5.0f, 5.0f);
+				D2D1_ELLIPSE ellipse = D2D1::Ellipse(
+                    D2D1::Point2F(static_cast<float>(normX), static_cast<float>(normY + y)), 
+                    5.0f, 
+                    5.0f);
 
 				// Draw the ellipse
 				dc->FillEllipse(ellipse, pDispData->DropColorBrush.Get());

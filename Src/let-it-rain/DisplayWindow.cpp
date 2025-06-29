@@ -5,6 +5,7 @@
 #include <shellapi.h>
 #include <commctrl.h>
 #include <sstream>
+#include <cmath>
 
 #include "CPUUsageTracker.h"
 #include "Global.h"
@@ -377,29 +378,45 @@ void DisplayWindow::UpdateSnowWind(const float deltaTime)
 	if (currentTime >= NextWindChangeTime)
 	{
 		// Calculate how often the wind changes based on variability (0-100)
-		// Higher variability means more frequent changes (3-20 seconds)
-		// Extended the duration range for smoother transitions
+		// Higher variability means more frequent changes (2-15 seconds)
+		// Reduced minimum time slightly to make wind changes more noticeable
 		const float variabilityFactor = GeneralSettings.SnowWindVariability / 100.0f;
-		const float changeDuration = 20.0f - (variabilityFactor * 17.0f);  // 3-20 seconds
+		const float changeDuration = 15.0f - (variabilityFactor * 13.0f);  // 2-15 seconds
 		
 		// Calculate how strong the wind is based on intensity (0-100)
-		// Higher intensity means stronger wind (-5 to 5)
-		// Slightly reduced wind range for more subtle transitions
+		// Higher intensity means stronger wind (-8 to 8) - increased range for visibility
+		// Increased the strength range from 4.0 to 8.0 to make wind more noticeable
 		const float intensityFactor = GeneralSettings.SnowWindIntensity / 100.0f;
-		const float maxWindStrength = 4.0f * intensityFactor;
+		const float maxWindStrength = 8.0f * intensityFactor;
 		
 		// Set the previous and target wind directions
 		CurrentSnowWindDirection = TargetSnowWindDirection;
 		
-		// Generate a new target wind direction with smoother transitions
+		// Generate a new target wind direction with more dramatic shifts
 		auto& rng = RandomGenerator::GetInstance();
 		
-		// Add a bit of continuity - new wind target tends to be related to current wind
-		// This creates more natural shifts in wind patterns
-		const float windContinuityFactor = 0.3f;
-		const float randomComponent = rng.GenerateFloat(-maxWindStrength, maxWindStrength);
-		TargetSnowWindDirection = (CurrentSnowWindDirection * windContinuityFactor) + 
-		                          (randomComponent * (1.0f - windContinuityFactor));
+		// Make wind changes more dramatic by having more variance between directions
+		// Reduced continuity factor to allow more dramatic shifts
+		const float windContinuityFactor = 0.1f;  // Reduced from 0.3 for more dramatic shifts
+		
+		// Make wind shifts more pronounced by sometimes forcing direction change
+		// If the current wind is weak or we need a dramatic change
+		if (fabsf(CurrentSnowWindDirection) < 1.0f || rng.GenerateFloat(0.0f, 1.0f) < 0.3f) {
+			// Create more dramatic wind shift
+			const float randomComponent = rng.GenerateFloat(-maxWindStrength, maxWindStrength);
+			// Force wind to blow in a more noticeable direction, avoiding near-zero values
+			if (fabsf(randomComponent) < 2.0f) {
+				TargetSnowWindDirection = randomComponent > 0 ? 2.0f : -2.0f;
+			} else {
+				TargetSnowWindDirection = randomComponent;
+			}
+		}
+		else {
+			// Normal wind shift with some continuity
+			const float randomComponent = rng.GenerateFloat(-maxWindStrength, maxWindStrength);
+			TargetSnowWindDirection = (CurrentSnowWindDirection * windContinuityFactor) + 
+									  (randomComponent * (1.0f - windContinuityFactor));
+		}
 		
 		// Cap the target wind strength
 		if (TargetSnowWindDirection > maxWindStrength)
@@ -415,13 +432,13 @@ void DisplayWindow::UpdateSnowWind(const float deltaTime)
 		NextWindChangeTime = currentTime + changeDuration + (rng.GenerateFloat(-2.0f, 2.0f));
 	}
 	
-	// Update wind transition
+	// Update wind transition - slightly faster transitions for more noticeable effect
 	if (WindTransitionProgress < 1.0f)
 	{
-		// Transition more slowly for smoother wind changes
-		// Complete transition over 3-5 seconds based on variability
-		float transitionSpeed = 0.2f + 
-		                       (GeneralSettings.SnowWindVariability / 100.0f * 0.3f);
+		// Transition more quickly for more dramatic wind changes
+		// Increased transition speed for more visible changes
+		float transitionSpeed = 0.3f + 
+		                       (GeneralSettings.SnowWindVariability / 100.0f * 0.4f);
 		
 		WindTransitionProgress += deltaTime * transitionSpeed;
 		if (WindTransitionProgress > 1.0f)
@@ -441,17 +458,17 @@ float DisplayWindow::GetCurrentSnowWindFactor() const
 	// Use smooth transition between wind directions
 	const float t = WindTransitionProgress;
 	
-	// Cubic easing function - very smooth acceleration and deceleration
-	// This creates more natural-feeling wind transitions
+	// Modified easing function for more dramatic initial and final movements
+	// This makes wind changes more noticeable at start and end of transition
 	float easedT;
 	if (t < 0.5f) {
-		// Ease-in: slow start, gradual acceleration
-		easedT = 4.0f * t * t * t;
+		// Sharper initial acceleration (more noticeable start)
+		easedT = 2.0f * t * t;
 	}
 	else {
-		// Ease-out: gradual deceleration to smooth stop
-		const float f = t - 1.0f;
-		easedT = 1.0f + 4.0f * f * f * f;
+		// Sharper deceleration at the end (more noticeable finish)
+		const float f = (1.0f - t);
+		easedT = 1.0f - 2.0f * f * f;
 	}
 	
 	// Interpolate between current and target wind directions

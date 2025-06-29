@@ -38,17 +38,17 @@ private:
 		Star        // Star shape with more branches
 	};
 
-	static constexpr float MAX_SPEED = 200.0f; // Reduced max speed for smoother movement
-	static constexpr float NOISE_INTENSITY = 30.0f; // Reduced noise intensity for smoother movement
-	static constexpr float NOISE_SCALE = 0.005f; // Reduced noise scale for smoother noise transitions
-	static constexpr float NOISE_TIMESCALE = 0.1f; // Slowed down time scale for smoother noise changes
-	static constexpr float GRAVITY = 12.0f; // Slightly reduced gravity
+	static constexpr float MAX_SPEED = 250.0f; // Increased max speed for more dynamic movement
+	static constexpr float NOISE_INTENSITY = 30.0f; // Maintained noise intensity from previous changes
+	static constexpr float NOISE_SCALE = 0.005f; // Maintained noise scale from previous changes
+	static constexpr float NOISE_TIMESCALE = 0.1f; // Maintained time scale from previous changes
+	static constexpr float GRAVITY = 12.0f; // Maintained gravity from previous changes
 	static constexpr bool SNOW_COLOR = true;
 	static constexpr bool AIR_COLOR = false;
-	static constexpr int SNOW_FLOW_RATE = 1; // Reduced from 3 to 1 to slow down settling rate
-	static constexpr float MAX_WOBBLE = 0.8f; // Reduced wobble for less erratic movement
-	static constexpr float WIND_RESISTANCE = 0.15f; // Reduced wind resistance for smoother changes
-	static constexpr float MAX_WIND_SPEED = 40.0f; // Reduced maximum wind effect on velocity
+	static constexpr int SNOW_FLOW_RATE = 1; // Maintained flow rate from previous changes
+	static constexpr float MAX_WOBBLE = 1.2f; // Increased max wobble for more visible wind effects
+	static constexpr float WIND_RESISTANCE = 0.25f; // Increased wind resistance for more visible effects
+	static constexpr float MAX_WIND_SPEED = 80.0f; // Significantly increased max wind speed for more visible effects
 
 	// Static member for snow accumulation chance
 	static float s_snowAccumulationChance;
