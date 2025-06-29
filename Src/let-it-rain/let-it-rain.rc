@@ -25,9 +25,9 @@ IDI_SMALL               ICON                    "small.ico"
 // Dialog
 //
 
-IDD_DIALOGB DIALOGEX 0, 0, 285, 375
+IDD_DIALOGB DIALOGEX 0, 0, 299, 410
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "let it rain [v 2.0.2] - options"
+CAPTION "let it rain [v 2.0.3] - options"
 FONT 8, "MS Shell Dlg", 0, 0, 0x1
 BEGIN
     LTEXT           "No of Rain Drops / Snow Flakes",IDC_STATIC,10,43,122,8
@@ -37,19 +37,28 @@ BEGIN
     LTEXT           "Wind Direction",IDC_STATIC,10,87,122,8
     CONTROL         "",IDC_SLIDER2,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,35,103,204,24
     CTEXT           "Left",IDC_STATIC,15,106,18,8
-    CTEXT           "Right",IDC_STATIC,245,106,18,8
+    CTEXT           "Right",IDC_STATIC,246,106,18,8
     LTEXT           "Lightning Frequency",IDC_STATIC,10,135,122,12
     CONTROL         "",IDC_SLIDER_LIGHTNING_FREQ,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,35,150,204,24
     CTEXT           "Rare",IDC_STATIC,15,153,18,8
-    CTEXT           "Frequent",IDC_STATIC,245,153,25,8
+    CTEXT           "Frequent",IDC_STATIC,246,153,38,8
     LTEXT           "Lightning Intensity",IDC_STATIC,10,185,122,12
     CONTROL         "",IDC_SLIDER_LIGHTNING_INTENSITY,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,35,200,204,24
     CTEXT           "Dim",IDC_STATIC,15,203,18,8
-    CTEXT           "Bright",IDC_STATIC,245,203,22,8
-    LTEXT           "Color of Rain Drops / Snow Flakes",IDC_STATIC,10,235,150,12
-    PUSHBUTTON      "Select Color",IDC_BUTTON_SHOW_COLOR,35,250,59,14
-    PUSHBUTTON      "Github Repo",IDC_BUTTON_GITHUB,17,280,82,25
-    LTEXT           "Todd Dube - Todd@thedubes.com",IDC_STATIC,113,290,137,12
+    CTEXT           "Bright",IDC_STATIC,246,203,22,8
+    CONTROL         "Enable Random Wind for Snow",IDC_CHECK_SNOW_WIND,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,230,150,10
+    LTEXT           "Snow Wind Intensity",IDC_STATIC,10,248,122,12
+    CONTROL         "",IDC_SLIDER_SNOW_WIND_INTENSITY,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,35,263,204,24
+    CTEXT           "Mild",IDC_STATIC,15,266,18,8
+    CTEXT           "Strong",IDC_STATIC,246,266,22,8
+    LTEXT           "Snow Wind Variability",IDC_STATIC,10,293,122,12
+    CONTROL         "",IDC_SLIDER_SNOW_WIND_VARIABILITY,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,35,308,204,24
+    CTEXT           "Stable",IDC_STATIC,9,311,26,8
+    CTEXT           "Gusty",IDC_STATIC,246,311,22,8
+    LTEXT           "Color of Rain Drops / Snow Flakes",IDC_STATIC,71,338,150,12
+    PUSHBUTTON      "Select Color",IDC_BUTTON_SHOW_COLOR,97,352,59,14
+    PUSHBUTTON      "Github Repo",IDC_BUTTON_GITHUB,27,381,82,25
+    LTEXT           "Todd Dube - Todd@thedubes.com",IDC_STATIC,123,391,137,12
     CONTROL         "Rain",IDC_RADIO1,"Button",BS_AUTORADIOBUTTON,94,15,30,10
     CONTROL         "Snow",IDC_RADIO2,"Button",BS_AUTORADIOBUTTON,144,15,33,10
 END

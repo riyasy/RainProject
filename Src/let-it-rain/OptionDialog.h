@@ -11,7 +11,8 @@ class OptionsDialog
 {
 public:
 	OptionsDialog(HINSTANCE hInstance, int maxParticles, int windDirection,
-	              COLORREF particleColor, ParticleType partType, int lightningFreq, int lightningIntensity);
+	              COLORREF particleColor, ParticleType partType, int lightningFreq, int lightningIntensity,
+	              bool enableSnowWind = false, int snowWindIntensity = 25, int snowWindVariability = 50);
 	static void SubscribeToChange(CallBackWindow* subscriber);
 	bool Create();
 	void Show() const;
@@ -25,10 +26,14 @@ private:
 	static void NotifyParticleTypeChange(ParticleType newType);
 	static void NotifyLightningFrequencyChange(int newValue);
 	static void NotifyLightningIntensityChange(int newValue);
+	static void NotifyEnableSnowWind(bool enabled);
+	static void NotifySnowWindIntensity(int newValue);
+	static void NotifySnowWindVariability(int newValue);
 	
 	// UI helper methods
 	void CenterDialog() const;
 	static void ShowColorChooserDialog(HWND hWnd);
+	static void UpdateSnowWindControlsState(HWND hWnd, bool enabled);
 	
 	// Member variables
 	static std::vector<CallBackWindow*> subscribers;
@@ -40,5 +45,8 @@ private:
 	ParticleType PartType;
 	int LightningFrequency;
 	int LightningIntensity;
+	bool EnableSnowWind;
+	int SnowWindIntensity;
+	int SnowWindVariability;
 	static OptionsDialog* pThis;
 };

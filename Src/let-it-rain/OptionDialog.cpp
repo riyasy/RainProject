@@ -16,7 +16,10 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
                              const COLORREF particleColor,
                              const ParticleType partType,
                              const int lightningFreq,
-                             const int lightningIntensity)
+                             const int lightningIntensity,
+                             const bool enableSnowWind,
+                             const int snowWindIntensity,
+                             const int snowWindVariability)
 	: hInstance{hInstance},
 	  hDialog{nullptr},
 	  MaxParticles{maxParticles},
@@ -24,7 +27,10 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
 	  ParticleColor{particleColor},
 	  PartType{partType},
 	  LightningFrequency{lightningFreq},
-	  LightningIntensity{lightningIntensity}
+	  LightningIntensity{lightningIntensity},
+	  EnableSnowWind{enableSnowWind},
+	  SnowWindIntensity{snowWindIntensity},
+	  SnowWindVariability{snowWindVariability}
 {
 	pThis = this;
 }
@@ -102,6 +108,13 @@ void OptionsDialog::Show() const
 	}
 }
 
+void OptionsDialog::UpdateSnowWindControlsState(const HWND hWnd, const bool enabled)
+{
+	// Enable/disable snow wind sliders based on the checkbox state
+	EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_SNOW_WIND_INTENSITY), enabled);
+	EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_SNOW_WIND_VARIABILITY), enabled);
+}
+
 LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, const WPARAM wParam,
                                            const LPARAM lParam)
 {
@@ -122,7 +135,7 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_SETRANGE, TRUE, MAKELONG(WIND_MIN, WIND_MAX));
 			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_SETPOS, TRUE, pThis->WindDirection);
 
-			// Lightning frequency slider (0-100) - control should exist in RC file
+			// Lightning frequency slider (0-100)
 			HWND hLightningFreqSlider = GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_FREQ);
 			if (hLightningFreqSlider)
 			{
@@ -132,7 +145,7 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 				SendMessage(hLightningFreqSlider, TBM_SETPOS, TRUE, pThis->LightningFrequency);
 			}
 
-			// Lightning intensity slider (0-100) - control should exist in RC file
+			// Lightning intensity slider (0-100)
 			HWND hLightningIntensitySlider = GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_INTENSITY);
 			if (hLightningIntensitySlider)
 			{
@@ -140,6 +153,33 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 				constexpr int LIGHTNING_INTENSITY_MAX = 100;
 				SendMessage(hLightningIntensitySlider, TBM_SETRANGE, TRUE, MAKELONG(LIGHTNING_INTENSITY_MIN, LIGHTNING_INTENSITY_MAX));
 				SendMessage(hLightningIntensitySlider, TBM_SETPOS, TRUE, pThis->LightningIntensity);
+			}
+			
+			// Enable Snow Wind checkbox
+			HWND hEnableSnowWindCheck = GetDlgItem(hWnd, IDC_CHECK_SNOW_WIND);
+			if (hEnableSnowWindCheck)
+			{
+				SendMessage(hEnableSnowWindCheck, BM_SETCHECK, pThis->EnableSnowWind ? BST_CHECKED : BST_UNCHECKED, 0);
+			}
+			
+			// Snow wind intensity slider (0-100)
+			HWND hSnowWindIntensitySlider = GetDlgItem(hWnd, IDC_SLIDER_SNOW_WIND_INTENSITY);
+			if (hSnowWindIntensitySlider)
+			{
+				constexpr int SNOW_WIND_INTENSITY_MIN = 0;
+				constexpr int SNOW_WIND_INTENSITY_MAX = 100;
+				SendMessage(hSnowWindIntensitySlider, TBM_SETRANGE, TRUE, MAKELONG(SNOW_WIND_INTENSITY_MIN, SNOW_WIND_INTENSITY_MAX));
+				SendMessage(hSnowWindIntensitySlider, TBM_SETPOS, TRUE, pThis->SnowWindIntensity);
+			}
+			
+			// Snow wind variability slider (0-100)
+			HWND hSnowWindVariabilitySlider = GetDlgItem(hWnd, IDC_SLIDER_SNOW_WIND_VARIABILITY);
+			if (hSnowWindVariabilitySlider)
+			{
+				constexpr int SNOW_WIND_VARIABILITY_MIN = 0;
+				constexpr int SNOW_WIND_VARIABILITY_MAX = 100;
+				SendMessage(hSnowWindVariabilitySlider, TBM_SETRANGE, TRUE, MAKELONG(SNOW_WIND_VARIABILITY_MIN, SNOW_WIND_VARIABILITY_MAX));
+				SendMessage(hSnowWindVariabilitySlider, TBM_SETPOS, TRUE, pThis->SnowWindVariability);
 			}
 
 			// Set initial radio button state based on particle type
@@ -149,6 +189,11 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 				// Enable lightning controls for rain
 				if (hLightningFreqSlider) EnableWindow(hLightningFreqSlider, TRUE);
 				if (hLightningIntensitySlider) EnableWindow(hLightningIntensitySlider, TRUE);
+				
+				// Disable snow wind controls since we're in rain mode
+				if (hEnableSnowWindCheck) EnableWindow(hEnableSnowWindCheck, FALSE);
+				if (hSnowWindIntensitySlider) EnableWindow(hSnowWindIntensitySlider, FALSE);
+				if (hSnowWindVariabilitySlider) EnableWindow(hSnowWindVariabilitySlider, FALSE);
 			}
 			else
 			{
@@ -157,6 +202,12 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 				EnableWindow(GetDlgItem(hWnd, IDC_SLIDER2), FALSE);
 				if (hLightningFreqSlider) EnableWindow(hLightningFreqSlider, FALSE);
 				if (hLightningIntensitySlider) EnableWindow(hLightningIntensitySlider, FALSE);
+				
+				// Enable snow wind checkbox control
+				if (hEnableSnowWindCheck) EnableWindow(hEnableSnowWindCheck, TRUE);
+				
+				// Set snow wind controls state based on the checkbox
+				UpdateSnowWindControlsState(hWnd, pThis->EnableSnowWind);
 			}
 
 			// Set up GitHub button with icon
@@ -207,6 +258,18 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 				const int pos = static_cast<int>(SendMessage(hControl, TBM_GETPOS, 0, 0));
 				NotifyLightningIntensityChange(pos);
 			}
+			else if (hControl == GetDlgItem(hWnd, IDC_SLIDER_SNOW_WIND_INTENSITY))
+			{
+				// Snow wind intensity slider
+				const int pos = static_cast<int>(SendMessage(hControl, TBM_GETPOS, 0, 0));
+				NotifySnowWindIntensity(pos);
+			}
+			else if (hControl == GetDlgItem(hWnd, IDC_SLIDER_SNOW_WIND_VARIABILITY))
+			{
+				// Snow wind variability slider
+				const int pos = static_cast<int>(SendMessage(hControl, TBM_GETPOS, 0, 0));
+				NotifySnowWindVariability(pos);
+			}
 		}
 		return TRUE;
 
@@ -234,6 +297,12 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER2), TRUE);
 					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_FREQ), TRUE);
 					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_INTENSITY), TRUE);
+					
+					// Disable snow wind settings for rain
+					EnableWindow(GetDlgItem(hWnd, IDC_CHECK_SNOW_WIND), FALSE);
+					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_SNOW_WIND_INTENSITY), FALSE);
+					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_SNOW_WIND_VARIABILITY), FALSE);
+					
 					pThis->PartType = RAIN;
 					NotifyParticleTypeChange(pThis->PartType);
 				}
@@ -246,8 +315,31 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER2), FALSE);
 					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_FREQ), FALSE);
 					EnableWindow(GetDlgItem(hWnd, IDC_SLIDER_LIGHTNING_INTENSITY), FALSE);
+					
+					// Enable snow wind checkbox
+					EnableWindow(GetDlgItem(hWnd, IDC_CHECK_SNOW_WIND), TRUE);
+					
+					// Set snow wind controls state based on the checkbox
+					bool enableSnowWind = (SendMessage(GetDlgItem(hWnd, IDC_CHECK_SNOW_WIND), BM_GETCHECK, 0, 0) == BST_CHECKED);
+					UpdateSnowWindControlsState(hWnd, enableSnowWind);
+					
 					pThis->PartType = SNOW;
 					NotifyParticleTypeChange(pThis->PartType);
+				}
+				break;
+				
+			case IDC_CHECK_SNOW_WIND:
+				if (notificationCode == BN_CLICKED)
+				{
+					// Snow wind checkbox was clicked
+					bool enabled = (SendMessage(GetDlgItem(hWnd, IDC_CHECK_SNOW_WIND), BM_GETCHECK, 0, 0) == BST_CHECKED);
+					pThis->EnableSnowWind = enabled;
+					
+					// Enable/disable snow wind sliders based on checkbox state
+					UpdateSnowWindControlsState(hWnd, enabled);
+					
+					// Notify callback
+					NotifyEnableSnowWind(enabled);
 				}
 				break;
 			}
@@ -337,6 +429,36 @@ void OptionsDialog::NotifyLightningIntensityChange(const int newValue)
 	{
 		if (subscriber != nullptr) {
 			subscriber->UpdateLightningIntensity(newValue);
+		}
+	}
+}
+
+void OptionsDialog::NotifyEnableSnowWind(const bool enabled)
+{
+	for (auto* subscriber : subscribers)
+	{
+		if (subscriber != nullptr) {
+			subscriber->UpdateEnableSnowWind(enabled);
+		}
+	}
+}
+
+void OptionsDialog::NotifySnowWindIntensity(const int newValue)
+{
+	for (auto* subscriber : subscribers)
+	{
+		if (subscriber != nullptr) {
+			subscriber->UpdateSnowWindIntensity(newValue);
+		}
+	}
+}
+
+void OptionsDialog::NotifySnowWindVariability(const int newValue)
+{
+	for (auto* subscriber : subscribers)
+	{
+		if (subscriber != nullptr) {
+			subscriber->UpdateSnowWindVariability(newValue);
 		}
 	}
 }

@@ -15,6 +15,9 @@ public:
 	void Draw(ID2D1DeviceContext* dc) const;
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
 	static void DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDispData);
+	
+	// Apply wind to the snowflake's velocity
+	void ApplyWind(float windFactor, float deltaTime);
 
 	// Setter for snow accumulation chance
 	static void SetSnowAccumulationChance(float chance) {
@@ -35,15 +38,17 @@ private:
 		Star        // Star shape with more branches
 	};
 
-	static constexpr float MAX_SPEED = 300.0f; // Increased max speed
-	static constexpr float NOISE_INTENSITY = 40.0f; // Doubled noise intensity for more chaotic movement
-	static constexpr float NOISE_SCALE = 0.01f;
-	static constexpr float NOISE_TIMESCALE = 0.002f; // Increased timescale for faster noise changes
-	static constexpr float GRAVITY = 15.0f; // Slightly increased gravity
+	static constexpr float MAX_SPEED = 200.0f; // Reduced max speed for smoother movement
+	static constexpr float NOISE_INTENSITY = 30.0f; // Reduced noise intensity for smoother movement
+	static constexpr float NOISE_SCALE = 0.005f; // Reduced noise scale for smoother noise transitions
+	static constexpr float NOISE_TIMESCALE = 0.1f; // Slowed down time scale for smoother noise changes
+	static constexpr float GRAVITY = 12.0f; // Slightly reduced gravity
 	static constexpr bool SNOW_COLOR = true;
 	static constexpr bool AIR_COLOR = false;
 	static constexpr int SNOW_FLOW_RATE = 1; // Reduced from 3 to 1 to slow down settling rate
-	static constexpr float MAX_WOBBLE = 1.5f; // Increased wobble for more erratic movement
+	static constexpr float MAX_WOBBLE = 0.8f; // Reduced wobble for less erratic movement
+	static constexpr float WIND_RESISTANCE = 0.15f; // Reduced wind resistance for smoother changes
+	static constexpr float MAX_WIND_SPEED = 40.0f; // Reduced maximum wind effect on velocity
 
 	// Static member for snow accumulation chance
 	static float s_snowAccumulationChance;
@@ -56,6 +61,7 @@ private:
 	float Opacity;       // Transparency value (0.0 - 1.0)
 	float WobblePhase;   // Phase for the wobble effect
 	float WobbleAmplitude; // Amplitude of the wobble
+	float WindResistance;  // Individual wind resistance for this snowflake
 	SnowflakeShape Shape; // Shape type of this snowflake
 
 	DisplayData* pDisplayData;

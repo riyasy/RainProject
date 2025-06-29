@@ -25,19 +25,22 @@ void SnowFlake::Spawn()
 	Pos.x = rng.GenerateInt(-pDisplayData->Width / 2, (pDisplayData->Width * 3) / 2);
 	Pos.y = rng.GenerateInt(-pDisplayData->Height / 2, pDisplayData->Height);
 	
-	// Velocity randomization - increased speed for more dynamic movement
-	Vel.x = rng.GenerateInt(-15, 15); // Add initial horizontal velocity variation
-	Vel.y = rng.GenerateFloat(25.0f, 75.0f); // Increased speed range for more dynamic movement
+	// Velocity randomization - more moderate initial velocities for smoother movement
+	Vel.x = rng.GenerateFloat(-10.0f, 10.0f); // Reduced horizontal velocity variation
+	Vel.y = rng.GenerateFloat(20.0f, 50.0f); // More moderate vertical speed range
 	
 	// Visual properties
-	Size = 0.5f + (rng.GenerateInt(0, 80) / 100.0f); // 0.5 to 1.3 base size for more variation
-	Rotation = rng.GenerateInt(0, 360) * (PI / 180.0f); // Random initial rotation
-	RotationSpeed = (rng.GenerateInt(-60, 60) / 300.0f); // Increased rotation speed variation
-	Opacity = 0.5f + (rng.GenerateInt(0, 50) / 100.0f); // 0.5 to 1.0 opacity for more variation
+	Size = 0.5f + (rng.GenerateFloat(0.0f, 0.8f)); // 0.5 to 1.3 base size for more variation
+	Rotation = rng.GenerateFloat(0.0f, TWO_PI); // Random initial rotation (in radians directly)
+	RotationSpeed = rng.GenerateFloat(-0.2f, 0.2f); // Reduced rotation speed for smoother spinning
+	Opacity = 0.5f + rng.GenerateFloat(0.0f, 0.5f); // 0.5 to 1.0 opacity
 	
-	// Wobble effect for more natural movement
-	WobblePhase = rng.GenerateInt(0, 100) / 100.0f * TWO_PI;
-	WobbleAmplitude = rng.GenerateInt(20, 200) / 100.0f * MAX_WOBBLE; // Increased wobble variation
+	// Wobble effect for smoother natural movement
+	WobblePhase = rng.GenerateFloat(0.0f, TWO_PI);
+	WobbleAmplitude = rng.GenerateFloat(0.2f, 1.0f) * MAX_WOBBLE; // Smoother wobble variation
+	
+	// Wind resistance based on size (smaller flakes are more affected by wind)
+	WindResistance = WIND_RESISTANCE * (1.8f - Size);  // Adjusted for smoother transitions
 	
 	// Randomly choose a snowflake shape
 	int shapeType = rng.GenerateInt(0, 100);
@@ -60,19 +63,22 @@ void SnowFlake::ReSpawn()
 	Pos.x = rng.GenerateFloat(-pDisplayData->Width * 0.5f, pDisplayData->Width * 1.5f);
 	Pos.y = -5.0f;
 	
-	// Velocity randomization
-	Vel.x = rng.GenerateInt(-15, 15); // Increased horizontal velocity variation
-	Vel.y = rng.GenerateFloat(25.0f, 75.0f); // Increased speed range for more dynamic movement
+	// Velocity randomization - more moderate values for smoother movement
+	Vel.x = rng.GenerateFloat(-10.0f, 10.0f); // Reduced horizontal velocity variation
+	Vel.y = rng.GenerateFloat(20.0f, 50.0f); // More moderate vertical speed range
 	
 	// Visual properties
-	Size = 0.5f + (rng.GenerateInt(0, 80) / 100.0f); // 0.5 to 1.3 base size for more variation
-	Rotation = rng.GenerateInt(0, 360) * (PI / 180.0f);
-	RotationSpeed = (rng.GenerateInt(-60, 60) / 300.0f); // Increased rotation speed variation
-	Opacity = 0.5f + (rng.GenerateInt(0, 50) / 100.0f); // 0.5 to 1.0 opacity for more variation
+	Size = 0.5f + rng.GenerateFloat(0.0f, 0.8f); // 0.5 to 1.3 base size
+	Rotation = rng.GenerateFloat(0.0f, TWO_PI); // Random initial rotation (in radians)
+	RotationSpeed = rng.GenerateFloat(-0.2f, 0.2f); // Reduced rotation speed
+	Opacity = 0.5f + rng.GenerateFloat(0.0f, 0.5f); // 0.5 to 1.0 opacity
 	
 	// Wobble effect
-	WobblePhase = rng.GenerateInt(0, 100) / 100.0f * TWO_PI;
-	WobbleAmplitude = rng.GenerateInt(20, 200) / 100.0f * MAX_WOBBLE; // Increased wobble variation
+	WobblePhase = rng.GenerateFloat(0.0f, TWO_PI);
+	WobbleAmplitude = rng.GenerateFloat(0.2f, 1.0f) * MAX_WOBBLE; // Smoother wobble variation
+	
+	// Wind resistance based on size (smaller flakes are more affected by wind)
+	WindResistance = WIND_RESISTANCE * (1.8f - Size);  // Adjusted for smoother transitions
 	
 	// Randomly choose a snowflake shape (same distribution as in Spawn)
 	int shapeType = rng.GenerateInt(0, 100);
@@ -87,38 +93,71 @@ void SnowFlake::ReSpawn()
 	}
 }
 
+void SnowFlake::ApplyWind(float windFactor, float deltaTime)
+{
+	// Apply wind effect to the snowflake with smoother transitions
+	const float windForce = windFactor * WindResistance * 5.0f * deltaTime;
+	
+	// Add wind to the horizontal velocity with a smooth transition
+	Vel.x += windForce;
+	
+	// Cap the maximum wind-induced velocity with smoother capping
+	const float maxWindSpeed = MAX_WIND_SPEED * Size;  // Scale by size for varied movement
+	
+	if (Vel.x > maxWindSpeed) {
+		// Gradually approach max speed
+		Vel.x = Vel.x * 0.95f + maxWindSpeed * 0.05f;
+	}
+	else if (Vel.x < -maxWindSpeed) {
+		// Gradually approach min speed
+		Vel.x = Vel.x * 0.95f - maxWindSpeed * 0.05f;
+	}
+	
+	// Wind affects rotation slightly based on size (smoother changes)
+	RotationSpeed += windForce * 0.005f * (1.0f / Size);
+}
+
 void SnowFlake::UpdatePosition(const float deltaSeconds)
 {
-	// Update rotation
+	// Update rotation with proper delta time
 	Rotation += RotationSpeed * deltaSeconds;
 	
-	// Update wobble phase
+	// Update wobble phase with proper delta time
 	WobblePhase += deltaSeconds;
 	if (WobblePhase > TWO_PI) {
 		WobblePhase -= TWO_PI;
 	}
 	
-	// Apply noise-based movement
-	const float t = static_cast<float>(clock()) * NOISE_TIMESCALE;
-    const float noiseVal = pDisplayData->pNoiseGen->GetNoise(Pos.x, Pos.y, t);
+	// Use the current time for noise instead of clock()
+	// This fixes the jitter by making noise movement frame-rate independent
+	static double accumulatedTime = 0.0;
+	accumulatedTime += deltaSeconds;
+	const float t = static_cast<float>(accumulatedTime) * NOISE_TIMESCALE;
+	
+    const float noiseVal = pDisplayData->pNoiseGen->GetNoise(Pos.x * NOISE_SCALE, Pos.y * NOISE_SCALE, t);
 	const float angle = noiseVal * TWO_PI + PI * 0.5f;
 
 	// Add wobble effect to horizontal movement
-	float wobbleEffect = sin(WobblePhase) * WobbleAmplitude;
+	const float wobbleEffect = sin(WobblePhase) * WobbleAmplitude;
 	
-	Vel.x += (std::cos(angle) * NOISE_INTENSITY * deltaSeconds) * 2.0f + wobbleEffect * deltaSeconds;
+	// Apply forces with proper delta time scaling
+	Vel.x += (std::cos(angle) * NOISE_INTENSITY * deltaSeconds) + (wobbleEffect * deltaSeconds);
 	Vel.y += std::sin(angle) * NOISE_INTENSITY * deltaSeconds;
 
+	// Apply gravity with proper delta time
 	Vel.y += GRAVITY * deltaSeconds;
 
 	// Dampen horizontal velocity slightly for more realistic movement
-	Vel.x *= 0.99f;
+	// Use delta-time based damping factor
+	Vel.x *= (1.0f - (0.01f * deltaSeconds * 100.0f));
 
+	// Cap maximum velocity
 	if (Vel.MagnitudeSquared() > MAX_SPEED * MAX_SPEED)
 	{
 		Vel.SetMagnitude(MAX_SPEED);
 	}
 
+	// Update position with proper delta time
 	Pos.x += Vel.x * deltaSeconds;
 	Pos.y += Vel.y * deltaSeconds;
 

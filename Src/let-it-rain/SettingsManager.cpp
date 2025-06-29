@@ -8,7 +8,7 @@
 // Initialize the singleton instance to nullptr
 SettingsManager* SettingsManager::instance = nullptr;
 
-SettingsManager::SettingsManager() : defaultSetting(MAX_PARTICLES, 3, 0x00AAAAAA, RAIN, 50, 50)
+SettingsManager::SettingsManager() : defaultSetting(MAX_PARTICLES, 3, 0x00AAAAAA, RAIN, 50, 50, false, 25, 50)
 {
 	const std::wstring appDataPath = GetAppDataPath();
 	iniFilePath = appDataPath + L"\\let-it-rain.ini";
@@ -42,6 +42,14 @@ void SettingsManager::CreateINIFile() const
 	WritePrivateProfileString(L"Settings", L"LightningFrequency", std::to_wstring(defaultSetting.LightningFrequency).c_str(),
 		iniFilePath.c_str());
 	WritePrivateProfileString(L"Settings", L"LightningIntensity", std::to_wstring(defaultSetting.LightningIntensity).c_str(),
+		iniFilePath.c_str());
+		
+	// Snow wind randomness settings
+	WritePrivateProfileString(L"Settings", L"EnableSnowWind", std::to_wstring(defaultSetting.EnableSnowWind ? 1 : 0).c_str(),
+		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"SnowWindIntensity", std::to_wstring(defaultSetting.SnowWindIntensity).c_str(),
+		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"SnowWindVariability", std::to_wstring(defaultSetting.SnowWindVariability).c_str(),
 		iniFilePath.c_str());
 }
 
@@ -78,9 +86,20 @@ void SettingsManager::ReadSettings(Setting& setting) const
 	                                                   iniFilePath.c_str());
 	setting.LightningIntensity = GetPrivateProfileInt(L"Settings", L"LightningIntensity", defaultSetting.LightningIntensity,
 	                                                   iniFilePath.c_str());
+	
+	// Snow wind randomness settings
+	setting.EnableSnowWind = GetPrivateProfileInt(L"Settings", L"EnableSnowWind", defaultSetting.EnableSnowWind ? 1 : 0,
+		iniFilePath.c_str()) != 0;
+	setting.SnowWindIntensity = GetPrivateProfileInt(L"Settings", L"SnowWindIntensity", defaultSetting.SnowWindIntensity,
+		iniFilePath.c_str());
+	setting.SnowWindVariability = GetPrivateProfileInt(L"Settings", L"SnowWindVariability", defaultSetting.SnowWindVariability,
+		iniFilePath.c_str());
 
 	// Update missing values in INI file
 	WriteSettings(setting);
+	
+	// Mark settings as loaded
+	setting.loaded = true;
 }
 
 void SettingsManager::WriteSettings(const Setting& setting) const
@@ -99,5 +118,13 @@ void SettingsManager::WriteSettings(const Setting& setting) const
 	WritePrivateProfileString(L"Settings", L"LightningFrequency", std::to_wstring(setting.LightningFrequency).c_str(),
 		iniFilePath.c_str());
 	WritePrivateProfileString(L"Settings", L"LightningIntensity", std::to_wstring(setting.LightningIntensity).c_str(),
+		iniFilePath.c_str());
+		
+	// Snow wind randomness settings
+	WritePrivateProfileString(L"Settings", L"EnableSnowWind", std::to_wstring(setting.EnableSnowWind ? 1 : 0).c_str(),
+		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"SnowWindIntensity", std::to_wstring(setting.SnowWindIntensity).c_str(),
+		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"SnowWindVariability", std::to_wstring(setting.SnowWindVariability).c_str(),
 		iniFilePath.c_str());
 }

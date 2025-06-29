@@ -43,7 +43,8 @@ void HR(const HRESULT result)
 enum TIMERS
 {
 	DELAY_TIMER = 1947,
-	INTERVAL_TIMER = 1948
+	INTERVAL_TIMER = 1948,
+	Z_ORDER_TIMER = 1949
 };
 
 HINSTANCE DisplayWindow::AppInstance = nullptr;
@@ -62,7 +63,9 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	wc.lpfnWndProc = WndProc;
 	RegisterClass(&wc);
 
-	constexpr DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
+	// Remove WS_EX_TOPMOST flag to allow the window to go behind other windows
+	// Keeping WS_EX_TRANSPARENT, WS_EX_LAYERED, and WS_EX_TOOLWINDOW
+	constexpr DWORD exstyle = WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOOLWINDOW;
 	// DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP | WS_EX_TOPMOST;
 	constexpr DWORD style = WS_POPUP | WS_VISIBLE;
 
@@ -102,7 +105,9 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	{
 		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxParticles, GeneralSettings.WindSpeed,
 		                                GeneralSettings.ParticleColor, GeneralSettings.PartType,
-		                                GeneralSettings.LightningFrequency, GeneralSettings.LightningIntensity);
+		                                GeneralSettings.LightningFrequency, GeneralSettings.LightningIntensity,
+		                                GeneralSettings.EnableSnowWind, GeneralSettings.SnowWindIntensity,
+		                                GeneralSettings.SnowWindVariability);
 		pOptionsDlg->Create();
 	}
 
@@ -110,6 +115,16 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	pDisplaySpecificData = new DisplayData(Dc.Get());
 	pDisplaySpecificData->SetRainColor(GeneralSettings.ParticleColor);
 	HandleWindowBoundsChange(window, false);
+	
+	// Initialize snow wind system with default values
+	CurrentSnowWindDirection = 0.0f;
+	TargetSnowWindDirection = 0.0f;
+	WindTransitionProgress = 1.0f;
+	LastWindChangeTime = GetCurrentTimeInSeconds();
+	NextWindChangeTime = LastWindChangeTime + 5.0; // First change in 5 seconds
+
+	// Set the window to the bottom of the Z-order so it appears behind other windows
+	SetWindowPos(window, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
 	return 0;
 }
@@ -145,6 +160,21 @@ void DisplayWindow::UpdateLightningIntensity(const int val)
 	GeneralSettings.LightningIntensity = val;
 }
 
+void DisplayWindow::UpdateEnableSnowWind(const bool enabled)
+{
+	GeneralSettings.EnableSnowWind = enabled;
+}
+
+void DisplayWindow::UpdateSnowWindIntensity(const int val)
+{
+	GeneralSettings.SnowWindIntensity = val;
+}
+
+void DisplayWindow::UpdateSnowWindVariability(const int val)
+{
+	GeneralSettings.SnowWindVariability = val;
+}
+
 LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam)
 {
 	static UINT_PTR timerId = 0;
@@ -164,6 +194,12 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 				InitNotifyIcon(hWnd);
 			}
 			SetTimer(hWnd, INTERVAL_TIMER, 500, nullptr);
+			
+			 // Set up a timer for z-order management
+			SetTimer(hWnd, Z_ORDER_TIMER, 100, nullptr);
+			
+			// Initial z-order positioning
+			UpdateZOrder(hWnd);
 			break;
 		}
 	case WM_DESTROY:
@@ -186,6 +222,9 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 				KillTimer(hWnd, timerId);
 			}
 			timerId = SetTimer(hWnd, DELAY_TIMER, 1000, nullptr);
+			
+			 // Update z-order after display changes
+			UpdateZOrder(hWnd);
 			break;
 		}
 	case WM_TIMER:
@@ -195,11 +234,19 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 			pThis->HandleWindowBoundsChange(hWnd, true);
 			KillTimer(hWnd, DELAY_TIMER);
 			timerId = 0;
+			
+			 // Update z-order after window bounds change
+			UpdateZOrder(hWnd);
 		}
 		if (wParam == INTERVAL_TIMER)
 		{
 			DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
 			pThis->HandleTaskBarChange();
+		}
+		if (wParam == Z_ORDER_TIMER)
+		{
+			// Regularly check and update z-order position
+			UpdateZOrder(hWnd);
 		}
 		break;
 	case WM_TRAYICON:
@@ -226,6 +273,24 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 			if (hit == HTCLIENT) hit = HTCAPTION;
 			return hit;
 		}
+	case WM_CLOSE:
+		ShowWindow(hWnd, SW_HIDE);
+		// saving settings in config ini file
+		SettingsManager::GetInstance()->WriteSettings(GeneralSettings);
+		return TRUE;
+	case WM_SHOWWINDOW:
+		if (wParam == TRUE) // Window is being shown
+		{
+			// Update z-order when window is shown
+			UpdateZOrder(hWnd);
+		}
+		break;
+	case WM_WINDOWPOSCHANGED:
+		{
+			// Update z-order after position changes
+			UpdateZOrder(hWnd);
+			break;
+		}
 	case WM_KEYDOWN:
 	case WM_PAINT:
 		{
@@ -244,42 +309,56 @@ double DisplayWindow::GetCurrentTimeInSeconds()
 
 void DisplayWindow::Animate()
 {
-	constexpr double dt = 0.01;
+	// Target a stable physics time step of 1/120th of a second (more precise than previous 0.01)
+	constexpr double fixedTimeStep = 1.0 / 120.0;
 
 	if (CurrentTime < 0)
 	{
 		CurrentTime = GetCurrentTimeInSeconds();
+		return; // Skip the first frame to establish timing
 	}
+	
+	// Calculate actual frame time
 	const double newTime = GetCurrentTimeInSeconds();
-	const double frameTime = newTime - CurrentTime;
+	double frameTime = newTime - CurrentTime;
 	CurrentTime = newTime;
-
+	
+	// Cap maximum frame time to avoid "spiral of death" with very long frames
+	if (frameTime > 0.25)
+		frameTime = 0.25;
+		
+	// Add frame time to the accumulator
 	Accumulator += frameTime;
 
-	if (Accumulator > 1) 
+	// Update with a fixed time step for physics stability
+	int stepCount = 0;
+	while (Accumulator >= fixedTimeStep && stepCount < 3) // Limit max steps per frame
 	{
-		// If there are large gaps in animation due to screen stuck
-		// If Accumulator value is not decreased, large number of
-		// Updates will be called in while loop
-		Accumulator = dt;
-	}
-
-	while (Accumulator >= dt)
-	{
+		// Update particle systems with fixed time step
 		if (GeneralSettings.PartType == RAIN)
 		{
-			UpdateRainDrops(dt);
+			UpdateRainDrops(fixedTimeStep);
 		}
 		else if (GeneralSettings.PartType == SNOW)
 		{
-			UpdateSnowFlakes(dt);
+			// Update snow wind system if enabled
+			if (GeneralSettings.EnableSnowWind)
+			{
+				UpdateSnowWind(fixedTimeStep);
+			}
+			
+			UpdateSnowFlakes(fixedTimeStep);
 		}
 		
 		// Update lightning flash system
 		UpdateLightning();
 		
-		Accumulator -= dt;
+		// Consume accumulated time
+		Accumulator -= fixedTimeStep;
+		stepCount++;
 	}
+	
+	// Draw the current state
 	if (GeneralSettings.PartType == RAIN)
 	{
 		DrawRainDrops();
@@ -288,6 +367,95 @@ void DisplayWindow::Animate()
 	{
 		DrawSnowFlakes();
 	}	
+}
+
+void DisplayWindow::UpdateSnowWind(const float deltaTime)
+{
+	const double currentTime = GetCurrentTimeInSeconds();
+	
+	// Check if it's time to change the wind direction
+	if (currentTime >= NextWindChangeTime)
+	{
+		// Calculate how often the wind changes based on variability (0-100)
+		// Higher variability means more frequent changes (3-20 seconds)
+		// Extended the duration range for smoother transitions
+		const float variabilityFactor = GeneralSettings.SnowWindVariability / 100.0f;
+		const float changeDuration = 20.0f - (variabilityFactor * 17.0f);  // 3-20 seconds
+		
+		// Calculate how strong the wind is based on intensity (0-100)
+		// Higher intensity means stronger wind (-5 to 5)
+		// Slightly reduced wind range for more subtle transitions
+		const float intensityFactor = GeneralSettings.SnowWindIntensity / 100.0f;
+		const float maxWindStrength = 4.0f * intensityFactor;
+		
+		// Set the previous and target wind directions
+		CurrentSnowWindDirection = TargetSnowWindDirection;
+		
+		// Generate a new target wind direction with smoother transitions
+		auto& rng = RandomGenerator::GetInstance();
+		
+		// Add a bit of continuity - new wind target tends to be related to current wind
+		// This creates more natural shifts in wind patterns
+		const float windContinuityFactor = 0.3f;
+		const float randomComponent = rng.GenerateFloat(-maxWindStrength, maxWindStrength);
+		TargetSnowWindDirection = (CurrentSnowWindDirection * windContinuityFactor) + 
+		                          (randomComponent * (1.0f - windContinuityFactor));
+		
+		// Cap the target wind strength
+		if (TargetSnowWindDirection > maxWindStrength)
+			TargetSnowWindDirection = maxWindStrength;
+		if (TargetSnowWindDirection < -maxWindStrength)
+			TargetSnowWindDirection = -maxWindStrength;
+		
+		// Reset transition progress
+		WindTransitionProgress = 0.0f;
+		
+		// Schedule next wind change with some randomness for natural variation
+		LastWindChangeTime = currentTime;
+		NextWindChangeTime = currentTime + changeDuration + (rng.GenerateFloat(-2.0f, 2.0f));
+	}
+	
+	// Update wind transition
+	if (WindTransitionProgress < 1.0f)
+	{
+		// Transition more slowly for smoother wind changes
+		// Complete transition over 3-5 seconds based on variability
+		float transitionSpeed = 0.2f + 
+		                       (GeneralSettings.SnowWindVariability / 100.0f * 0.3f);
+		
+		WindTransitionProgress += deltaTime * transitionSpeed;
+		if (WindTransitionProgress > 1.0f)
+		{
+			WindTransitionProgress = 1.0f;
+		}
+	}
+}
+
+float DisplayWindow::GetCurrentSnowWindFactor() const
+{
+	if (!GeneralSettings.EnableSnowWind)
+	{
+		return 0.0f;
+	}
+	
+	// Use smooth transition between wind directions
+	const float t = WindTransitionProgress;
+	
+	// Cubic easing function - very smooth acceleration and deceleration
+	// This creates more natural-feeling wind transitions
+	float easedT;
+	if (t < 0.5f) {
+		// Ease-in: slow start, gradual acceleration
+		easedT = 4.0f * t * t * t;
+	}
+	else {
+		// Ease-out: gradual deceleration to smooth stop
+		const float f = t - 1.0f;
+		easedT = 1.0f + 4.0f * f * f * f;
+	}
+	
+	// Interpolate between current and target wind directions
+	return CurrentSnowWindDirection * (1.0f - easedT) + TargetSnowWindDirection * easedT;
 }
 
 void DisplayWindow::InitNotifyIcon(const HWND hWnd)
@@ -407,8 +575,9 @@ void DisplayWindow::InitDirect2D(const HWND hWnd)
 		__uuidof(DcompDevice),
 		reinterpret_cast<void**>(DcompDevice.GetAddressOf())));
 
+	// Set topmost to false to allow the window to appear behind other windows
 	HR(DcompDevice->CreateTargetForHwnd(hWnd,
-	                                    true, // Top most
+	                                    false, // Set to false to not be topmost
 	                                    Target.GetAddressOf()));
 
 	HR(DcompDevice->CreateVisual(Visual.GetAddressOf()));
@@ -689,9 +858,19 @@ void DisplayWindow::UpdateSnowFlakes(const float deltaTime)
 		SnowFlakes.erase(SnowFlakes.begin(), SnowFlakes.begin() + noOfFlakesToErase);
 	}
 
+	// Get current wind direction for snow (if enabled)
+	const float snowWindFactor = GetCurrentSnowWindFactor();
+	
 	// Move each snowflake to the next point
 	for (SnowFlake* const pFlake : SnowFlakes)
 	{
+		// Apply wind to horizontal velocity if snow wind is enabled
+		if (GeneralSettings.EnableSnowWind && snowWindFactor != 0.0f)
+		{
+			// Add wind effect to the snowflake's velocity
+			pFlake->ApplyWind(snowWindFactor, deltaTime);
+		}
+		
 		pFlake->UpdatePosition(deltaTime); // Use proper delta time instead of hard-coded 0.01f
 	}
 	SnowFlake::SettleSnow(pDisplaySpecificData);
@@ -787,4 +966,33 @@ void DisplayWindow::DrawLightningFlash() const
 		
 		Dc->FillRectangle(screenRect, flashBrush.Get());
 	}
+}
+
+void DisplayWindow::UpdateZOrder(HWND hWnd)
+{
+    // Get the current foreground window
+    HWND hwndForeground = GetForegroundWindow();
+    
+    // Skip if our window is the foreground window (shouldn't happen but just in case)
+    if (hwndForeground == hWnd)
+        return;
+    
+    // If there is an active foreground window, place our window just behind it
+    if (hwndForeground != NULL)
+    {
+        // Position our window immediately below the foreground window
+        SetWindowPos(hWnd, hwndForeground, 0, 0, 0, 0, 
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
+    else
+    {
+        // If there's no foreground window, make sure we're still above most windows
+        // but below any that might become active
+        SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+        
+        // Immediately undo the topmost status to allow other windows to go above us when activated
+        SetWindowPos(hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, 
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
 }
