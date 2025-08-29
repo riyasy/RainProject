@@ -1,6 +1,21 @@
 #include "DisplayWindow.h"
 #include "Global.h"
+#include <chrono>
+#include <thread> // Add thread header for sleep_for
 
+// Helper function to limit frame rate
+void sleepFor(const std::chrono::high_resolution_clock::time_point& lastFrameTime, 
+              const std::chrono::microseconds& targetFrameTime) {
+    // Calculate time since last frame
+    auto now = std::chrono::high_resolution_clock::now();
+    auto frameTime = now - lastFrameTime;
+    
+    // If we still have time before next frame is due
+    if (frameTime < targetFrameTime) {
+        auto sleepTime = targetFrameTime - frameTime;
+        std::this_thread::sleep_for(sleepTime);
+    }
+}
 
 //
 // Provides the entry point to the application.
@@ -36,6 +51,11 @@ int WINAPI WinMain(
 		if (!rainWindows.empty())
 		{
 			MSG msg = {};
+            
+            // Target 60 FPS - approximately 16.6667 milliseconds per frame
+            const std::chrono::microseconds targetFrameTime(16667);
+            auto lastFrameTime = std::chrono::high_resolution_clock::now();
+            
 			while (msg.message != WM_QUIT)
 			{
 				if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -49,7 +69,10 @@ int WINAPI WinMain(
 					{
 						rainWindow->Animate();
 					}
-					Sleep(10);
+                    
+                    // Properly limit the frame rate
+                    sleepFor(lastFrameTime, targetFrameTime);
+                    lastFrameTime = std::chrono::high_resolution_clock::now();
 				}
 			}
 			for (const DisplayWindow* rainWindow : rainWindows)
