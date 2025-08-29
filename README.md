@@ -47,9 +47,6 @@ Customize your rain experience with these options, available in the Preferences 
 
 Contributions are welcome! Feel free to fork the repo and submit pull requests. Please ensure that your changes are well-documented and tested.
 
-## License
-
-This project is licensed under the [MIT License](LICENSE).
 
 ## Contact
 
