@@ -11,4 +11,11 @@ public:
 	virtual void UpdateWindDirection(int val) = 0;
 	virtual void UpdateParticleColor(DWORD color) = 0;
 	virtual void UpdateParticleType(ParticleType partType) = 0;
+	virtual void UpdateLightningFrequency(int val) = 0;
+	virtual void UpdateLightningIntensity(int val) = 0;
+
+	// New callback methods for snow wind randomness
+	virtual void UpdateEnableSnowWind(bool enabled) = 0;
+	virtual void UpdateSnowWindIntensity(int val) = 0;
+	virtual void UpdateSnowWindVariability(int val) = 0;
 };

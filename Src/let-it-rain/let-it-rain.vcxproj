@@ -159,14 +159,14 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
+      <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <PreLinkEvent>
       <Command>echo IDR_PIXEL_SHADER RCDATA $(OutDir)Direct2DHelloWorld.fxo &gt; $(OutDir)Direct2DHelloWorld.resinclude</Command>
@@ -193,7 +193,7 @@
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
@@ -213,6 +213,7 @@
     <ClInclude Include="OptionDialog.h" />
     <ClInclude Include="DisplayWindow.h" />
     <ClInclude Include="RainDrop.h" />
+    <ClInclude Include="RainDrop_Modern.h" />
     <ClInclude Include="SnowFlake.h" />
     <ClInclude Include="Splatter.h" />
     <ClInclude Include="Vector2.h" />
@@ -221,6 +222,8 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SettingsManager.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="ErrorHandling.h" />
+    <ClInclude Include="ParticleSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
