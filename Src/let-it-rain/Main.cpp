@@ -49,7 +49,7 @@ int WINAPI WinMain(
 					{
 						rainWindow->Animate();
 					}
-					Sleep(10);
+					//Sleep(10);
 				}
 			}
 			for (const DisplayWindow* rainWindow : rainWindows)

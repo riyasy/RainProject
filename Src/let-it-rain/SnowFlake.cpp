@@ -14,18 +14,49 @@ SnowFlake::SnowFlake(DisplayData* pDispData) :
 
 void SnowFlake::Spawn()
 {
-	Pos.x = RandomGenerator::GetInstance().GenerateInt(-pDisplayData->Width / 2, (pDisplayData->Width * 3) / 2);
-	Pos.y = RandomGenerator::GetInstance().GenerateInt(-pDisplayData->Height / 2, pDisplayData->Height);
+	Pos.x = RandomGenerator::GetInstance().GenerateFloat(-pDisplayData->Width / 2.0f, (pDisplayData->Width * 3) / 2.0f);
+	Pos.y = RandomGenerator::GetInstance().GenerateFloat(-pDisplayData->Height / 2.0f, pDisplayData->Height / 1.0f);
 	Vel.x = 0.0f;
-	Vel.y = RandomGenerator::GetInstance().GenerateInt(5.0f, 20.0f);
+	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f);
+	
+	Size = 0.5f + (RandomGenerator::GetInstance().GenerateFloat(0.0f, 0.8f)); // 0.5 to 1.3 base size for more variation
+	Rotation = RandomGenerator::GetInstance().GenerateFloat(0.0f, TWO_PI); // Random initial rotation (in radians directly)
+	RotationSpeed = RandomGenerator::GetInstance().GenerateFloat(-0.2f, 0.2f); // Reduced rotation speed for smoother spinning
+	// Randomly choose a snowflake shape
+	int shapeType = RandomGenerator::GetInstance().GenerateInt(0, 100);
+	if (shapeType < 40) {
+		Shape = SnowflakeShape::Simple; // 40% simple shapes
+	} else if (shapeType < 70) {
+		Shape = SnowflakeShape::Crystal; // 30% crystals
+	} else if (shapeType < 90) {
+		Shape = SnowflakeShape::Hexagon; // 20% hexagons
+	} else {
+		Shape = SnowflakeShape::Star; // 10% stars
+	}
 }
 
 void SnowFlake::ReSpawn()
 {
-	Pos.x = RandomGenerator::GetInstance().GenerateInt(-pDisplayData->Width * 0.5f, pDisplayData->Width * 1.5f);
+	Pos.x = RandomGenerator::GetInstance().GenerateFloat(-pDisplayData->Width * 0.5f, pDisplayData->Width * 1.5f);
 	Pos.y = -5.0f;
 	Vel.x = 0.0f;
-	Vel.y = RandomGenerator::GetInstance().GenerateInt(5.0f, 20.0f);
+	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f);
+	
+		// Visual properties
+	Size = 0.5f + RandomGenerator::GetInstance().GenerateFloat(0.0f, 0.8f); // 0.5 to 1.3 base size
+	Rotation = RandomGenerator::GetInstance().GenerateFloat(0.0f, TWO_PI); // Random initial rotation (in radians)
+	RotationSpeed = RandomGenerator::GetInstance().GenerateFloat(-0.2f, 0.2f); // Reduced rotation speed
+	// Randomly choose a snowflake shape (same distribution as in Spawn)
+	int shapeType = RandomGenerator::GetInstance().GenerateInt(0, 100);
+	if (shapeType < 40) {
+		Shape = SnowflakeShape::Simple;
+	} else if (shapeType < 70) {
+		Shape = SnowflakeShape::Crystal;
+	} else if (shapeType < 90) {
+		Shape = SnowflakeShape::Hexagon;
+	} else {
+		Shape = SnowflakeShape::Star;
+	}
 }
 
 void SnowFlake::UpdatePosition(const float deltaSeconds)
@@ -93,14 +124,228 @@ void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 {
 	if (MathUtil::IsPointInRect(pDisplayData->SceneRectNorm, Pos))
 	{
+	    // Calculate the drawing position
+		D2D1_POINT_2F center = D2D1::Point2F(
+			Pos.x + pDisplayData->SceneRect.left,
+			Pos.y + pDisplayData->SceneRect.top
+		);
+		
+		// Scale the size based on the display scale factor
+		float drawSize = Size * pDisplayData->ScaleFactor;
+		
+		
 		// Define the ellipse with center at (posX, posY) and radius 5px
 		const D2D1_ELLIPSE ellipse = D2D1::Ellipse(
 			D2D1::Point2F(Pos.x + pDisplayData->SceneRect.left, Pos.y + pDisplayData->SceneRect.top), 
 			2.0f * pDisplayData->ScaleFactor, 
 			2.0f * pDisplayData->ScaleFactor);
-		// Draw the ellipse
-		dc->FillEllipse(ellipse, pDisplayData->DropColorBrush.Get());
+		// Draw different snowflake shapes based on the shape type
+		switch (Shape)
+		{
+		case SnowflakeShape::Simple:
+			DrawSimpleSnowflake(dc, center, drawSize, Rotation);
+			break;
+		case SnowflakeShape::Crystal:
+			DrawCrystalSnowflake(dc, center, drawSize, Rotation);
+			break;
+		case SnowflakeShape::Hexagon:
+			DrawHexagonSnowflake(dc, center, drawSize, Rotation);
+			break;
+		case SnowflakeShape::Star:
+			DrawStarSnowflake(dc, center, drawSize, Rotation);
+			break;
+		}
 	}
+}
+
+void SnowFlake::DrawSimpleSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const
+{
+	// For simple snowflakes, just draw an ellipse with slight variations
+	const float radiusX = 1.0f * size;
+	const float radiusY = 0.7f * size;
+	
+	// Create a rotation matrix
+	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(
+		rotation * 180.0f / PI, // Convert to degrees
+		center
+	);
+	
+	// Save the current transform
+	D2D1::Matrix3x2F originalTransform;
+	dc->GetTransform(&originalTransform);
+	
+	// Apply rotation
+	dc->SetTransform(rotMatrix * originalTransform);
+	
+	// Draw the ellipse
+	D2D1_ELLIPSE ellipse = D2D1::Ellipse(center, radiusX, radiusY);
+	dc->FillEllipse(ellipse, pDisplayData->DropColorBrush.Get());
+	
+	// Restore original transform
+	dc->SetTransform(originalTransform);
+}
+
+void SnowFlake::DrawCrystalSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const
+{
+	// Save the current transform
+	D2D1::Matrix3x2F originalTransform;
+	dc->GetTransform(&originalTransform);
+	
+	// Apply rotation
+	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(
+		rotation * 180.0f / PI,
+		center
+	);
+	dc->SetTransform(rotMatrix * originalTransform);
+	
+	// Draw a small center circle
+	D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.5f, size * 0.5f);
+	dc->FillEllipse(centerCircle, pDisplayData->DropColorBrush.Get());
+	
+	// Draw 6 arms for the crystal (60 degrees apart)
+	const int numArms = 6;
+	const float baseLength = size * 2.0f;
+	
+	for (int i = 0; i < numArms; i++)
+	{
+		float angle = (i * TWO_PI) / numArms;
+		float endX = center.x + cos(angle) * baseLength;
+		float endY = center.y + sin(angle) * baseLength;
+		
+		// Create a line for each arm
+		D2D1_POINT_2F endPoint = D2D1::Point2F(endX, endY);
+		
+		// Draw the main arm
+		dc->DrawLine(center, endPoint, pDisplayData->DropColorBrush.Get(), size * 0.2f);
+		
+		// Draw small branches (2 per arm)
+		float branchLength = baseLength * 0.4f;
+		float branchAngleOffset = 30.0f * (PI / 180.0f); // 30 degrees
+		
+		float midX = center.x + cos(angle) * baseLength * 0.6f;
+		float midY = center.y + sin(angle) * baseLength * 0.6f;
+		D2D1_POINT_2F midPoint = D2D1::Point2F(midX, midY);
+		
+		// First branch
+		float branch1Angle = angle + branchAngleOffset;
+		float branch1EndX = midX + cos(branch1Angle) * branchLength;
+		float branch1EndY = midY + sin(branch1Angle) * branchLength;
+		D2D1_POINT_2F branch1End = D2D1::Point2F(branch1EndX, branch1EndY);
+		dc->DrawLine(midPoint, branch1End, pDisplayData->DropColorBrush.Get(), size * 0.15f);
+		
+		// Second branch
+		float branch2Angle = angle - branchAngleOffset;
+		float branch2EndX = midX + cos(branch2Angle) * branchLength;
+		float branch2EndY = midY + sin(branch2Angle) * branchLength;
+		D2D1_POINT_2F branch2End = D2D1::Point2F(branch2EndX, branch2EndY);
+		dc->DrawLine(midPoint, branch2End, pDisplayData->DropColorBrush.Get(), size * 0.15f);
+	}
+	
+	// Restore original transform
+	dc->SetTransform(originalTransform);
+}
+
+void SnowFlake::DrawHexagonSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const
+{
+	// Save the current transform
+	D2D1::Matrix3x2F originalTransform;
+	dc->GetTransform(&originalTransform);
+	
+	// Apply rotation
+	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(
+		rotation * 180.0f / PI,
+		center
+	);
+	dc->SetTransform(rotMatrix * originalTransform);
+	
+	// Draw a hexagon shape using lines
+	const int sides = 6;
+	const float radius = size * 2.0f;
+	
+	// Draw the hexagon outline
+	D2D1_POINT_2F* points = new D2D1_POINT_2F[sides + 1];
+	
+	for (int i = 0; i <= sides; ++i) {
+		float angle = i * TWO_PI / sides;
+		points[i] = D2D1::Point2F(
+			center.x + radius * cos(angle),
+			center.y + radius * sin(angle)
+		);
+	}
+	
+	// Draw the hexagon outline
+	for (int i = 0; i < sides; ++i) {
+		dc->DrawLine(points[i], points[i + 1], pDisplayData->DropColorBrush.Get(), size * 0.2f);
+	}
+	
+	// Draw inner details (spokes)
+	for (int i = 0; i < sides; ++i) {
+		// Draw line from center to each vertex
+		dc->DrawLine(
+			center,
+			points[i],
+			pDisplayData->DropColorBrush.Get(),
+			size * 0.15f
+		);
+	}
+	
+	delete[] points;
+	
+	// Draw center circle
+	D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.4f, size * 0.4f);
+	dc->FillEllipse(centerCircle, pDisplayData->DropColorBrush.Get());
+	
+	// Restore original transform
+	dc->SetTransform(originalTransform);
+}
+
+void SnowFlake::DrawStarSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const
+{
+	// Save the current transform
+	D2D1::Matrix3x2F originalTransform;
+	dc->GetTransform(&originalTransform);
+	
+	// Apply rotation
+	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(
+		rotation * 180.0f / PI,
+		center
+	);
+	dc->SetTransform(rotMatrix * originalTransform);
+	
+	// Draw a small center circle
+	D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.4f, size * 0.4f);
+	dc->FillEllipse(centerCircle, pDisplayData->DropColorBrush.Get());
+	
+	// Draw a star pattern with 12 spikes
+	const int numSpikes = 12;
+	const float outerRadius = size * 2.5f;
+	const float innerRadius = size * 1.0f;
+	
+	for (int i = 0; i < numSpikes; i++)
+	{
+		float angle = (i * TWO_PI) / numSpikes;
+		
+		// Main spike
+		float endX = center.x + cos(angle) * outerRadius;
+		float endY = center.y + sin(angle) * outerRadius;
+		D2D1_POINT_2F endPoint = D2D1::Point2F(endX, endY);
+		
+		// Draw the spike
+		dc->DrawLine(center, endPoint, pDisplayData->DropColorBrush.Get(), size * 0.15f);
+		
+		// Draw small intersecting lines between main spikes
+		if (i % 2 == 0) {
+			float crossAngle = angle + (TWO_PI / numSpikes / 2);
+			float crossX = center.x + cos(crossAngle) * innerRadius;
+			float crossY = center.y + sin(crossAngle) * innerRadius;
+			D2D1_POINT_2F crossPoint = D2D1::Point2F(crossX, crossY);
+			
+			dc->DrawLine(center, crossPoint, pDisplayData->DropColorBrush.Get(), size * 0.1f);
+		}
+	}
+	
+	// Restore original transform
+	dc->SetTransform(originalTransform);
 }
 
 void SnowFlake::DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDispData)

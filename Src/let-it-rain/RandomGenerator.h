@@ -36,6 +36,13 @@ public:
 		return disRange2(gen);
 	}
 
+	// Generate a floating point number in [min, max)
+	float GenerateFloat(const float min, const float max)
+	{
+		disReal = std::uniform_real_distribution<float>(min, max);
+		return disReal(gen);
+	}
+
 private:
 	RandomGenerator() : gen(rd())
 	{
@@ -45,4 +52,5 @@ private:
 	std::mt19937 gen;
 	std::uniform_int_distribution<> disRange1;
 	std::uniform_int_distribution<> disRange2;
+	std::uniform_real_distribution<float> disReal;
 };
