@@ -12,11 +12,20 @@ public:
 	RainDrop(int windDirectionFactor, DisplayData* pDispData);
 	~RainDrop();
 
+	// Movable but not copyable (ownership of splatters must transfer)
+	RainDrop(RainDrop&& other) noexcept;
+	RainDrop& operator=(RainDrop&& other) noexcept;
+	RainDrop(const RainDrop&) = delete;
+	RainDrop& operator=(const RainDrop&) = delete;
+
 	bool DidTouchGround() const;
 	bool IsReadyForErase() const;
 
 	void UpdatePosition(float deltaSeconds);
 	void Draw(ID2D1DeviceContext* dc) const;
+
+	// Allow reusing an existing RainDrop object without reallocating
+	void Reset(int windDirectionFactor, DisplayData* pDispData);
 
 private:
 	static constexpr int MAX_SPLUTTER_FRAME_COUNT_ = 50;
@@ -40,7 +49,8 @@ private:
 	bool IsDead = false;
 	int CurrentFrameCountForSplatter = 0;
 
-	std::vector<Splatter*> Splatters;
+	// Use value semantics for splatters to avoid extra heap allocations
+	std::vector<Splatter> Splatters;
 
 	void Initialize();
 	void CreateSplatters();

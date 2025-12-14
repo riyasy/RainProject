@@ -8,7 +8,7 @@ Splatter::Splatter(DisplayData* pDispData, const Vector2 pos, const Vector2 vel)
 	pDisplayData(pDispData), Pos(pos), Vel(vel)
 {
 	// Create splatters with radius ranging from 1.0 to 2.0 pixels
-	Radius = (RandomGenerator::GetInstance().GenerateInt(15, 25) / 10.0f) * pDisplayData->ScaleFactor;
+	Radius = (RandomGenerator::GetInstance().GenerateInt(15, 25) / 10.0f) * pDispData->ScaleFactor;
 	Pos.y = pos.y - Radius; // Slight adjustment
 }
 

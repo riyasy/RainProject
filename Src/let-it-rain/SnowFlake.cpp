@@ -1,15 +1,45 @@
 #include "SnowFlake.h"
 #include "RandomGenerator.h"
 #include "MathUtil.h"
-
 #include "FastNoiseLite.h"
-
 
 SnowFlake::SnowFlake(DisplayData* pDispData) :
 	pDisplayData(pDispData)
 {	
 	Spawn();
+}
 
+// Move constructor
+SnowFlake::SnowFlake(SnowFlake&& other) noexcept
+{
+	Pos = other.Pos;
+	Vel = other.Vel;
+	Size = other.Size;
+	Rotation = other.Rotation;
+	RotationSpeed = other.RotationSpeed;
+	Shape = other.Shape;
+	pDisplayData = other.pDisplayData;
+
+	// leave other in safe state
+	other.pDisplayData = nullptr;
+}
+
+// Move assignment
+SnowFlake& SnowFlake::operator=(SnowFlake&& other) noexcept
+{
+	if (this != &other)
+	{
+		Pos = other.Pos;
+		Vel = other.Vel;
+		Size = other.Size;
+		Rotation = other.Rotation;
+		RotationSpeed = other.RotationSpeed;
+		Shape = other.Shape;
+		pDisplayData = other.pDisplayData;
+
+		other.pDisplayData = nullptr;
+	}
+	return *this;
 }
 
 void SnowFlake::Spawn()
@@ -86,7 +116,7 @@ void SnowFlake::UpdatePosition(const float deltaSeconds)
 		if (Pos.x >= 0 && Pos.x < pDisplayData->Width && Pos.y >= pDisplayData->Height)
 		{
 			const int x = Pos.x;
-			pDisplayData->pScenePixels[x + (pDisplayData->Height - 1) * pDisplayData->Width] = SNOW_COLOR;
+			pDisplayData->ScenePixels[x + (pDisplayData->Height - 1) * pDisplayData->Width] = 1; // SNOW_COLOR
 		}
 		ReSpawn();
 	}
@@ -103,10 +133,10 @@ void SnowFlake::UpdatePosition(const float deltaSeconds)
 			{
 				if (IsSceneryPixelSet(x + xOff, y + yOff))
 				{
-					if (pDisplayData->pScenePixels[x + y * pDisplayData->Width] == AIR_COLOR)
+					if (pDisplayData->ScenePixels[x + y * pDisplayData->Width] == 0)
 					{
 						// Only settle if the pixel is empty
-						pDisplayData->pScenePixels[x + y * pDisplayData->Width] = SNOW_COLOR;
+						pDisplayData->ScenePixels[x + y * pDisplayData->Width] = 1; // SNOW_COLOR
 						if (y < pDisplayData->MaxSnowHeight)
 						{
 							pDisplayData->MaxSnowHeight = y;
@@ -160,43 +190,39 @@ void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 
 void SnowFlake::DrawSimpleSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const
 {
-	// For simple snowflakes, just draw an ellipse with slight variations
-	const float radiusX = 1.0f * size;
-	const float radiusY = 0.7f * size;
-	
+#ifdef ROTATE
 	// Create a rotation matrix
-	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(
-		rotation * 180.0f / PI, // Convert to degrees
-		center
-	);
-	
+	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(rotation * 180.0f / PI, center);	
 	// Save the current transform
 	D2D1::Matrix3x2F originalTransform;
-	dc->GetTransform(&originalTransform);
-	
+	dc->GetTransform(&originalTransform);	
 	// Apply rotation
 	dc->SetTransform(rotMatrix * originalTransform);
-	
+#endif
+
+	// For simple snowflakes, just draw an ellipse with slight variations
+	const float radiusX = 1.0f * size;
+	const float radiusY = 0.7f * size;	
 	// Draw the ellipse
 	D2D1_ELLIPSE ellipse = D2D1::Ellipse(center, radiusX, radiusY);
 	dc->FillEllipse(ellipse, pDisplayData->DropColorBrush.Get());
 	
+#ifdef ROTATE
 	// Restore original transform
 	dc->SetTransform(originalTransform);
+#endif
 }
 
 void SnowFlake::DrawCrystalSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const
 {
+#ifdef ROTATE
 	// Save the current transform
 	D2D1::Matrix3x2F originalTransform;
-	dc->GetTransform(&originalTransform);
-	
+	dc->GetTransform(&originalTransform);	
 	// Apply rotation
-	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(
-		rotation * 180.0f / PI,
-		center
-	);
+	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(rotation * 180.0f / PI,	center);
 	dc->SetTransform(rotMatrix * originalTransform);
+#endif
 	
 	// Draw a small center circle
 	D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.5f, size * 0.5f);
@@ -240,23 +266,22 @@ void SnowFlake::DrawCrystalSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F cente
 		D2D1_POINT_2F branch2End = D2D1::Point2F(branch2EndX, branch2EndY);
 		dc->DrawLine(midPoint, branch2End, pDisplayData->DropColorBrush.Get(), size * 0.15f);
 	}
-	
+#ifdef ROTATE
 	// Restore original transform
 	dc->SetTransform(originalTransform);
+#endif
 }
 
 void SnowFlake::DrawHexagonSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const
 {
+#ifdef ROTATE
 	// Save the current transform
 	D2D1::Matrix3x2F originalTransform;
-	dc->GetTransform(&originalTransform);
-	
+	dc->GetTransform(&originalTransform);	
 	// Apply rotation
-	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(
-		rotation * 180.0f / PI,
-		center
-	);
+	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(rotation * 180.0f / PI,	center);
 	dc->SetTransform(rotMatrix * originalTransform);
+#endif
 	
 	// Draw a hexagon shape using lines
 	const int sides = 6;
@@ -295,22 +320,22 @@ void SnowFlake::DrawHexagonSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F cente
 	D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.4f, size * 0.4f);
 	dc->FillEllipse(centerCircle, pDisplayData->DropColorBrush.Get());
 	
+#ifdef ROTATE
 	// Restore original transform
-	dc->SetTransform(originalTransform);
+	 dc->SetTransform(originalTransform);
+#endif
 }
 
 void SnowFlake::DrawStarSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const
 {
+#ifdef ROTATE
 	// Save the current transform
 	D2D1::Matrix3x2F originalTransform;
-	dc->GetTransform(&originalTransform);
-	
+	dc->GetTransform(&originalTransform);	
 	// Apply rotation
-	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(
-		rotation * 180.0f / PI,
-		center
-	);
+	D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(rotation * 180.0f / PI,	center);
 	dc->SetTransform(rotMatrix * originalTransform);
+#endif
 	
 	// Draw a small center circle
 	D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.4f, size * 0.4f);
@@ -343,39 +368,10 @@ void SnowFlake::DrawStarSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, 
 			dc->DrawLine(center, crossPoint, pDisplayData->DropColorBrush.Get(), size * 0.1f);
 		}
 	}
-	
+#ifdef ROTATE
 	// Restore original transform
 	dc->SetTransform(originalTransform);
-}
-
-void SnowFlake::DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDispData)
-{
-	for (int y = pDispData->Height - 1; y >= pDispData->MaxSnowHeight; --y)
-	{
-		for (int x = 0; x < pDispData->Width; ++x)
-		{
-			if (pDispData->pScenePixels[x + y * pDispData->Width] == SNOW_COLOR)
-			{
-				const int normX = x + pDispData->SceneRect.left;
-				const int normY = y + pDispData->SceneRect.top;
-				const float halfWidth = pDispData->ScaleFactor >= 1 ? pDispData->ScaleFactor : 1;
-
-				D2D1_RECT_F rect = D2D1::RectF(
-					normX - halfWidth,
-					normY - halfWidth,
-					normX + halfWidth,
-					normY + halfWidth);
-				dc->FillRectangle(rect, pDispData->DropColorBrush.Get());
-
-				//// Define the ellipse with center at (posX, posY) and radius 5px
-				//D2D1_ELLIPSE ellipse = D2D1::Ellipse(
-				//	D2D1::Point2F(normX, y + normY), 2.0f, 2.0f);
-
-				//// Draw the ellipse
-				//dc->FillEllipse(ellipse, pDispData->DropColorBrush.Get());
-			}
-		}
-	}
+#endif
 }
 
 void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData)
@@ -386,7 +382,7 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 
 		for (int x = 0; x < pDispData->Width; ++x)
 		{
-			if (pDispData->pScenePixels[x + y * pDispData->Width] == SNOW_COLOR)
+			if (pDispData->ScenePixels[x + y * pDispData->Width] == 1)
 			{
 				if (startX == -1) // New run starts
 				{
@@ -394,7 +390,7 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 				}
 
 				// If we reach the end of the row or the next pixel is not SNOW_COLOR
-				if (x == pDispData->Width - 1 || pDispData->pScenePixels[(x + 1) + y * pDispData->Width] != SNOW_COLOR)
+				if (x == pDispData->Width - 1 || pDispData->ScenePixels[(x + 1) + y * pDispData->Width] != 1)
 				{
 					const int normXStart = startX + pDispData->SceneRect.left;
 					const int normXEnd = x + pDispData->SceneRect.left;
@@ -402,10 +398,10 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 					const float halfWidth = pDispData->ScaleFactor >= 1 ? pDispData->ScaleFactor : 1;
 
 					D2D1_RECT_F rect = D2D1::RectF(
-						normXStart - halfWidth,
-						normY - halfWidth,
-						normXEnd + halfWidth,
-						normY + halfWidth
+					normXStart - halfWidth,
+					normY - halfWidth,
+					normXEnd + halfWidth,
+					normY + halfWidth
 					);
 
 					dc->FillRectangle(rect, pDispData->DropColorBrush.Get());
@@ -425,18 +421,18 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 bool SnowFlake::CanSnowFlowInto(const int x, const int y, const DisplayData* pDispData)
 {
 	if (x < 0 || x >= pDispData->Width || y < 0 || y >= pDispData->Height) return false; // Out-of-bounds
-	const bool pixel = pDispData->pScenePixels[x + y * pDispData->Width];
-	return pixel == AIR_COLOR;
+	const uint8_t pixel = pDispData->ScenePixels[x + y * pDispData->Width];
+	return pixel == 0; // AIR_COLOR
 }
 
 bool SnowFlake::IsSceneryPixelSet(const int x, const int y) const
 {
 	if (x < 0 || x >= pDisplayData->Width || y < 0 || y >= pDisplayData->Height) return false; // Out-of-bounds
-	const bool pixel = pDisplayData->pScenePixels[x + y * pDisplayData->Width];
-	return pixel == SNOW_COLOR;
+	const uint8_t pixel = pDisplayData->ScenePixels[x + y * pDisplayData->Width];
+	return pixel == 1; // SNOW_COLOR
 }
 
-void SnowFlake::SettleSnow(const DisplayData* pDispData)
+void SnowFlake::SettleSnow(DisplayData* pDispData)
 {
 	// Settled snow physics
 	// Iterate from bottom-up, to avoid updating falling pixels multiple times per-frame, which would cause them to "teleport"
@@ -444,15 +440,15 @@ void SnowFlake::SettleSnow(const DisplayData* pDispData)
 	{
 		for (int x = 0; x < pDispData->Width; ++x)
 		{
-			const bool pixel = pDispData->pScenePixels[x + y * pDispData->Width];
-			if (pixel != SNOW_COLOR) continue;
+			const uint8_t pixel = pDispData->ScenePixels[x + y * pDispData->Width];
+			if (pixel != 1) continue;
 			if (RandomGenerator::GetInstance().GenerateInt(0, 10) > SNOW_FLOW_RATE) continue;
 
 			if (CanSnowFlowInto(x, y + 1, pDispData))
 			{
 				// Flow downwards
-				pDispData->pScenePixels[x + (y + 1) * pDispData->Width] = SNOW_COLOR;
-				pDispData->pScenePixels[x + y * pDispData->Width] = AIR_COLOR;
+				pDispData->ScenePixels[x + (y + 1) * pDispData->Width] = 1;
+				pDispData->ScenePixels[x + y * pDispData->Width] = 0;
 			}
 			else
 			{
@@ -464,14 +460,14 @@ void SnowFlake::SettleSnow(const DisplayData* pDispData)
 				if (CanSnowFlowInto(x + firstDirection, y + 1, pDispData) && CanSnowFlowInto(
 					x + firstDirection, y, pDispData))
 				{
-					pDispData->pScenePixels[x + firstDirection + (y + 1) * pDispData->Width] = SNOW_COLOR;
-					pDispData->pScenePixels[x + y * pDispData->Width] = AIR_COLOR;
+					pDispData->ScenePixels[x + firstDirection + (y + 1) * pDispData->Width] = 1;
+					pDispData->ScenePixels[x + y * pDispData->Width] = 0;
 				}
 				else if (CanSnowFlowInto(x + secondDirection, y + 1, pDispData) && CanSnowFlowInto(
 					x + secondDirection, y, pDispData))
 				{
-					pDispData->pScenePixels[x + secondDirection + (y + 1) * pDispData->Width] = SNOW_COLOR;
-					pDispData->pScenePixels[x + y * pDispData->Width] = AIR_COLOR;
+					pDispData->ScenePixels[x + secondDirection + (y + 1) * pDispData->Width] = 1;
+					pDispData->ScenePixels[x + y * pDispData->Width] = 0;
 				}
 			}
 		}

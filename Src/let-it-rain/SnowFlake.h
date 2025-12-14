@@ -2,6 +2,7 @@
 
 #include "Vector2.h"
 #include "DisplayData.h"
+#include <cstdint>
 
 #define TWO_PI 6.28318530718f
 #define PI 3.14159265359f
@@ -10,8 +11,15 @@ class SnowFlake
 {
 public:
 	SnowFlake(DisplayData* pDispData);
+
+	// Movable but not copyable
+	SnowFlake(SnowFlake&& other) noexcept;
+	SnowFlake& operator=(SnowFlake&& other) noexcept;
+	SnowFlake(const SnowFlake&) = delete;
+	SnowFlake& operator=(const SnowFlake&) = delete;
+
 	void UpdatePosition(float deltaSeconds);
-	static void SettleSnow(const DisplayData* pDispData);
+	static void SettleSnow(DisplayData* pDispData);
 	void Draw(ID2D1DeviceContext* dc) const;
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
 	static void DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDispData);
@@ -30,8 +38,8 @@ private:
 	static constexpr float NOISE_SCALE = 0.01f;
 	static constexpr float NOISE_TIMESCALE = 0.001f;
 	static constexpr float GRAVITY = 10.0f;
-	static constexpr bool SNOW_COLOR = true;
-	static constexpr bool AIR_COLOR = false;
+	static constexpr uint8_t SNOW_COLOR = 1;
+	static constexpr uint8_t AIR_COLOR = 0;
 	static constexpr int SNOW_FLOW_RATE = 3;
 
 	Vector2 Pos;

@@ -12,7 +12,6 @@ DisplayData::DisplayData(ID2D1DeviceContext* dc): DC(dc)
 
 DisplayData::~DisplayData()
 {
-	delete []pScenePixels;
 	delete pNoiseGen;
 }
 
@@ -43,10 +42,10 @@ void DisplayData::SetRainColor(const COLORREF color)
 
 void DisplayData::SetSceneBounds(const RECT sceneRect, const float scaleFactor)
 {
-	if (!IsSame(SceneRect, sceneRect) && pScenePixels != nullptr)
+	if (!IsSame(SceneRect, sceneRect) && !ScenePixels.empty())
 	{
-		delete[] pScenePixels;
-		pScenePixels = nullptr;
+		ScenePixels.clear();
+		ScenePixels.shrink_to_fit();
 	}
 
 	//wchar_t buffer[100];
@@ -64,9 +63,10 @@ void DisplayData::SetSceneBounds(const RECT sceneRect, const float scaleFactor)
 	Width = SceneRect.right - SceneRect.left;
 	Height = SceneRect.bottom - SceneRect.top;
 
-	if (pScenePixels == nullptr)
+	if (ScenePixels.empty())
 	{
-		pScenePixels = new bool[Height * Width]();
+		ScenePixels.resize(Height * Width);
+		// std::vector::resize zero-initializes POD types like uint8_t
 		MaxSnowHeight = Height - 2;
 	}
 }

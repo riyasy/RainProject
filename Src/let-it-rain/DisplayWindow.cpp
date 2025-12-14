@@ -389,9 +389,13 @@ void DisplayWindow::HandleWindowBoundsChange(const HWND window, const bool clear
 	{
 		if (!RainDrops.empty() && clearDrops)
 		{
+			// clear existing value-based drops
 			RainDrops.clear();
 		}
 		pDisplaySpecificData->SetSceneBounds(sceneRect, scaleFactor);
+
+		// Reserve memory to avoid reallocations and fragmentation
+		RainDrops.reserve(GeneralSettings.MaxParticles * 3);
 
 		//std::wostringstream  oss;
 		//oss << "Monitor Name: " << MonitorDat.Name.c_str() << ", "
@@ -533,7 +537,7 @@ void DisplayWindow::FindSceneRect2(RECT& sceneRect, float& scaleFactor) const
 		{
 			sceneRect = desktopRect;
 		}
-	}	
+	}
 
 	sceneRect = MathUtil::NormalizeRect(sceneRect, top, left);
 
@@ -546,9 +550,9 @@ void DisplayWindow::DrawRainDrops() const
 	Dc->BeginDraw();
 	Dc->Clear();
 
-	for (const auto pDrop : RainDrops)
+	for (const auto& drop : RainDrops)
 	{
-		pDrop->Draw(Dc.Get());
+		drop.Draw(Dc.Get());
 	}
 
 	HR(Dc->EndDraw());
@@ -561,9 +565,9 @@ void DisplayWindow::DrawSnowFlakes() const
 	Dc->BeginDraw();
 	Dc->Clear();
 
-	for (const auto pFlake : SnowFlakes)
+	for (const auto & flake : SnowFlakes)
 	{
-		pFlake->Draw(Dc.Get());
+		flake.Draw(Dc.Get());
 	}
 
 	if (!SnowFlakes.empty())
@@ -579,30 +583,35 @@ void DisplayWindow::DrawSnowFlakes() const
 void DisplayWindow::UpdateRainDrops()
 {
 	// Move each raindrop to the next point
-	for (RainDrop* const pDrop : RainDrops)
+	for (auto & drop : RainDrops)
 	{
-		pDrop->UpdatePosition(0.01f);
+		drop.UpdatePosition(0.01f);
 	}
 
-	// Remove all raindrops that have expired
-	for (auto pDropIterator = RainDrops.begin(); pDropIterator != RainDrops.end();)
+	// Remove all raindrops that have expired using swap-and-pop to avoid shifting
+	for (size_t i = 0; i < RainDrops.size(); )
 	{
-		if ((*pDropIterator)->IsReadyForErase())
+		if (RainDrops[i].IsReadyForErase())
 		{
-			delete*pDropIterator;
-			pDropIterator = RainDrops.erase(pDropIterator);
+			// Move last element into position i and pop
+			if (i + 1 != RainDrops.size())
+			{
+				RainDrops[i] = std::move(RainDrops.back());
+			}
+			RainDrops.pop_back();
+			// do not increment i, re-evaluate new element at i
 		}
 		else
 		{
-			++pDropIterator;
+			++i;
 		}
 	}
 
 	// Calculate the number of raindrops to generate
 	int countOfFallingDrops = 0;
-	for (const RainDrop* const pDrop : RainDrops)
+	for (const auto & drop : RainDrops)
 	{
-		if (!pDrop->DidTouchGround())
+		if (!drop.DidTouchGround())
 		{
 			countOfFallingDrops++;
 		}
@@ -610,11 +619,23 @@ void DisplayWindow::UpdateRainDrops()
 
 	const int noOfDropsToGenerate = GeneralSettings.MaxParticles * 3 - countOfFallingDrops;
 
-	// Generate new raindrops
-	for (int i = 0; i < noOfDropsToGenerate; ++i)
+	// Generate new raindrops (emplace so constructor runs in-place)
+	if (noOfDropsToGenerate > 0)
 	{
-		RainDrop* pDrop = new RainDrop(GeneralSettings.WindSpeed, pDisplaySpecificData);
-		RainDrops.push_back(pDrop);
+		for (int i = 0; i < noOfDropsToGenerate; ++i)
+		{
+			RainDrops.emplace_back(GeneralSettings.WindSpeed, pDisplaySpecificData);
+		}
+	}
+	else if (noOfDropsToGenerate < 0)
+	{
+		// If we have too many drops, remove some dead/falling ones. We'll pop from the back.
+		int excess = -noOfDropsToGenerate;
+		while (excess > 0 && !RainDrops.empty())
+		{
+			RainDrops.pop_back();
+			--excess;
+		}
 	}
 }
 
@@ -626,27 +647,26 @@ void DisplayWindow::UpdateSnowFlakes()
 	{
 		for (int i = 0; i < noOfFlakesToGenerate; i++)
 		{
-			SnowFlake* pFlake = new SnowFlake(pDisplaySpecificData);
-			SnowFlakes.push_back(pFlake);
+			SnowFlakes.emplace_back(pDisplaySpecificData);
 		}
 	}
 
 	if (noOfFlakesToGenerate < 0)
 	{
-		const int noOfFlakesToErase = -noOfFlakesToGenerate;
-		for (int i = 0; i < noOfFlakesToErase; i++)
+		int excess = -noOfFlakesToGenerate;
+		// Remove using swap-and-pop from vector's back
+		while (excess > 0 && !SnowFlakes.empty())
 		{
-			delete SnowFlakes[i];
+			SnowFlakes.pop_back();
+			--excess;
 		}
-		// Remove the first n elements
-		SnowFlakes.erase(SnowFlakes.begin(), SnowFlakes.begin() + noOfFlakesToErase);
 	}
 
 
-	// Move each raindrop to the next point
-	for (SnowFlake* const pFlake : SnowFlakes)
+	// Move each snowflake to the next point
+	for (auto & flake : SnowFlakes)
 	{
-		pFlake->UpdatePosition(0.01f);
+		flake.UpdatePosition(0.01f);
 	}
 	SnowFlake::SettleSnow(pDisplaySpecificData);
 }

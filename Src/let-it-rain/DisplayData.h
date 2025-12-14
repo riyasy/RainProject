@@ -28,9 +28,8 @@ public:
 	Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> DropColorBrush;
 	std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> PrebuiltSplatterOpacityBrushes;
 
-	// TODO delete the allocated memory	
 	int MaxSnowHeight = 0;
-	bool* pScenePixels = nullptr;
+	std::vector<uint8_t> ScenePixels;
 	FastNoiseLite* pNoiseGen = nullptr;
 
 private:

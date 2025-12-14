@@ -63,8 +63,10 @@ private:
 	static HINSTANCE AppInstance;
 	static OptionsDialog* pOptionsDlg;
 
-	std::vector<RainDrop*> RainDrops;
-	std::vector<SnowFlake*> SnowFlakes;
+	// Store raindrops by value to improve memory locality and avoid heap fragmentation
+	std::vector<RainDrop> RainDrops;
+	// Store snowflakes by value as well for locality and to enable pre-allocation
+	std::vector<SnowFlake> SnowFlakes;
 
 	// For animation
 	double CurrentTime = -1.0;

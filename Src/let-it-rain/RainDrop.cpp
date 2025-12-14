@@ -14,6 +14,65 @@ RainDrop::RainDrop(const int windDirectionFactor, DisplayData* pDispData):
 	Initialize();
 }
 
+// Move constructor
+RainDrop::RainDrop(RainDrop&& other) noexcept
+{
+	pDisplayData = other.pDisplayData;
+	WindDirectionFactor = other.WindDirectionFactor;
+	Pos = other.Pos;
+	Vel = other.Vel;
+	Radius = other.Radius;
+	DropTrailLength = other.DropTrailLength;
+	TouchedGround = other.TouchedGround;
+	IsDead = other.IsDead;
+	CurrentFrameCountForSplatter = other.CurrentFrameCountForSplatter;
+	Splatters = std::move(other.Splatters);
+
+	// Leave other in a safe state
+	other.pDisplayData = nullptr;
+	other.Splatters.clear();
+}
+
+// Move assignment
+RainDrop& RainDrop::operator=(RainDrop&& other) noexcept
+{
+	if (this != &other)
+	{
+		Splatters.clear();
+
+		pDisplayData = other.pDisplayData;
+		WindDirectionFactor = other.WindDirectionFactor;
+		Pos = other.Pos;
+		Vel = other.Vel;
+		Radius = other.Radius;
+		DropTrailLength = other.DropTrailLength;
+		TouchedGround = other.TouchedGround;
+		IsDead = other.IsDead;
+		CurrentFrameCountForSplatter = other.CurrentFrameCountForSplatter;
+		Splatters = std::move(other.Splatters);
+
+		other.pDisplayData = nullptr;
+		other.Splatters.clear();
+	}
+	return *this;
+}
+
+void RainDrop::Reset(int windDirectionFactor, DisplayData* pDispData)
+{
+	// Reset state so object can be reused
+	pDisplayData = pDispData;
+	WindDirectionFactor = windDirectionFactor;
+
+	TouchedGround = false;
+	IsDead = false;
+	CurrentFrameCountForSplatter = 0;
+
+	// Clear any previous splatters (value semantics)
+	Splatters.clear();
+
+	Initialize();
+}
+
 void RainDrop::Initialize()
 {
 	// Randomize x position
@@ -40,10 +99,7 @@ void RainDrop::Initialize()
 
 RainDrop::~RainDrop()
 {
-	for (const auto splatter : Splatters)
-	{
-		delete splatter;
-	}
+	// value-based splatters cleaned automatically
 }
 
 bool RainDrop::DidTouchGround() const
@@ -84,9 +140,9 @@ void RainDrop::UpdatePosition(const float deltaSeconds)
 	}
 	else
 	{
-		for (const auto splatter : Splatters)
+		for (auto & splatter : Splatters)
 		{
-			splatter->UpdatePosition(deltaSeconds);
+			splatter.UpdatePosition(deltaSeconds);
 		}
 		IsDead = (++CurrentFrameCountForSplatter) >= MAX_SPLUTTER_FRAME_COUNT_;
 	}
@@ -101,10 +157,9 @@ void RainDrop::CreateSplatters()
 
 		// Calculate velocity components
 		const Vector2 velSplatter(SPLATTER_STARTING_VELOCITY * std::cos(angleBounceRadians) * pDisplayData->ScaleFactor,
-		                          -SPLATTER_STARTING_VELOCITY * std::sin(angleBounceRadians) * pDisplayData->ScaleFactor);
+	                          -SPLATTER_STARTING_VELOCITY * std::sin(angleBounceRadians) * pDisplayData->ScaleFactor);
 
-		auto splatter = new Splatter(pDisplayData, Pos, velSplatter);
-		Splatters.push_back(splatter);
+		Splatters.emplace_back(pDisplayData, Pos, velSplatter);
 	}
 }
 
@@ -128,9 +183,9 @@ void RainDrop::Draw(ID2D1DeviceContext* dc) const
 
 	if (!Splatters.empty())
 	{
-		for (const auto splatter : Splatters)
+		for (const auto & splatter : Splatters)
 		{
-			splatter->Draw(dc, pDisplayData->PrebuiltSplatterOpacityBrushes[CurrentFrameCountForSplatter].Get());
+			splatter.Draw(dc, pDisplayData->PrebuiltSplatterOpacityBrushes[CurrentFrameCountForSplatter].Get());
 		}
 	}
 }
