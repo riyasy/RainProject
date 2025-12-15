@@ -4,6 +4,7 @@
 #include <vector>
 #include <dcomp.h>
 #include <wrl/client.h>
+#include <memory>
 
 class FastNoiseLite;
 
@@ -33,7 +34,7 @@ public:
 
 	int MaxSnowHeight = 0;
 	std::vector<uint8_t> ScenePixels;
-	FastNoiseLite* pNoiseGen = nullptr;
+	std::unique_ptr<FastNoiseLite> pNoiseGen;
 
 private:
 	static bool IsSame(const RECT& l, const RECT& r);

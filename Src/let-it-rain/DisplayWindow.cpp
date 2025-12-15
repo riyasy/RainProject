@@ -4,6 +4,7 @@
 #include <shellapi.h>
 #include <commctrl.h>
 #include <sstream>
+#include <memory>
 
 #include "CPUUsageTracker.h"
 #include "Global.h"
@@ -85,7 +86,7 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	}
 
 	InitDirect2D(window);
-	pDisplaySpecificData = new DisplayData(Dc.Get());
+	pDisplaySpecificData = std::make_unique<DisplayData>(Dc.Get());
 	pDisplaySpecificData->SetRainColor(GeneralSettings.ParticleColor);
 	HandleWindowBoundsChange(window, false);
 
@@ -572,7 +573,7 @@ void DisplayWindow::DrawSnowFlakes() const
 
 	if (!SnowFlakes.empty())
 	{
-		SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData);
+		SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData.get());
 	}
 
 	HR(Dc->EndDraw());
@@ -624,7 +625,7 @@ void DisplayWindow::UpdateRainDrops()
 	{
 		for (int i = 0; i < noOfDropsToGenerate; ++i)
 		{
-			RainDrops.emplace_back(GeneralSettings.WindSpeed, pDisplaySpecificData);
+			RainDrops.emplace_back(GeneralSettings.WindSpeed, pDisplaySpecificData.get());
 		}
 	}
 	else if (noOfDropsToGenerate < 0)
@@ -647,7 +648,7 @@ void DisplayWindow::UpdateSnowFlakes()
 	{
 		for (int i = 0; i < noOfFlakesToGenerate; i++)
 		{
-			SnowFlakes.emplace_back(pDisplaySpecificData);
+			SnowFlakes.emplace_back(pDisplaySpecificData.get());
 		}
 	}
 
@@ -668,7 +669,7 @@ void DisplayWindow::UpdateSnowFlakes()
 	{
 		flake.UpdatePosition(0.01f, CurrentTime);
 	}
-	SnowFlake::SettleSnow(pDisplaySpecificData);
+	SnowFlake::SettleSnow(pDisplaySpecificData.get());
 }
 
 void DisplayWindow::SetInstanceToHwnd(const HWND hWnd, const LPARAM lParam)
@@ -684,5 +685,5 @@ DisplayWindow* DisplayWindow::GetInstanceFromHwnd(const HWND hWnd)
 
 DisplayWindow::~DisplayWindow()
 {
-	delete pDisplaySpecificData;
+	// unique_ptr will clean up automatically
 };

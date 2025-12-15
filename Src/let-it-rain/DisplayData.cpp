@@ -1,11 +1,12 @@
 #include "DisplayData.h"
 #include "FastNoiseLite.h"
+#include <memory>
 
 DisplayData::DisplayData(ID2D1DeviceContext * dc) : DC(dc)
 {
 	if (pNoiseGen == nullptr)
 	{
-		pNoiseGen = new FastNoiseLite();
+		pNoiseGen = std::make_unique<FastNoiseLite>();
 		pNoiseGen->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 	}
 	// Reserve space for the 4 snowflake types
@@ -14,7 +15,7 @@ DisplayData::DisplayData(ID2D1DeviceContext * dc) : DC(dc)
 
 DisplayData::~DisplayData()
 {
-	delete pNoiseGen;
+	// unique_ptr will clean up automatically
 }
 
 void DisplayData::SetRainColor(const COLORREF color)

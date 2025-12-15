@@ -6,6 +6,7 @@
 #include <d2d1_2.h>
 #include <dcomp.h>
 #include <vector>
+#include <memory>
 
 #include "framework.h"
 #include "RainDrop.h"
@@ -74,7 +75,7 @@ private:
 
 	static Setting GeneralSettings;
 
-	DisplayData* pDisplaySpecificData = nullptr;
+	std::unique_ptr<DisplayData> pDisplaySpecificData;
 	MonitorData MonitorDat;
 
 	static LRESULT CALLBACK WndProc(
