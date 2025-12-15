@@ -63,8 +63,8 @@ private:
 
 	// Helper methods for drawing different snowflake shapes
 	// Changed to ID2D1RenderTarget to support drawing to BitmapRenderTarget
-	void DrawSimpleSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, float rotation) const;
-	void DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, float rotation) const;
-	void DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, float rotation) const;
-	void DrawStarSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, float rotation) const;
+	void DrawSimpleSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const;
+	void DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const;
+	void DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const;
+	void DrawStarSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const;
 };
