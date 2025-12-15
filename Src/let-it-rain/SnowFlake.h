@@ -18,12 +18,10 @@ public:
 	SnowFlake(const SnowFlake&) = delete;
 	SnowFlake& operator=(const SnowFlake&) = delete;
 
-	void UpdatePosition(float deltaSeconds);
+	void UpdatePosition(float deltaSeconds, double clockTime);
 	static void SettleSnow(DisplayData* pDispData);
 	void Draw(ID2D1DeviceContext* dc) const;
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
-	static void DrawSettledSnow2(ID2D1DeviceContext* dc, const DisplayData* pDispData);
-	
 
 private:
 	// Snowflake shape types
@@ -42,6 +40,11 @@ private:
 	static constexpr uint8_t AIR_COLOR = 0;
 	static constexpr int SNOW_FLOW_RATE = 3;
 
+	// Resolution for pre-rendered sprites
+	static constexpr float SPRITE_SIZE = 64.0f/8;
+	// Base size used during pre-rendering to fit within SPRITE_SIZE
+	static constexpr float SPRITE_BASE_DRAW_SIZE = 15.0f/8;
+
 	Vector2 Pos;
 	Vector2 Vel;
 	float Size;          // Size of the snowflake
@@ -54,10 +57,14 @@ private:
 	static bool CanSnowFlowInto(int x, int y, const DisplayData* pDispData);
 	bool IsSceneryPixelSet(int x, int y) const;
 	void Spawn();
-	void ReSpawn();	
+	void ReSpawn();
+
+	void GenerateSprite(ID2D1DeviceContext* dc, int shapeIndex) const;
+
 	// Helper methods for drawing different snowflake shapes
-	void DrawSimpleSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const;
-	void DrawCrystalSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const;
-	void DrawHexagonSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const;
-	void DrawStarSnowflake(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float size, float rotation) const;
+	// Changed to ID2D1RenderTarget to support drawing to BitmapRenderTarget
+	void DrawSimpleSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, float rotation) const;
+	void DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, float rotation) const;
+	void DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, float rotation) const;
+	void DrawStarSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, float rotation) const;
 };

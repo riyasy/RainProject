@@ -1,13 +1,15 @@
 #include "DisplayData.h"
 #include "FastNoiseLite.h"
 
-DisplayData::DisplayData(ID2D1DeviceContext* dc): DC(dc)
+DisplayData::DisplayData(ID2D1DeviceContext * dc) : DC(dc)
 {
 	if (pNoiseGen == nullptr)
 	{
 		pNoiseGen = new FastNoiseLite();
 		pNoiseGen->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 	}
+	// Reserve space for the 4 snowflake types
+	SpriteCache.resize(4);
 }
 
 DisplayData::~DisplayData()
@@ -37,6 +39,17 @@ void DisplayData::SetRainColor(const COLORREF color)
 		Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> splatterColorBrush;
 		DC->CreateSolidColorBrush(splatterColor, splatterColorBrush.GetAddressOf());
 		PrebuiltSplatterOpacityBrushes.push_back(splatterColorBrush);
+	}
+
+	// Color changed, so cached sprites are invalid
+	InvalidateSpriteCache();
+}
+
+void DisplayData::InvalidateSpriteCache()
+{
+	for (auto& bitmap : SpriteCache)
+	{
+		bitmap = nullptr;
 	}
 }
 

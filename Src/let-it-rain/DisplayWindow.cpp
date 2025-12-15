@@ -666,7 +666,7 @@ void DisplayWindow::UpdateSnowFlakes()
 	// Move each snowflake to the next point
 	for (auto & flake : SnowFlakes)
 	{
-		flake.UpdatePosition(0.01f);
+		flake.UpdatePosition(0.01f, CurrentTime);
 	}
 	SnowFlake::SettleSnow(pDisplaySpecificData);
 }
