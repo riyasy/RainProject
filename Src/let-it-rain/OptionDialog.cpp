@@ -131,6 +131,10 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 		{
 			ShellExecute(nullptr, L"open", L"https://github.com/riyasy/RainProject", nullptr, nullptr, SW_SHOWNORMAL);
 		}
+		else if (controlId == IDC_BUTTON_SPONSOR)
+		{
+			ShellExecute(nullptr, L"open", L"https://github.com/sponsors/riyasy", nullptr, nullptr, SW_SHOWNORMAL);
+		}
 		else if (controlId == IDC_RADIO1 && HIWORD(wParam) == BN_CLICKED)
 		{
 			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), WM_ENABLE, TRUE, 0);
