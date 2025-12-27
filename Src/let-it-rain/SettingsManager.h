@@ -17,12 +17,14 @@ public:
 	int WindSpeed;
 	COLORREF ParticleColor;
 	ParticleType PartType;
+	bool AllowHide;
 
 	explicit Setting(const int maxParticles = 10, 
 		const int windSpeed = 3, 
 		const COLORREF ParticleColor = 0x00AAAAAA, 
-		const ParticleType partType = RAIN)
-		: MaxParticles(maxParticles), WindSpeed(windSpeed), ParticleColor(ParticleColor), PartType(partType)
+		const ParticleType partType = RAIN,
+		const bool allowHide = false)
+		: MaxParticles(maxParticles), WindSpeed(windSpeed), ParticleColor(ParticleColor), PartType(partType), AllowHide(allowHide)
 	{
 	}
 };

@@ -44,6 +44,7 @@ public:
 	void UpdateWindDirection(int val) override;
 	void UpdateParticleColor(COLORREF color) override;
 	void UpdateParticleType(ParticleType partType) override;
+	void UpdateAllowHide(bool allowHide) override;
 
 	~DisplayWindow() override;
 
@@ -77,6 +78,7 @@ private:
 
 	std::unique_ptr<DisplayData> pDisplaySpecificData;
 	MonitorData MonitorDat;
+	HWND WindowHandle = nullptr;
 
 	static LRESULT CALLBACK WndProc(
 		HWND hWnd,
