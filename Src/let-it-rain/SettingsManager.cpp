@@ -37,6 +37,8 @@ void SettingsManager::CreateINIFile() const
 
 	WritePrivateProfileString(L"Settings", L"ParticleType", std::to_wstring(defaultSetting.PartType).c_str(),
 		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"AllowHide", std::to_wstring(defaultSetting.AllowHide).c_str(),
+		iniFilePath.c_str());
 }
 
 SettingsManager* SettingsManager::GetInstance()
@@ -67,6 +69,9 @@ void SettingsManager::ReadSettings(Setting& setting) const
 	setting.PartType = static_cast<ParticleType>(GetPrivateProfileInt(L"Settings", L"ParticleType", defaultSetting.PartType,
 	                                                                  iniFilePath.c_str()));
 
+	setting.AllowHide = GetPrivateProfileInt(L"Settings", L"AllowHide", defaultSetting.AllowHide,
+	                                         iniFilePath.c_str()) != 0;
+
 	// Update missing values in INI file
 	WriteSettings(setting);
 }
@@ -81,5 +86,7 @@ void SettingsManager::WriteSettings(const Setting& setting) const
 	swprintf_s(colorBuffer, 10, L"%08X", setting.ParticleColor);
 	WritePrivateProfileString(L"Settings", L"ParticleColor", colorBuffer, iniFilePath.c_str());
 	WritePrivateProfileString(L"Settings", L"ParticleType", std::to_wstring(setting.PartType).c_str(),
+		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"AllowHide", std::to_wstring(setting.AllowHide).c_str(),
 		iniFilePath.c_str());
 }
