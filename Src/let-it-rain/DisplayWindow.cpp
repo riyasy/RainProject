@@ -81,7 +81,8 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	if (MonitorDat.IsPrimaryDisplay)
 	{
 		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxParticles, GeneralSettings.WindSpeed,
-		                                GeneralSettings.ParticleColor, GeneralSettings.PartType);
+		                                GeneralSettings.ParticleColor, GeneralSettings.PartType,
+		                                GeneralSettings.StartWithWindows);
 		pOptionsDlg->Create();
 	}
 

@@ -3,6 +3,7 @@
 #include <d2d1.h>
 
 #include "Resource.h"
+#include "SettingsManager.h"
 
 OptionsDialog* OptionsDialog::pThis;
 std::vector<CallBackWindow*> OptionsDialog::subscribers;
@@ -11,13 +12,15 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
                              const int maxParticles,
                              const int windDirection,
                              const COLORREF particleColor,
-                             const ParticleType partType)
+                             const ParticleType partType,
+                             const bool startWithWindows)
 	: hInstance(hInstance),
 	  hDialog(nullptr),
 	  MaxParticles(maxParticles),
 	  WindDirection(windDirection),
 	  ParticleColor(particleColor),
-	  PartType(partType)
+	  PartType(partType),
+	  StartWithWindows(startWithWindows)
 {
 	pThis = this;
 }
@@ -84,6 +87,10 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			// Set the image and the text
 			SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(hIcon));
 			SetWindowText(hButton, L"Github Repo");
+
+			// Initialize startup checkbox
+			SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_SETCHECK,
+				pThis->StartWithWindows ? BST_CHECKED : BST_UNCHECKED, 0);
 		}
 		return TRUE;
 	case WM_HSCROLL:
@@ -152,6 +159,12 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			{
 				subscriber->UpdateParticleType(pThis->PartType);
 			}
+		}
+		else if (controlId == IDC_CHECK_STARTUP && HIWORD(wParam) == BN_CLICKED)
+		{
+			const bool isChecked = SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_GETCHECK, 0, 0) == BST_CHECKED;
+			pThis->StartWithWindows = isChecked;
+			SettingsManager::SetStartupEnabled(isChecked);
 		}
 		return TRUE;
 	}
