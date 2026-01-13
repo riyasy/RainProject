@@ -11,13 +11,15 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
                              const int maxParticles,
                              const int windDirection,
                              const COLORREF particleColor,
-                             const ParticleType partType)
+                             const ParticleType partType,
+                             const bool allowHide)
 	: hInstance(hInstance),
 	  hDialog(nullptr),
 	  MaxParticles(maxParticles),
 	  WindDirection(windDirection),
 	  ParticleColor(particleColor),
-	  PartType(partType)
+	  PartType(partType),
+	  AllowHide(allowHide)
 {
 	pThis = this;
 }
@@ -70,22 +72,26 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 				SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), WM_ENABLE, FALSE, 0);
 			}
 
-			// Load the image from resources
-			HICON hIcon = LoadIcon(pThis->hInstance, MAKEINTRESOURCE(IDI_GITHUB_ICON));
+		// Set the allow hide checkbox
+		SendMessage(GetDlgItem(hWnd, IDC_CHECK_ALLOW_HIDE), BM_SETCHECK, 
+		            pThis->AllowHide ? BST_CHECKED : BST_UNCHECKED, 0);
 
-			// Get handle to the button
-			const HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);
+		// Load the image from resources
+		HICON hIcon = LoadIcon(pThis->hInstance, MAKEINTRESOURCE(IDI_GITHUB_ICON));
 
-			// Set the button style to allow both image and text
-			const LONG_PTR style = GetWindowLongPtr(hButton, GWL_STYLE);
-			//SetWindowLongPtr(hButton, GWL_STYLE, style | BS_ICON | BS_TEXT);
-			SetWindowLongPtr(hButton, GWL_STYLE, style | BS_CENTER | BS_TEXT);
+		// Get handle to the button
+		const HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);
 
-			// Set the image and the text
-			SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(hIcon));
-			SetWindowText(hButton, L"Github Repo");
-		}
-		return TRUE;
+		// Set the button style to allow both image and text
+		const LONG_PTR style = GetWindowLongPtr(hButton, GWL_STYLE);
+		//SetWindowLongPtr(hButton, GWL_STYLE, style | BS_ICON | BS_TEXT);
+		SetWindowLongPtr(hButton, GWL_STYLE, style | BS_CENTER | BS_TEXT);
+
+		// Set the image and the text
+		SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(hIcon));
+		SetWindowText(hButton, L"Github Repo");
+	}
+	return TRUE;
 	case WM_HSCROLL:
 		if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER))
 		{
@@ -151,6 +157,15 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			for (CallBackWindow* subscriber : subscribers)
 			{
 				subscriber->UpdateParticleType(pThis->PartType);
+			}
+		}
+		else if (controlId == IDC_CHECK_ALLOW_HIDE && HIWORD(wParam) == BN_CLICKED)
+		{
+			const LRESULT checkState = SendMessage(GetDlgItem(hWnd, IDC_CHECK_ALLOW_HIDE), BM_GETCHECK, 0, 0);
+			pThis->AllowHide = (checkState == BST_CHECKED);
+			for (CallBackWindow* subscriber : subscribers)
+			{
+				subscriber->UpdateAllowHide(pThis->AllowHide);
 			}
 		}
 		return TRUE;
