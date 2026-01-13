@@ -11,7 +11,7 @@ class OptionsDialog
 {
 public:
 	OptionsDialog(HINSTANCE hInstance, int maxParticles, int windDirection,
-	              COLORREF particleColor, ParticleType partType, bool startWithWindows);
+	              COLORREF particleColor, ParticleType partType, bool startWithWindows, bool allowHide);
 	static void SubscribeToChange(CallBackWindow* subscriber);
 	bool Create();
 	void Show() const;
@@ -26,5 +26,6 @@ private:
 	COLORREF ParticleColor;
 	ParticleType PartType;
 	bool StartWithWindows;
+	bool AllowHide;
 	static OptionsDialog* pThis;
 };

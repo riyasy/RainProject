@@ -13,14 +13,16 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
                              const int windDirection,
                              const COLORREF particleColor,
                              const ParticleType partType,
-                             const bool startWithWindows)
+                             const bool startWithWindows,
+                             const bool allowHide)
 	: hInstance(hInstance),
 	  hDialog(nullptr),
 	  MaxParticles(maxParticles),
 	  WindDirection(windDirection),
 	  ParticleColor(particleColor),
 	  PartType(partType),
-	  StartWithWindows(startWithWindows)
+	  StartWithWindows(startWithWindows),
+	  AllowHide(allowHide)
 {
 	pThis = this;
 }
@@ -91,6 +93,10 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			// Initialize startup checkbox
 			SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_SETCHECK,
 				pThis->StartWithWindows ? BST_CHECKED : BST_UNCHECKED, 0);
+
+			// Initialize allow hide checkbox
+			SendMessage(GetDlgItem(hWnd, IDC_CHECK_ALLOW_HIDE), BM_SETCHECK,
+				pThis->AllowHide ? BST_CHECKED : BST_UNCHECKED, 0);
 		}
 		return TRUE;
 	case WM_HSCROLL:
@@ -165,6 +171,15 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			const bool isChecked = SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_GETCHECK, 0, 0) == BST_CHECKED;
 			pThis->StartWithWindows = isChecked;
 			SettingsManager::SetStartupEnabled(isChecked);
+		}
+		else if (controlId == IDC_CHECK_ALLOW_HIDE && HIWORD(wParam) == BN_CLICKED)
+		{
+			const LRESULT checkState = SendMessage(GetDlgItem(hWnd, IDC_CHECK_ALLOW_HIDE), BM_GETCHECK, 0, 0);
+			pThis->AllowHide = (checkState == BST_CHECKED);
+			for (CallBackWindow* subscriber : subscribers)
+			{
+				subscriber->UpdateAllowHide(pThis->AllowHide);
+			}
 		}
 		return TRUE;
 	}

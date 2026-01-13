@@ -8,7 +8,7 @@
 // Initialize the singleton instance to nullptr
 SettingsManager* SettingsManager::instance = nullptr;
 
-SettingsManager::SettingsManager() : defaultSetting(25, 3, 0x00AAAAAA, RAIN, false)
+SettingsManager::SettingsManager() : defaultSetting(25, 3, 0x00AAAAAA, RAIN, false, false)
 {
 	const std::wstring appDataPath = GetAppDataPath();
 	iniFilePath = appDataPath + L"\\let-it-rain.ini";
@@ -36,6 +36,8 @@ void SettingsManager::CreateINIFile() const
 	WritePrivateProfileString(L"Settings", L"ParticleColor", colorBuffer, iniFilePath.c_str());
 
 	WritePrivateProfileString(L"Settings", L"ParticleType", std::to_wstring(defaultSetting.PartType).c_str(),
+		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"AllowHide", std::to_wstring(defaultSetting.AllowHide).c_str(),
 		iniFilePath.c_str());
 }
 
@@ -70,6 +72,9 @@ void SettingsManager::ReadSettings(Setting& setting) const
 	// Read startup setting from registry
 	setting.StartWithWindows = IsStartupEnabled();
 
+	setting.AllowHide = GetPrivateProfileInt(L"Settings", L"AllowHide", defaultSetting.AllowHide,
+	                                         iniFilePath.c_str()) != 0;
+
 	// Update missing values in INI file
 	WriteSettings(setting);
 }
@@ -84,6 +89,8 @@ void SettingsManager::WriteSettings(const Setting& setting) const
 	swprintf_s(colorBuffer, 10, L"%08X", setting.ParticleColor);
 	WritePrivateProfileString(L"Settings", L"ParticleColor", colorBuffer, iniFilePath.c_str());
 	WritePrivateProfileString(L"Settings", L"ParticleType", std::to_wstring(setting.PartType).c_str(),
+		iniFilePath.c_str());
+	WritePrivateProfileString(L"Settings", L"AllowHide", std::to_wstring(setting.AllowHide).c_str(),
 		iniFilePath.c_str());
 }
 

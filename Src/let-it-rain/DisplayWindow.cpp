@@ -70,6 +70,7 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	                                   monitorData.MonitorRect.bottom - monitorData.MonitorRect.top,
 	                                   nullptr, nullptr, HINST_THISCOMPONENT, this);
 
+	WindowHandle = window;
 	ShowWindow(window, SW_SHOW);
 
 	if (!GeneralSettings.loaded)
@@ -82,7 +83,7 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	{
 		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxParticles, GeneralSettings.WindSpeed,
 		                                GeneralSettings.ParticleColor, GeneralSettings.PartType,
-		                                GeneralSettings.StartWithWindows);
+		                                GeneralSettings.StartWithWindows, GeneralSettings.AllowHide);
 		pOptionsDlg->Create();
 	}
 
@@ -90,6 +91,13 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	pDisplaySpecificData = std::make_unique<DisplayData>(Dc.Get());
 	pDisplaySpecificData->SetRainColor(GeneralSettings.ParticleColor);
 	HandleWindowBoundsChange(window, false);
+
+	// Apply the AllowHide setting from saved configuration
+	if (GeneralSettings.AllowHide)
+	{
+		SetWindowPos(WindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0,
+		             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+	}
 
 	return 0;
 }
@@ -113,6 +121,28 @@ void DisplayWindow::UpdateParticleColor(const COLORREF color)
 void DisplayWindow::UpdateParticleType(const ParticleType partType)
 {
 	GeneralSettings.PartType = partType;
+}
+
+void DisplayWindow::UpdateAllowHide(const bool allowHide)
+{
+	GeneralSettings.AllowHide = allowHide;
+
+	// Toggle the TOPMOST window style
+	if (WindowHandle)
+	{
+		if (allowHide)
+		{
+			// Remove TOPMOST flag - allow other windows to cover this one
+			SetWindowPos(WindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0,
+			             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+		}
+		else
+		{
+			// Add TOPMOST flag - always on top
+			SetWindowPos(WindowHandle, HWND_TOPMOST, 0, 0, 0, 0,
+			             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+		}
+	}
 }
 
 LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM wParam, const LPARAM lParam)

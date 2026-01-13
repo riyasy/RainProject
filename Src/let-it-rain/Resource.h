@@ -22,6 +22,7 @@
 #define IDC_RADIO2                      1004
 #define IDC_BUTTON_SPONSOR              1007
 #define IDC_CHECK_STARTUP               1008
+#define IDC_CHECK_ALLOW_HIDE            1009
 #define ID_TRAY_EXIT_CONTEXT_MENU_ITEM  3000
 #define ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM 3001
 #define ID_TRAY_APP_ICON                5000
