@@ -82,7 +82,8 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	if (MonitorDat.IsPrimaryDisplay)
 	{
 		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxParticles, GeneralSettings.WindSpeed,
-		                                GeneralSettings.ParticleColor, GeneralSettings.PartType, GeneralSettings.AllowHide);
+		                                GeneralSettings.ParticleColor, GeneralSettings.PartType,
+		                                GeneralSettings.StartWithWindows, GeneralSettings.AllowHide);
 		pOptionsDlg->Create();
 	}
 
@@ -94,7 +95,7 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	// Apply the AllowHide setting from saved configuration
 	if (GeneralSettings.AllowHide)
 	{
-		SetWindowPos(WindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, 
+		SetWindowPos(WindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0,
 		             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 	}
 
@@ -125,20 +126,20 @@ void DisplayWindow::UpdateParticleType(const ParticleType partType)
 void DisplayWindow::UpdateAllowHide(const bool allowHide)
 {
 	GeneralSettings.AllowHide = allowHide;
-	
+
 	// Toggle the TOPMOST window style
 	if (WindowHandle)
 	{
 		if (allowHide)
 		{
 			// Remove TOPMOST flag - allow other windows to cover this one
-			SetWindowPos(WindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0, 
+			SetWindowPos(WindowHandle, HWND_NOTOPMOST, 0, 0, 0, 0,
 			             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 		}
 		else
 		{
 			// Add TOPMOST flag - always on top
-			SetWindowPos(WindowHandle, HWND_TOPMOST, 0, 0, 0, 0, 
+			SetWindowPos(WindowHandle, HWND_TOPMOST, 0, 0, 0, 0,
 			             SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 		}
 	}

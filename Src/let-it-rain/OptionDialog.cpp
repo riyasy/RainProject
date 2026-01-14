@@ -3,6 +3,7 @@
 #include <d2d1.h>
 
 #include "Resource.h"
+#include "SettingsManager.h"
 
 OptionsDialog* OptionsDialog::pThis;
 std::vector<CallBackWindow*> OptionsDialog::subscribers;
@@ -12,6 +13,7 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
                              const int windDirection,
                              const COLORREF particleColor,
                              const ParticleType partType,
+                             const bool startWithWindows,
                              const bool allowHide)
 	: hInstance(hInstance),
 	  hDialog(nullptr),
@@ -19,6 +21,7 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
 	  WindDirection(windDirection),
 	  ParticleColor(particleColor),
 	  PartType(partType),
+	  StartWithWindows(startWithWindows),
 	  AllowHide(allowHide)
 {
 	pThis = this;
@@ -72,26 +75,30 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 				SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), WM_ENABLE, FALSE, 0);
 			}
 
-		// Set the allow hide checkbox
-		SendMessage(GetDlgItem(hWnd, IDC_CHECK_ALLOW_HIDE), BM_SETCHECK, 
-		            pThis->AllowHide ? BST_CHECKED : BST_UNCHECKED, 0);
+			// Load the image from resources
+			HICON hIcon = LoadIcon(pThis->hInstance, MAKEINTRESOURCE(IDI_GITHUB_ICON));
 
-		// Load the image from resources
-		HICON hIcon = LoadIcon(pThis->hInstance, MAKEINTRESOURCE(IDI_GITHUB_ICON));
+			// Get handle to the button
+			const HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);
 
-		// Get handle to the button
-		const HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);
+			// Set the button style to allow both image and text
+			const LONG_PTR style = GetWindowLongPtr(hButton, GWL_STYLE);
+			//SetWindowLongPtr(hButton, GWL_STYLE, style | BS_ICON | BS_TEXT);
+			SetWindowLongPtr(hButton, GWL_STYLE, style | BS_CENTER | BS_TEXT);
 
-		// Set the button style to allow both image and text
-		const LONG_PTR style = GetWindowLongPtr(hButton, GWL_STYLE);
-		//SetWindowLongPtr(hButton, GWL_STYLE, style | BS_ICON | BS_TEXT);
-		SetWindowLongPtr(hButton, GWL_STYLE, style | BS_CENTER | BS_TEXT);
+			// Set the image and the text
+			SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(hIcon));
+			SetWindowText(hButton, L"Github Repo");
 
-		// Set the image and the text
-		SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(hIcon));
-		SetWindowText(hButton, L"Github Repo");
-	}
-	return TRUE;
+			// Initialize startup checkbox
+			SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_SETCHECK,
+				pThis->StartWithWindows ? BST_CHECKED : BST_UNCHECKED, 0);
+
+			// Initialize allow hide checkbox
+			SendMessage(GetDlgItem(hWnd, IDC_CHECK_ALLOW_HIDE), BM_SETCHECK,
+				pThis->AllowHide ? BST_CHECKED : BST_UNCHECKED, 0);
+		}
+		return TRUE;
 	case WM_HSCROLL:
 		if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER))
 		{
@@ -158,6 +165,12 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			{
 				subscriber->UpdateParticleType(pThis->PartType);
 			}
+		}
+		else if (controlId == IDC_CHECK_STARTUP && HIWORD(wParam) == BN_CLICKED)
+		{
+			const bool isChecked = SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_GETCHECK, 0, 0) == BST_CHECKED;
+			pThis->StartWithWindows = isChecked;
+			SettingsManager::SetStartupEnabled(isChecked);
 		}
 		else if (controlId == IDC_CHECK_ALLOW_HIDE && HIWORD(wParam) == BN_CLICKED)
 		{
