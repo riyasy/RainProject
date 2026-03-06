@@ -578,6 +578,24 @@ void DisplayWindow::FindSceneRect(RECT& sceneRect, float& scaleFactor) const
 			const int monitorHeight = desktopRect.bottom - desktopRect.top;
 			scaleFactor = static_cast<float>(monitorHeight) / 1080.0f;
 
+			// If a fullscreen app (other than let-it-rain itself) covers this monitor,
+			// the taskbar is hidden behind it — extend rain to the full monitor rect.
+			const HWND hwndFG = GetForegroundWindow();
+			if (hwndFG && hwndFG != WindowHandle)
+			{
+				RECT fgRect = {};
+				GetWindowRect(hwndFG, &fgRect);
+				if (fgRect.left  <= desktopRect.left  &&
+				    fgRect.top   <= desktopRect.top   &&
+				    fgRect.right >= desktopRect.right &&
+				    fgRect.bottom >= desktopRect.bottom)
+				{
+					// Fullscreen window detected — taskbar not visible, use full monitor
+					sceneRect = MathUtil::NormalizeRect(desktopRect, desktopRect.top, desktopRect.left);
+					break;
+				}
+			}
+
 			// Check if task bar is hidden and act accordingly
 			if ((taskBarRect.top >= desktopRect.bottom - 4) ||
 				(taskBarRect.right <= desktopRect.left + 2) ||
