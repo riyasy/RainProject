@@ -183,9 +183,16 @@ void RainDrop::Draw(ID2D1DeviceContext* dc) const
 
 	if (!Splatters.empty())
 	{
+		// Compute opacity for this frame once and set it on the shared brush.
+		// Alpha fades from 0.75 → 0.0 as CurrentFrameCountForSplatter goes from 0 → MAX.
+		const float alpha =
+			(1.0f - static_cast<float>(CurrentFrameCountForSplatter) /
+			         static_cast<float>(MAX_SPLUTTER_FRAME_COUNT_)) * 0.75f;
+		pDisplayData->SplatterColorBrush->SetOpacity(alpha);
+
 		for (const auto & splatter : Splatters)
 		{
-			splatter.Draw(dc, pDisplayData->PrebuiltSplatterOpacityBrushes[CurrentFrameCountForSplatter].Get());
+			splatter.Draw(dc, pDisplayData->SplatterColorBrush.Get());
 		}
 	}
 }

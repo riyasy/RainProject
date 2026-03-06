@@ -3,6 +3,7 @@
 #include "Vector2.h"
 #include "DisplayData.h"
 #include <cstdint>
+#include <d2d1_1.h>
 
 #define TWO_PI 6.28318530718f
 #define PI 3.14159265359f
@@ -20,7 +21,7 @@ public:
 
 	void UpdatePosition(float deltaSeconds, double clockTime);
 	static void SettleSnow(DisplayData* pDispData);
-	void Draw(ID2D1DeviceContext* dc) const;
+	void Draw(ID2D1DeviceContext* dc, const D2D1::Matrix3x2F& baseTransform) const;
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
 
 private:

@@ -6,6 +6,8 @@
 #include <sstream>
 #include <memory>
 
+#pragma comment(lib, "wtsapi32.lib")
+
 #include "CPUUsageTracker.h"
 #include "Global.h"
 #include "MathUtil.h"
@@ -40,12 +42,14 @@ void HR(const HRESULT result)
 enum TIMERS
 {
 	DELAY_TIMER = 1947,
-	INTERVAL_TIMER = 1948
+	INTERVAL_TIMER = 1948  // fallback poll for auto-hide taskbar slide-in/out
 };
 
 HINSTANCE DisplayWindow::AppInstance = nullptr;
 OptionsDialog* DisplayWindow::pOptionsDlg;
 Setting DisplayWindow::GeneralSettings;
+// Register message ID once at startup; same string always returns the same ID
+UINT DisplayWindow::WmTaskbarCreated = RegisterWindowMessage(L"TaskbarCreated");
 
 HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& monitorData)
 {
@@ -149,6 +153,15 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 {
 	static UINT_PTR timerId = 0;
 
+	// WmTaskbarCreated is a dynamically-registered message (value >= 0xC000) and cannot
+	// be used as a case label, so we handle it before the switch.
+	if (WmTaskbarCreated != 0 && message == WmTaskbarCreated)
+	{
+		DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
+		if (pThis) pThis->HandleTaskBarChange();
+		return 0;
+	}
+
 	switch (message)
 	{
 	case WM_NCCREATE:
@@ -163,11 +176,14 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 			{
 				InitNotifyIcon(hWnd);
 			}
-			SetTimer(hWnd, INTERVAL_TIMER, 500, nullptr);
+			SetTimer(hWnd, INTERVAL_TIMER, 2000, nullptr); // 2s fallback for auto-hide taskbar
+			// Register to receive session lock/unlock notifications
+			WTSRegisterSessionNotification(hWnd, NOTIFY_FOR_THIS_SESSION);
 			break;
 		}
 	case WM_DESTROY:
 		{
+			WTSUnRegisterSessionNotification(hWnd);
 			const DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
 			if (pThis->MonitorDat.IsPrimaryDisplay)
 			{
@@ -219,6 +235,27 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 		default: ;
 		}
 		break;
+	case WM_SETTINGCHANGE:
+		// SPI_SETWORKAREA fires when the taskbar is moved, resized, or toggled auto-hide
+		if (wParam == SPI_SETWORKAREA)
+		{
+			DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
+			if (pThis) pThis->HandleTaskBarChange();
+		}
+		break;
+	case WM_WTSSESSION_CHANGE:
+		{
+			DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
+			if (wParam == WTS_SESSION_LOCK)
+			{
+				pThis->IsSessionLocked = true;
+			}
+			else if (wParam == WTS_SESSION_UNLOCK)
+			{
+				pThis->IsSessionLocked = false;
+			}
+			break;
+		}
 	case WM_NCHITTEST:
 		{
 			LRESULT hit = DefWindowProc(hWnd, message, wParam, lParam);
@@ -243,6 +280,26 @@ double DisplayWindow::GetCurrentTimeInSeconds()
 
 void DisplayWindow::Animate()
 {
+	// Do not render while the session is locked
+	if (IsSessionLocked) return;
+
+	// If the device was lost, attempt to recreate it before rendering
+	if (IsDeviceLost)
+	{
+		ReleaseDeviceResources();
+		if (SUCCEEDED(RecreateDeviceResources(WindowHandle)))
+		{
+			IsDeviceLost = false;
+			// Reset timing so we don't get a burst of accumulated frames
+			CurrentTime = -1.0;
+			Accumulator = 0.0;
+		}
+		else
+		{
+			return; // not ready yet, retry next frame
+		}
+	}
+
 	constexpr double dt = 0.01;
 
 	if (CurrentTime < 0)
@@ -275,14 +332,23 @@ void DisplayWindow::Animate()
 		}
 		Accumulator -= dt;
 	}
-	if (GeneralSettings.PartType == RAIN)
+
+	try
 	{
-		DrawRainDrops();
+		if (GeneralSettings.PartType == RAIN)
+		{
+			DrawRainDrops();
+		}
+		else if (GeneralSettings.PartType == SNOW)
+		{
+			DrawSnowFlakes();
+		}
 	}
-	else if (GeneralSettings.PartType == SNOW)
+	catch (const ComException&)
 	{
-		DrawSnowFlakes();
-	}	
+		// Catch any device-lost error that slipped through — schedule recreation
+		IsDeviceLost = true;
+	}
 }
 
 void DisplayWindow::InitNotifyIcon(const HWND hWnd)
@@ -493,6 +559,17 @@ void DisplayWindow::FindSceneRect(RECT& sceneRect, float& scaleFactor) const
 				}
 			}
 
+			// If the taskbar window isn't found (e.g. during session lock/unlock transitions),
+			// treat the full monitor rect as the scene rect.
+			if (hTaskbarWnd == nullptr)
+			{
+				sceneRect = MathUtil::NormalizeRect(monitorData.MonitorRect,
+				                                   monitorData.MonitorRect.top,
+				                                   monitorData.MonitorRect.left);
+				scaleFactor = static_cast<float>(monitorData.MonitorRect.bottom - monitorData.MonitorRect.top) / 1080.0f;
+				break;
+			}
+
 			RECT taskBarRect;
 			GetWindowRect(hTaskbarWnd, &taskBarRect);
 
@@ -577,7 +654,7 @@ void DisplayWindow::FindSceneRect2(RECT& sceneRect, float& scaleFactor) const
 	scaleFactor = static_cast<float>(monitorHeight) / 1080.0f;
 }
 
-void DisplayWindow::DrawRainDrops() const
+void DisplayWindow::DrawRainDrops()
 {
 	Dc->BeginDraw();
 	Dc->Clear();
@@ -587,29 +664,60 @@ void DisplayWindow::DrawRainDrops() const
 		drop.Draw(Dc.Get());
 	}
 
-	HR(Dc->EndDraw());
+	const HRESULT endDrawHr = Dc->EndDraw();
+	if (FAILED(endDrawHr))
+	{
+		// Covers DXGI_ERROR_DEVICE_REMOVED, DXGI_ERROR_DEVICE_RESET,
+		// DXGI_ERROR_DEVICE_HUNG, D2DERR_RECREATE_TARGET, etc.
+		IsDeviceLost = true;
+		return;
+	}
+
 	// Make the swap chain available to the composition engine
-	HR(SwapChain->Present(1, 0));
+	const HRESULT presentHr = SwapChain->Present(1, 0);
+	if (FAILED(presentHr))
+	{
+		IsDeviceLost = true;
+	}
 }
 
-void DisplayWindow::DrawSnowFlakes() const
+void DisplayWindow::DrawSnowFlakes()
 {
 	Dc->BeginDraw();
 	Dc->Clear();
 
+	// Read the current transform once — avoids N redundant GetTransform calls inside Draw()
+	D2D1::Matrix3x2F baseTransform;
+	Dc->GetTransform(&baseTransform);
+
 	for (const auto & flake : SnowFlakes)
 	{
-		flake.Draw(Dc.Get());
+		flake.Draw(Dc.Get(), baseTransform);
 	}
+
+	// Restore transform once after the loop (each Draw only sets, never restores)
+	Dc->SetTransform(baseTransform);
 
 	if (!SnowFlakes.empty())
 	{
 		SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData.get());
 	}
 
-	HR(Dc->EndDraw());
+	const HRESULT endDrawHr = Dc->EndDraw();
+	if (FAILED(endDrawHr))
+	{
+		// Covers DXGI_ERROR_DEVICE_REMOVED, DXGI_ERROR_DEVICE_RESET,
+		// DXGI_ERROR_DEVICE_HUNG, D2DERR_RECREATE_TARGET, etc.
+		IsDeviceLost = true;
+		return;
+	}
+
 	// Make the swap chain available to the composition engine
-	HR(SwapChain->Present(1, 0));
+	const HRESULT presentHr = SwapChain->Present(1, 0);
+	if (FAILED(presentHr))
+	{
+		IsDeviceLost = true;
+	}
 }
 
 void DisplayWindow::UpdateRainDrops()
@@ -712,6 +820,43 @@ void DisplayWindow::SetInstanceToHwnd(const HWND hWnd, const LPARAM lParam)
 DisplayWindow* DisplayWindow::GetInstanceFromHwnd(const HWND hWnd)
 {
 	return reinterpret_cast<DisplayWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+}
+
+void DisplayWindow::ReleaseDeviceResources()
+{
+	// Release all device-dependent resources so they can be recreated
+	if (Dc)
+	{
+		Dc->SetTarget(nullptr);
+	}
+	Bitmap.Reset();
+	Surface.Reset();
+	SwapChain.Reset();
+	Target.Reset();
+	Visual.Reset();
+	DcompDevice.Reset();
+	Dc.Reset();
+	D2Device.Reset();
+	D2Factory.Reset();
+	DxFactory.Reset();
+	DxgiDevice.Reset();
+	Direct3dDevice.Reset();
+}
+
+HRESULT DisplayWindow::RecreateDeviceResources(const HWND hWnd)
+{
+	try
+	{
+		InitDirect2D(hWnd);
+		pDisplaySpecificData = std::make_unique<DisplayData>(Dc.Get());
+		pDisplaySpecificData->SetRainColor(GeneralSettings.ParticleColor);
+		HandleWindowBoundsChange(hWnd, true);
+		return S_OK;
+	}
+	catch (const ComException&)
+	{
+		return E_FAIL;
+	}
 }
 
 DisplayWindow::~DisplayWindow()

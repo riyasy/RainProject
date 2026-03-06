@@ -2,6 +2,7 @@
 #include "RandomGenerator.h"
 #include "MathUtil.h"
 #include "FastNoiseLite.h"
+#include <array>
 
 SnowFlake::SnowFlake(DisplayData * pDispData) :
 	pDisplayData(pDispData)
@@ -205,11 +206,11 @@ void SnowFlake::GenerateSprite(ID2D1DeviceContext* dc, int shapeIndex) const
 	}
 }
 
-void SnowFlake::Draw(ID2D1DeviceContext* dc) const
+void SnowFlake::Draw(ID2D1DeviceContext* dc, const D2D1::Matrix3x2F& baseTransform) const
 {
 	if (MathUtil::IsPointInRect(pDisplayData->SceneRectNorm, Pos))
 	{
-		int shapeIndex = static_cast<int>(Shape);
+		const int shapeIndex = static_cast<int>(Shape);
 
 		// Lazy Load: If sprite doesn't exist, create it
 		if (pDisplayData->SpriteCache[shapeIndex] == nullptr)
@@ -220,31 +221,29 @@ void SnowFlake::Draw(ID2D1DeviceContext* dc) const
 		ID2D1Bitmap* pBitmap = pDisplayData->SpriteCache[shapeIndex].Get();
 		if (pBitmap)
 		{
-			D2D1_POINT_2F center = D2D1::Point2F(
+			const D2D1_POINT_2F center = D2D1::Point2F(
 				Pos.x + pDisplayData->SceneRect.left,
 				Pos.y + pDisplayData->SceneRect.top
 			);
 
-			float drawWidth = SPRITE_SIZE * Size * pDisplayData->ScaleFactor;
-			float drawHeight = SPRITE_SIZE * Size * pDisplayData->ScaleFactor;
+			const float drawWidth  = SPRITE_SIZE * Size * pDisplayData->ScaleFactor;
+			const float drawHeight = SPRITE_SIZE * Size * pDisplayData->ScaleFactor;
 
-			D2D1_RECT_F destRect = D2D1::RectF(
-				center.x - drawWidth / 2.0f,
+			const D2D1_RECT_F destRect = D2D1::RectF(
+				center.x - drawWidth  / 2.0f,
 				center.y - drawHeight / 2.0f,
-				center.x + drawWidth / 2.0f,
+				center.x + drawWidth  / 2.0f,
 				center.y + drawHeight / 2.0f
 			);
 
-			// Apply Rotation
-			D2D1::Matrix3x2F rotMatrix = D2D1::Matrix3x2F::Rotation(Rotation * 180.0f / PI,	center);
-			D2D1::Matrix3x2F originalTransform;
-			dc->GetTransform(&originalTransform);
-			dc->SetTransform(rotMatrix * originalTransform);
+			// Apply rotation on top of the caller-supplied base transform.
+			// No GetTransform needed here — caller reads it once before the loop.
+			// No restore needed here — caller restores once after the loop.
+			const D2D1::Matrix3x2F rotMatrix =
+				D2D1::Matrix3x2F::Rotation(Rotation * 180.0f / PI, center);
+			dc->SetTransform(rotMatrix * baseTransform);
 
-			// Draw the cached bitmap
 			dc->DrawBitmap(pBitmap, destRect);
-
-			dc->SetTransform(originalTransform);
 		}
 	}
 }
@@ -311,17 +310,17 @@ void SnowFlake::DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center
 void SnowFlake::DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const
 {
 	// Draw a hexagon shape using lines
-	const int sides = 6;
+	constexpr int sides = 6;
 	const float radius = size * 2.0f;
 
-	// Draw the hexagon outline
-	D2D1_POINT_2F* points = new D2D1_POINT_2F[sides + 1];
+	// Stack-allocated array — no heap, no leak risk (sides + 1 = 7)
+	std::array<D2D1_POINT_2F, 7> points;
 
 	for (int i = 0; i <= sides; ++i) {
-		float angle = i * TWO_PI / sides;
+		const float angle = i * TWO_PI / sides;
 		points[i] = D2D1::Point2F(
-			center.x + radius * cos(angle),
-			center.y + radius * sin(angle)
+			center.x + radius * std::cos(angle),
+			center.y + radius * std::sin(angle)
 		);
 	}
 
@@ -332,7 +331,6 @@ void SnowFlake::DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center
 
 	// Draw inner details (spokes)
 	for (int i = 0; i < sides; ++i) {
-		// Draw line from center to each vertex
 		rt->DrawLine(
 			center,
 			points[i],
@@ -341,10 +339,8 @@ void SnowFlake::DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center
 		);
 	}
 
-	delete[] points;
-
 	// Draw center circle
-	D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.4f, size * 0.4f);
+	const D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.4f, size * 0.4f);
 	rt->FillEllipse(centerCircle, pDisplayData->DropColorBrush.Get());
 }
 

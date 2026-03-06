@@ -27,7 +27,8 @@ public:
 	ID2D1DeviceContext* DC;
 
 	Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> DropColorBrush;
-	std::vector<Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>> PrebuiltSplatterOpacityBrushes;
+	// Single brush reused for all splatter draws — opacity is set dynamically at draw time
+	Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> SplatterColorBrush;
 
 	// Cache for pre-rendered snowflakes (one per shape type)
 	std::vector<Microsoft::WRL::ComPtr<ID2D1Bitmap>> SpriteCache;
@@ -38,5 +39,4 @@ public:
 
 private:
 	static bool IsSame(const RECT& l, const RECT& r);
-	static constexpr int MAX_SPLUTTER_FRAME_COUNT_ = 50;
 };

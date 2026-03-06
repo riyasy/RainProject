@@ -5,6 +5,7 @@
 #include <d3d11_2.h>
 #include <d2d1_2.h>
 #include <dcomp.h>
+#include <wtsapi32.h>
 #include <vector>
 #include <memory>
 
@@ -74,6 +75,10 @@ private:
 	double CurrentTime = -1.0;
 	double Accumulator = 0.0;
 
+	// Session / device state
+	bool IsSessionLocked = false;
+	bool IsDeviceLost = false;
+
 	static Setting GeneralSettings;
 
 	std::unique_ptr<DisplayData> pDisplaySpecificData;
@@ -88,6 +93,8 @@ private:
 	);
 
 	void InitDirect2D(HWND hWnd);
+	void ReleaseDeviceResources();
+	HRESULT RecreateDeviceResources(HWND hWnd);
 
 	void HandleWindowBoundsChange(HWND window, bool clearDrops);
 	void HandleTaskBarChange() const;
@@ -101,9 +108,12 @@ private:
 	static double GetCurrentTimeInSeconds();
 	void UpdateRainDrops();
 	void UpdateSnowFlakes();
-	void DrawRainDrops() const;
-	void DrawSnowFlakes() const;
+	void DrawRainDrops();
+	void DrawSnowFlakes();
 
 	static void SetInstanceToHwnd(HWND hWnd, LPARAM lParam);
 	static DisplayWindow* GetInstanceFromHwnd(HWND hWnd);
+
+	// Dynamically-registered message sent when the taskbar is recreated (Explorer restart)
+	static UINT WmTaskbarCreated;
 };

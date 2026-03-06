@@ -18,29 +18,26 @@ public:
 
 	int GenerateInt(const int min, const int max)
 	{
-		disRange1 = std::uniform_int_distribution<>(min, max);
-		return disRange1(gen);
+		return std::uniform_int_distribution<>(min, max)(gen);
 	}
 
 	int GenerateInt(const int range1Min, const int range1Max, const int range2Min, const int range2Max)
 	{
-		const int totalRangeSize = (range1Max - range1Min) + (range2Max - range2Min);
-		disRange1 = std::uniform_int_distribution<>(range1Min, range1Max);
-		disRange2 = std::uniform_int_distribution<>(range2Min, range2Max);
-
+		const int range1Size = range1Max - range1Min;
+		const int range2Size = range2Max - range2Min;
+		const int totalRangeSize = range1Size + range2Size;
 		const int choice = std::uniform_int_distribution<>(0, totalRangeSize)(gen);
-		if (choice <= (range1Max - range1Min))
+		if (choice <= range1Size)
 		{
-			return disRange1(gen);
+			return std::uniform_int_distribution<>(range1Min, range1Max)(gen);
 		}
-		return disRange2(gen);
+		return std::uniform_int_distribution<>(range2Min, range2Max)(gen);
 	}
 
 	// Generate a floating point number in [min, max)
 	float GenerateFloat(const float min, const float max)
 	{
-		disReal = std::uniform_real_distribution<float>(min, max);
-		return disReal(gen);
+		return std::uniform_real_distribution<float>(min, max)(gen);
 	}
 
 private:
@@ -50,7 +47,4 @@ private:
 
 	std::random_device rd;
 	std::mt19937 gen;
-	std::uniform_int_distribution<> disRange1;
-	std::uniform_int_distribution<> disRange2;
-	std::uniform_real_distribution<float> disReal;
 };
