@@ -40,4 +40,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: let-it-rain-${{ matrix.arch }}
-          path: Src/let-it-rain/${{ matrix.out_dir }}
+          path: Src/let-it-rain/${{ matrix.out_dir }}let-it-rain.exe
