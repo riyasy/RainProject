@@ -34,10 +34,7 @@ jobs:
 
       - name: Build let-it-rain
         run: |
-          msbuild RainProject\Src\let-it-rain\let-it-rain.vcxproj ^
-            /p:Configuration=Release ^
-            /p:Platform=${{ matrix.platform }} ^
-            /p:PlatformToolset=v143
+          msbuild RainProject\Src\let-it-rain\let-it-rain.vcxproj /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:PlatformToolset=v143
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
