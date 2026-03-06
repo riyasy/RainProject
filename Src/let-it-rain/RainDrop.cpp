@@ -150,6 +150,7 @@ void RainDrop::UpdatePosition(const float deltaSeconds)
 
 void RainDrop::CreateSplatters()
 {
+	Splatters.reserve(MAX_SPLATTER_PER_RAINDROP_);
 	for (int i = 0; i < MAX_SPLATTER_PER_RAINDROP_; i++)
 	{
 		const int angleBounce = RandomGenerator::GetInstance().GenerateInt(20, 70, 110, 160);
