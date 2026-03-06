@@ -39,7 +39,7 @@ bool OptionsDialog::Create()
 	icex.dwICC = ICC_BAR_CLASSES;
 	InitCommonControlsEx(&icex);
 
-	hDialog = CreateDialogParam(hInstance, MAKEINTRESOURCE(IDD_DIALOGB), nullptr, DialogProc, 0);
+	hDialog = CreateDialogParam(hInstance, MAKEINTRESOURCE(IDD_DIALOGB), nullptr, reinterpret_cast<DLGPROC>(DialogProc), 0);
 	if (!hDialog)
 	{
 		return false;

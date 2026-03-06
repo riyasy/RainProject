@@ -5,3 +5,16 @@
 /Src/let-it-rain/x64
 /Src/.vs/let-it-rain
 .vs
+
+# Build Output Directories
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+ARM64/
+Win32/
+*.user
+*.suo
+*.resinclude
