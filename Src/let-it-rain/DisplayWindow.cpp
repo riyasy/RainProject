@@ -386,9 +386,32 @@ void DisplayWindow::ShowContextMenu(const HWND hWnd)
 	const HMENU hMenu = CreatePopupMenu();
 	AppendMenu(hMenu, MF_STRING, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, L"Configure");
 	AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, L"Exit");
+
+	// Add bitmaps
+	HBITMAP hSettingsBmp = LoadBitmap(AppInstance, MAKEINTRESOURCE(IDB_SETTINGS_ICON));
+	if (hSettingsBmp)
+	{
+		MENUITEMINFO mii = { sizeof(MENUITEMINFO) };
+		mii.fMask = MIIM_BITMAP;
+		mii.hbmpItem = hSettingsBmp;
+		SetMenuItemInfo(hMenu, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, FALSE, &mii);
+	}
+
+	HBITMAP hExitBmp = LoadBitmap(AppInstance, MAKEINTRESOURCE(IDB_EXIT_ICON));
+	if (hExitBmp)
+	{
+		MENUITEMINFO mii = { sizeof(MENUITEMINFO) };
+		mii.fMask = MIIM_BITMAP;
+		mii.hbmpItem = hExitBmp;
+		SetMenuItemInfo(hMenu, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, FALSE, &mii);
+	}
+
 	SetForegroundWindow(hWnd);
 	TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, nullptr);
 	DestroyMenu(hMenu);
+
+	if (hSettingsBmp) DeleteObject(hSettingsBmp);
+	if (hExitBmp) DeleteObject(hExitBmp);
 }
 
 void DisplayWindow::InitDirect2D(const HWND hWnd)

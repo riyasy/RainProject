@@ -100,6 +100,12 @@
     <Image Include="github.ico">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="exit.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="settings.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="let-it-rain.rc">

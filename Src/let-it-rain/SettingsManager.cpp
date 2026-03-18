@@ -4,6 +4,9 @@
 #include <string>
 #include <shlobj.h> // For SHGetFolderPath
 #include <iostream>
+#include <winrt/Windows.ApplicationModel.h>
+#include <winrt/Windows.Foundation.h>
+#include <appmodel.h>
 
 // Initialize the singleton instance to nullptr
 SettingsManager* SettingsManager::instance = nullptr;
@@ -96,6 +99,14 @@ void SettingsManager::WriteSettings(const Setting& setting) const
 
 bool SettingsManager::IsStartupEnabled()
 {
+	UINT32 length = 0;
+	if (GetCurrentPackageFullName(&length, nullptr) == ERROR_INSUFFICIENT_BUFFER)
+	{
+		// OutputDebugString(L"[LetItRain] IsStartupEnabled: Running as packaged app\n");
+		return IsStartupEnabled_Pkgd();
+	}
+	// OutputDebugString(L"[LetItRain] IsStartupEnabled: Running as plain exe\n");
+
 	HKEY hKey;
 	const wchar_t* runKeyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 	const wchar_t* appName = L"LetItRain";
@@ -114,6 +125,15 @@ bool SettingsManager::IsStartupEnabled()
 
 void SettingsManager::SetStartupEnabled(const bool enabled)
 {
+	UINT32 length = 0;
+	if (GetCurrentPackageFullName(&length, nullptr) == ERROR_INSUFFICIENT_BUFFER)
+	{
+		// OutputDebugString(L"[LetItRain] SetStartupEnabled: Running as packaged app\n");
+		SetStartupEnabled_Pkgd(enabled);
+		return;
+	}
+	// OutputDebugString(L"[LetItRain] SetStartupEnabled: Running as plain exe\n");
+	
 	HKEY hKey;
 	const wchar_t* runKeyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 	const wchar_t* appName = L"LetItRain";
@@ -139,5 +159,37 @@ void SettingsManager::SetStartupEnabled(const bool enabled)
 			RegDeleteValue(hKey, appName);
 			RegCloseKey(hKey);
 		}
+	}
+}
+
+bool SettingsManager::IsStartupEnabled_Pkgd()
+{
+	try
+	{
+		auto startupTask = winrt::Windows::ApplicationModel::StartupTask::GetAsync(L"LetItRainStartup").get();
+		return startupTask.State() == winrt::Windows::ApplicationModel::StartupTaskState::Enabled;
+	}
+	catch (...)
+	{
+		return false;
+	}
+}
+
+void SettingsManager::SetStartupEnabled_Pkgd(const bool enabled)
+{
+	try
+	{
+		auto startupTask = winrt::Windows::ApplicationModel::StartupTask::GetAsync(L"LetItRainStartup").get();
+		if (enabled)
+		{
+			startupTask.RequestEnableAsync().get();
+		}
+		else
+		{
+			startupTask.Disable();
+		}
+	}
+	catch (...)
+	{
 	}
 }

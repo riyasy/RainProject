@@ -40,6 +40,8 @@ class SettingsManager
 	SettingsManager();
 	static std::wstring GetAppDataPath();
 	void CreateINIFile() const;
+	static bool IsStartupEnabled_Pkgd();
+	static void SetStartupEnabled_Pkgd(bool enabled);
 
 public:
 	static SettingsManager* GetInstance();

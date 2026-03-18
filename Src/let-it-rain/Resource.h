@@ -25,6 +25,8 @@
 #define ID_TRAY_EXIT_CONTEXT_MENU_ITEM  3000
 #define ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM 3001
 #define ID_TRAY_APP_ICON                5000
+#define IDB_SETTINGS_ICON               6000
+#define IDB_EXIT_ICON                   6001
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
