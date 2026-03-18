@@ -1,3 +1,12 @@
+File Version Upgrade Notes
+	Search for 2.2.0.0 in the code and replace with new version number.
+	Search for 2,2,0,0 and replace with new version number.
+
+	There are version numbers in let-it-rain.rc
+	There are version numbers in the installer project.
+
+
+
 Todo
 	Dynamic addition and removal of Monitors (Very hard to do)
 	FindSceneRect2 - remove it after few days
