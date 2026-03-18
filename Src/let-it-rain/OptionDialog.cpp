@@ -73,22 +73,7 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			{
 				SendMessage(GetDlgItem(hWnd, IDC_RADIO2), BM_SETCHECK, BST_CHECKED, 0);
 				SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), WM_ENABLE, FALSE, 0);
-			}
-
-			// Load the image from resources
-			HICON hIcon = LoadIcon(pThis->hInstance, MAKEINTRESOURCE(IDI_GITHUB_ICON));
-
-			// Get handle to the button
-			const HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);
-
-			// Set the button style to allow both image and text
-			const LONG_PTR style = GetWindowLongPtr(hButton, GWL_STYLE);
-			//SetWindowLongPtr(hButton, GWL_STYLE, style | BS_ICON | BS_TEXT);
-			SetWindowLongPtr(hButton, GWL_STYLE, style | BS_CENTER | BS_TEXT);
-
-			// Set the image and the text
-			SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, reinterpret_cast<LPARAM>(hIcon));
-			SetWindowText(hButton, L"Github Repo");
+			}			
 
 			// Initialize startup checkbox
 			SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_SETCHECK,
@@ -97,6 +82,11 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			// Initialize allow hide checkbox
 			SendMessage(GetDlgItem(hWnd, IDC_CHECK_ALLOW_HIDE), BM_SETCHECK,
 				pThis->AllowHide ? BST_CHECKED : BST_UNCHECKED, 0);
+
+			// Github icon button
+			HICON hGitHubIcon = (HICON)LoadImage(pThis->hInstance, MAKEINTRESOURCE(IDI_GITHUB_ICON), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR);
+			HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);			
+			SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, (LPARAM)hGitHubIcon);
 		}
 		return TRUE;
 	case WM_HSCROLL:

@@ -363,7 +363,7 @@ void DisplayWindow::InitNotifyIcon(const HWND hWnd)
 	nid.uID = NOTIFICATION_TRAY_ICON_UID;
 
 	nid.uCallbackMessage = WM_TRAYICON;
-	LoadIconMetric(AppInstance, MAKEINTRESOURCE(IDI_SMALL), LIM_SMALL, &nid.hIcon);
+	LoadIconMetric(AppInstance, MAKEINTRESOURCE(IDI_RAINCPPDXGI), LIM_SMALL, &nid.hIcon);
 	Shell_NotifyIcon(NIM_ADD, &nid);
 
 	// Context menu not working for NOTIFYICON_VERSION_4. So used NOTIFYICON_VERSION
