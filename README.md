@@ -1,53 +1,85 @@
-# Let It Rain - Desktop Rain Simulation for Windows (NOW WITH SNOW ALSO)
+# 🌧️ Let It Rain [![Github All Releases](https://img.shields.io/github/downloads/riyasy/RainProject/total.svg)]()
+### ASMR Rain & Snow Simulator for Windows Desktop
 
-Welcome to **Let It Rain**, an ASMR-inspired rain and snow simulation for the Windows desktop. This lightweight app brings a soothing visual experience by simulating raindrops falling from the top of your screen and splattering as they reach the taskbar. (OR snow flakes flying around and settling on your taskbar)
+Bring your desktop to life with calming rain and snow effects. Watch raindrops splash and snow gently settle on your taskbar, creating a relaxing ASMR-like atmosphere while you work.
 
-Watch "let-it-rain" in action
+---
 
-[![let-it-rain](https://markdown-videos-api.jorgenkh.no/url?url=https%3A%2F%2Fyoutu.be%2FEG98oerTAS4)](https://youtu.be/EG98oerTAS4)
+## 🎬 Preview
 
-## Features
+https://github.com/user-attachments/assets/54660767-922e-4aad-8db0-5d1ee6a2291e
 
-- 🌧️ **Realistic Raindrop Motion**: Watch raindrops gently descend from the top of the screen and splashing on your taks bar.
-- ❄️ **Realistic Snow Fall Motion**: Watch snow flakes gently descend from the top of the screen and settle on your task bar and heap up.
-- **ASMR Visuals**: Calm your mind as you watch raindrops or snowflakes dance across your workspace, creating a visual ASMR atmosphere.
-- ⚙️ **Customizable Settings**: Adjust the count, direction and color to suit your preferences.
-- Multi monitor support.
+---
 
-## Installation
+## ✨ Features
 
-1. Clone this repository or download the latest release.
-2. Run the exe directly after downloading or after building.
+- 🌧️ **Realistic Rain Effects** – Raindrops fall naturally and splash on your taskbar  
+- ❄️ **Snowfall Simulation** – Snowflakes settle and form soft heaps over time  
+- 🧘 **ASMR Visuals** – Calm, ambient effects for focus and relaxation  
+- ⚙️ **Customizable Settings** – Adjust particle count, wind direction, and color  
+- 🖥️ **Multi-Monitor Support** – Works seamlessly across multiple displays  
+- 🎯 **Lightweight** – Runs quietly in the background  
+- 🔄 **Rain & Snow Modes** – Switch instantly between effects  
 
-## Usage
+---
 
-- After launching the app, raindrops will begin falling on your desktop.
-- Access the preferences dialog by right-clicking the tray icon and selecting **Options**.
-- To exit the app, right-click the tray icon and choose **Quit**.
+## 📥 Download
 
-## Requirements
+<a href="https://apps.microsoft.com/detail/9p1h1vcjhjzp?referrer=appbadge&mode=full" target="_blank" rel="noopener noreferrer">
+  <img src="https://get.microsoft.com/images/en-us%20light.svg" width="200"/>
+</a>
 
-- **Windows 10/11**
-- May work on older systems, but not tested.
+- Purchasing from the Microsoft Store helps support ongoing development ❤️  
+- You can also support via GitHub Sponsors:    [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-fe8e86?logo=github)](https://github.com/sponsors/riyasy)
 
-## Settings
+### 📊 Store vs GitHub Version
 
-Customize your rain experience with these options, available in the Preferences dialog:
-- **Max Particles**: Control the number of raindrops/snow flakes on the screen.
-- **Wind Direction**: Choose the angle at which the raindrops fall.
-- **Particle Color**: Select the color of the raindrops/snow flakes for a personalized look.
+|  | Microsoft Store | GitHub Release |
+|--|--|--|
+| **Price** | 🪙 Paid | 🆓 Free |
+| **Updates** | ✅ Automatic | ❌ Manual |
+| **Security** | ✅ Signed & verified | ❌ Not signed |
 
-## TODO
+---
 
-- Test on older versions of Windows.
-- Make drop speed adjustable.
-- Pause while CPU is busy with any other tasks.
+## 🚀 Installation
 
-## Contributing
+- Option 1 : [**Install from Microsoft Store**](https://apps.microsoft.com/detail/9p1h1vcjhjzp?launch=true&cid=GitHubRelease&mode=full)
+- Option 2 : Download and install MSI from Github [**Releases Page**](https://github.com/riyasy/RainProject/releases)
 
-Contributions are welcome! Feel free to fork the repo and submit pull requests. Please ensure that your changes are well-documented and tested.
+---
 
+## ⚙️ Settings
 
-## Contact
+Customize your experience:
 
-For any inquiries, feel free to reach out via ryftools@outlook.com or open an issue on GitHub.
+- **Max Particles** – Control rain/snow density  
+- **Wind Direction** – Adjust fall angle  
+- **Particle Color** – Match your desktop theme  
+
+---
+
+## 📌 Requirements
+
+- Windows 10 / 11  (for store app)
+- Win 7+ for Github exe
+
+---
+
+## 🛠️ Roadmap
+
+- Adjustable drop speed  
+- Performance-aware auto pause  
+- More visual effects  
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Feel free to fork and submit pull requests.
+
+---
+
+## 💡 Tip
+
+For the best experience, use Let It Rain FX on a dark desktop background.
