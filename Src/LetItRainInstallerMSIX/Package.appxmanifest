@@ -8,12 +8,12 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="RYFTools.LetItRain"
-    Publisher="CN=Riyas"
+    Name="RYFTools.LetItRainFX"
+    Publisher="CN=44A50C10-C1BE-4575-B17F-07954C8C2229"
     Version="2.2.0.0" />
 
   <Properties>
-    <DisplayName>Let It Rain</DisplayName>
+    <DisplayName>Let It Rain FX</DisplayName>
     <PublisherDisplayName>RYF Tools</PublisherDisplayName>
     <Logo>Images\StoreLogo.png</Logo>
   </Properties>
@@ -32,7 +32,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Let It Rain"
+        DisplayName="Let It Rain FX"
         Description="LetItRain Installer"
         BackgroundColor="transparent"
         Square150x150Logo="Images\Square150x150Logo.png"
@@ -41,8 +41,8 @@
         <uap:SplashScreen Image="Images\SplashScreen.png" />
       </uap:VisualElements>
 	   <Extensions>
-        <desktop:Extension Category="windows.startupTask" Executable="$targetnametoken$.exe" EntryPoint="Windows.FullTrustApplication">
-          <desktop:StartupTask TaskId="LetItRainStartup" Enabled="false" DisplayName="Let It Rain" />
+        <desktop:Extension Category="windows.startupTask" Executable="let-it-rain\let-it-rain.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="LetItRainStartup" Enabled="false" DisplayName="Let It Rain FX" />
         </desktop:Extension>
       </Extensions>
     </Application>
