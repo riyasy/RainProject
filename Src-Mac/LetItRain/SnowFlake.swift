@@ -25,7 +25,7 @@ struct SnowFlake {
         self.screenBounds = screenBounds
         radius       = CGFloat.random(in: kSnowMinRadius...kSnowMaxRadius)
         rotation     = Double.random(in: 0...(2 * .pi))
-        rotationSpeed = Double.random(in: -0.2...0.2)
+        rotationSpeed = Double.random(in: -2.0...2.0)
         vel          = CGPoint(x: 0, y: -CGFloat.random(in: 5...10))
 
         let r = Int.random(in: 0...99)
