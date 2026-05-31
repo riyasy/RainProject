@@ -20,9 +20,17 @@ final class MetalRenderer {
     private var commandQueue: MTLCommandQueue?
     private var dropPipeline: MTLRenderPipelineState?
     private var splatterPipeline: MTLRenderPipelineState?
-    private var dropVtxBuf: MTLBuffer?
-    private var splatVtxBuf: MTLBuffer?
+    private var dropVtxBufs: [MTLBuffer] = []
+    private var splatVtxBufs: [MTLBuffer] = []
     private var indexBuf: MTLBuffer?    // pre-built quad→triangle index buffer
+
+    // Triple-buffered vertex data. The CPU writes frame N+1 into a *different*
+    // buffer than the GPU is still reading for frame N, so there's no read/write
+    // hazard on a shared buffer. The semaphore caps the CPU to kMaxInFlight frames
+    // ahead — every wait() is balanced by exactly one signal().
+    private static let kMaxInFlight = 3
+    private let inFlight = DispatchSemaphore(value: kMaxInFlight)
+    private var frameIndex = 0
 
     private static let kMaxDropVerts  = 500 * 4
     private static let kMaxSplatVerts = 500 * kSplatterCount * 4
@@ -63,11 +71,19 @@ final class MetalRenderer {
     func render(drops: [RainDrop], screenBounds: CGRect,
                 color: (r: Float, g: Float, b: Float)) {
         guard let layer    = metalLayer,
-              let dropBuf  = dropVtxBuf,
-              let splatBuf = splatVtxBuf,
               let idxBuf   = indexBuf,
               let cmdQueue = commandQueue,
-              let dev      = device else { return }
+              let dev      = device,
+              dropVtxBufs.count  == MetalRenderer.kMaxInFlight,
+              splatVtxBufs.count == MetalRenderer.kMaxInFlight else { return }
+
+        // Claim a free in-flight slot, then advance to its buffer ring index.
+        // From here on, every exit path must signal() exactly once (the command
+        // buffer's completion handler, or the early-outs in encode()).
+        inFlight.wait()
+        frameIndex = (frameIndex + 1) % MetalRenderer.kMaxInFlight
+        let dropBuf  = dropVtxBufs[frameIndex]
+        let splatBuf = splatVtxBufs[frameIndex]
 
         let sw = Float(screenBounds.width), sh = Float(screenBounds.height)
 
@@ -134,8 +150,13 @@ final class MetalRenderer {
     private func buildBuffers(device dev: MTLDevice) {
         let opts: MTLResourceOptions = dev.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         let stride = MemoryLayout<RainVertex>.stride
-        dropVtxBuf  = dev.makeBuffer(length: MetalRenderer.kMaxDropVerts  * stride, options: opts)
-        splatVtxBuf = dev.makeBuffer(length: MetalRenderer.kMaxSplatVerts * stride, options: opts)
+        frameIndex = 0
+        dropVtxBufs = (0..<MetalRenderer.kMaxInFlight).compactMap { _ in
+            dev.makeBuffer(length: MetalRenderer.kMaxDropVerts  * stride, options: opts)
+        }
+        splatVtxBufs = (0..<MetalRenderer.kMaxInFlight).compactMap { _ in
+            dev.makeBuffer(length: MetalRenderer.kMaxSplatVerts * stride, options: opts)
+        }
 
         // Each quad (4 verts) → 2 triangles (6 indices): [0,1,2, 1,3,2]
         let maxQuads = max(MetalRenderer.kMaxDropVerts, MetalRenderer.kMaxSplatVerts) / 4
@@ -205,7 +226,7 @@ final class MetalRenderer {
         guard let drawable,
               let cmdBuf    = cmdQueue.makeCommandBuffer(),
               let dropPipe  = dropPipeline,
-              let splatPipe = splatterPipeline else { return }
+              let splatPipe = splatterPipeline else { inFlight.signal(); return }
 
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].texture     = drawable.texture
@@ -213,7 +234,7 @@ final class MetalRenderer {
         pass.colorAttachments[0].clearColor  = MTLClearColorMake(0, 0, 0, 0)
         pass.colorAttachments[0].storeAction = .store
 
-        guard let enc = cmdBuf.makeRenderCommandEncoder(descriptor: pass) else { return }
+        guard let enc = cmdBuf.makeRenderCommandEncoder(descriptor: pass) else { inFlight.signal(); return }
 
         if dCnt > 0 {
             enc.setRenderPipelineState(dropPipe)
@@ -231,6 +252,7 @@ final class MetalRenderer {
         }
 
         enc.endEncoding()
+        cmdBuf.addCompletedHandler { [inFlight] _ in inFlight.signal() }
         cmdBuf.present(drawable)
         cmdBuf.commit()
     }

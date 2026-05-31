@@ -128,10 +128,15 @@ final class SnowRenderer {
         let strokedPath = CGMutablePath()
 
         for flake in system.flakes {
-            // Transform: scale to flake size → rotate → translate to position
-            let xf = CGAffineTransform(scaleX: flake.radius, y: flake.radius)
-                .rotated(by: CGFloat(flake.rotation))
-                .concatenating(CGAffineTransform(translationX: flake.pos.x, y: flake.pos.y))
+            // Transform: scale to flake size → rotate → translate to position.
+            // Built directly as a single matrix (uniform scale commutes with the
+            // rotation) instead of chaining .rotated(by:).concatenating(...), which
+            // allocates two intermediate matrices and does extra multiplies per flake.
+            //   a = r·cosθ, b = r·sinθ, c = -r·sinθ, d = r·cosθ
+            let cosR = CGFloat(cos(flake.rotation)) * flake.radius
+            let sinR = CGFloat(sin(flake.rotation)) * flake.radius
+            let xf = CGAffineTransform(a: cosR, b: sinR, c: -sinR, d: cosR,
+                                       tx: flake.pos.x, ty: flake.pos.y)
 
             switch flake.shape {
             case .simple:

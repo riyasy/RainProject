@@ -93,7 +93,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         pollTimer = nil
 
         screenBounds = NSScreen.main?.frame ?? .zero
-        dockObstacle = DockDetector.currentFrame()
+        dockObstacle = .zero
 
         let cv = window.contentView!
         cv.wantsLayer = true
@@ -110,16 +110,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 RainDrop(screenBounds: screenBounds, windX: wx, stagger: true)
             }
             snowSystem = nil
+            startDockPolling()
 
         case .snow:
             snowRenderer.setup(in: cv, screenBounds: screenBounds)
             snowSystem = SnowSystem(screenBounds: screenBounds, count: settingsIntensity)
             drops = []
+            // Snow never reads dockObstacle (it settles on the screen floor /
+            // heightMap), so no AppleScript Dock polling in snow mode.
         }
 
         startDisplayLink()
+    }
 
-        // NSAppleScript must run on the main thread (not thread-safe).
+    /// Dock detection is only meaningful for rain (drops/splatters land on the
+    /// Dock's top edge). The synchronous NSAppleScript query must run on the
+    /// main thread (not thread-safe), so it's kept off the hot path in snow mode.
+    private func startDockPolling() {
+        dockObstacle = DockDetector.currentFrame()
         pollTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self else { return }
             let updated = DockDetector.currentFrame()
