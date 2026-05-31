@@ -2,11 +2,12 @@ import Cocoa
 
 /// Detects the Dock icon bar's frame in AppKit coordinates (bottom-left origin).
 /// Primary method: System Events via AppleScript (exact icon bar bounds).
-/// Fallback: NSScreen.visibleFrame difference (reserved strip, full width).
+/// Fallback: an empty rect — no Dock obstacle, so rain lands on the real screen
+/// floor across the whole width (same behavior as snow).
 enum DockDetector {
 
     static func currentFrame() -> CGRect {
-        appleScriptFrame() ?? visibleFrameRect()
+        appleScriptFrame() ?? .zero
     }
 
     // MARK: Private
@@ -38,20 +39,5 @@ enum DockDetector {
 
         // Convert Quartz (top-left origin) → AppKit (bottom-left origin)
         return CGRect(x: x, y: screen.frame.height - qy - h, width: w, height: h)
-    }
-
-    /// Approximates the Dock reserved strip from the difference between
-    /// NSScreen.frame and NSScreen.visibleFrame. Covers the full strip width/height
-    /// rather than just the icon bar — used when Accessibility is not granted.
-    private static func visibleFrameRect() -> CGRect {
-        guard let screen = NSScreen.main else { return .zero }
-        let sf = screen.frame, vf = screen.visibleFrame
-        if sf.width > vf.width {
-            let w = sf.width - vf.width
-            return CGRect(x: vf.origin.x > 0 ? 0 : vf.maxX, y: 0, width: w, height: sf.height)
-        } else if vf.origin.y > 0 {
-            return CGRect(x: 0, y: 0, width: sf.width, height: vf.origin.y)
-        }
-        return .zero
     }
 }
