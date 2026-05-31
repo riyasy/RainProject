@@ -1,13 +1,20 @@
 import Cocoa
 
+/// The programmatic settings panel (mode toggle, intensity, direction, drop
+/// color, Quit). It holds no app state: the initial values are pushed in before
+/// presentation, and every change is reported through the `on*` callbacks, which
+/// `AppDelegate` applies and persists. Direction and color rows live in
+/// `rainOnlyViews` and are hidden in snow mode.
 final class SettingsViewController: NSViewController {
 
+    // Change callbacks, wired up by AppDelegate.
     var onIntensity: ((Int)          -> Void)?
     var onDirection: ((Int)          -> Void)?
     var onColor:     ((NSColor)      -> Void)?
     var onMode:      ((ParticleMode) -> Void)?
     var onQuit:      (() -> Void)?
 
+    // Seed values, set by AppDelegate before the panel is shown.
     var intensity: Int          = 200
     var direction: Int          = 0
     var mode: ParticleMode      = .rain
@@ -32,6 +39,9 @@ final class SettingsViewController: NSViewController {
 
     // MARK: - UI construction
 
+    /// Lay out every control by hand (no Auto Layout): a top-down cursor `top`
+    /// is decremented as each row is added. The intensity slider's 2–50 range maps
+    /// to 20–500 particles (×10); direction is an integer −5…+5 with tick stops.
     private func buildUI() {
         let pad: CGFloat = 18
         let w   = view.bounds.width - pad * 2
@@ -123,6 +133,7 @@ final class SettingsViewController: NSViewController {
         updateModeVisibility()
     }
 
+    /// Show the direction/color rows only in rain mode.
     private func updateModeVisibility() {
         let isRain = mode == .rain
         rainOnlyViews.forEach { $0.isHidden = !isRain }
@@ -137,7 +148,7 @@ final class SettingsViewController: NSViewController {
     }
 
     @objc private func intensityChanged(_ sender: NSSlider) {
-        let drops = Int(sender.intValue) * 10
+        let drops = Int(sender.intValue) * 10   // slider 2…50 → 20…500 particles
         intensityLabel.stringValue = "\(drops)"
         onIntensity?(drops)
     }
@@ -156,6 +167,7 @@ final class SettingsViewController: NSViewController {
 
     // MARK: - Helpers
 
+    /// Render the direction value as an arrow + magnitude (e.g. "← 3", "↓", "→ 2").
     private func formatDirection(_ d: Int) -> String {
         switch d {
         case ..<0: return "← \(-d)"

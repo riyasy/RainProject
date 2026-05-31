@@ -4,14 +4,21 @@ import Cocoa
 
 // MARK: - Vertex layout (must match RainShaders.metal attribute indices)
 
+/// One interleaved vertex shared by both renderers and every shader. The field
+/// order/offsets must stay in lock-step with the `MTLVertexDescriptor` set up in
+/// each renderer and the attribute indices in `RainShaders.metal`.
 struct RainVertex {
     var x, y: Float     // NDC position
-    var u, v: Float     // UV — used by splatterFragment for circle SDF clip
+    var u, v: Float     // UV — circle SDF clip (splatter) / atlas sample (snow)
     var r, g, b, a: Float
 }
 
 // MARK: - Renderer
 
+/// Metal renderer for rain. Each frame it walks the drop list, writing drop
+/// trails as line-quads and splatter bursts as circle-SDF quads into pre-sized,
+/// triple-buffered vertex buffers, then issues one indexed draw per primitive
+/// type. See `RainShaders.metal` for the matching vertex/fragment functions.
 final class RainRenderer {
 
     private(set) var metalLayer: CAMetalLayer?
@@ -37,6 +44,8 @@ final class RainRenderer {
 
     // MARK: Setup
 
+    /// Attach a transparent `CAMetalLayer` to `view` and build the pipelines and
+    /// buffers. Safe to call repeatedly; the previous layer is removed first.
     func setup(in view: NSView, screenBounds: CGRect) {
         guard let dev = MetalSystem.device else { return }
         device = dev
@@ -60,6 +69,8 @@ final class RainRenderer {
         buildBuffers(device: dev)
     }
 
+    /// Detach the Metal layer. The GPU resources are released when the renderer
+    /// is next set up or deallocated.
     func teardown() {
         metalLayer?.removeFromSuperlayer()
         metalLayer = nil
@@ -123,6 +134,9 @@ final class RainRenderer {
 
     // MARK: Private — setup helpers
 
+    /// Build the two render pipelines (drop trails, splatter dots). Both share the
+    /// `RainVertex` layout and premultiplied-style source-over alpha blending, and
+    /// differ only in fragment function.
     private func buildPipelines(device dev: MTLDevice) {
         guard let lib   = dev.makeDefaultLibrary(),
               let vert  = lib.makeFunction(name: "mainVertex"),
@@ -150,6 +164,8 @@ final class RainRenderer {
         splatterPipeline = pipe(splatF)
     }
 
+    /// Allocate the triple-buffered vertex rings (sized to the max particle
+    /// count) and the shared quad→triangle index buffer.
     private func buildBuffers(device dev: MTLDevice) {
         let opts: MTLResourceOptions = dev.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         let stride = MemoryLayout<RainVertex>.stride
@@ -176,6 +192,9 @@ final class RainRenderer {
 
     // MARK: Private — vertex building
 
+    /// Append one drop's trail as a 4-vertex quad (head `pos` → `trailTail`),
+    /// given a constant half-width perpendicular to the velocity. Skips the drop
+    /// when fully off-screen or when the buffer is full.
     private func buildDropQuad(drop: RainDrop, screenBounds: CGRect,
                                 sw: Float, sh: Float,
                                 r: Float, g: Float, b: Float,
@@ -188,6 +207,8 @@ final class RainRenderer {
         let v = drop.vel
         let mag = (v.x * v.x + v.y * v.y).squareRoot()
         let hw = CGFloat(1.5)
+        // (px, py): unit normal to the velocity, scaled to half-width and into NDC,
+        // so the two long edges of the trail quad sit either side of the streak.
         let px = Float(-v.y / mag * hw / screenBounds.width)
         let py = Float( v.x / mag * hw / screenBounds.height)
         let hx = Float(h.x) / sw * 2 - 1, hy = Float(h.y) / sh * 2 - 1
@@ -200,6 +221,9 @@ final class RainRenderer {
         count += 4
     }
 
+    /// Append a quad per live splatter droplet of a landed drop. The UVs span
+    /// `[-1, 1]` so `splatterFragment` can clip each quad to a circle, and the
+    /// whole burst fades out over `kSplatterDuration`.
     private func buildSplatterQuads(drop: RainDrop,
                                      sw: Float, sh: Float,
                                      r: Float, g: Float, b: Float,
@@ -221,6 +245,9 @@ final class RainRenderer {
 
     // MARK: Private — Metal encode + present
 
+    /// Encode and present one frame: clear to transparent, draw the drop quads
+    /// then the splatter quads, and signal the in-flight semaphore on completion.
+    /// Any early-out here must `signal()` so the `wait()` in `render` stays balanced.
     private func encode(drawable: (any CAMetalDrawable)?,
                         cmdQueue: MTLCommandQueue,
                         dropBuf: MTLBuffer, dCnt: Int,

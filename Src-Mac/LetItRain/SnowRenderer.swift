@@ -2,9 +2,9 @@ import Metal
 import QuartzCore
 import Cocoa
 
-// Unit paths for each shape type — built once at the shape's natural extent.
-// These are baked into the atlas texture (see SnowRenderer.buildAtlas) rather
-// than re-tessellated per frame.
+/// Unit `CGPath`s for the four flake shapes, each built once at its natural
+/// extent (centered on the origin). These are baked into the atlas texture by
+/// `SnowRenderer.buildAtlas` rather than re-tessellated per frame.
 private enum UnitPath {
 
     // Simple: slightly oval ellipse (radiusX = 1, radiusY = 0.7)
@@ -105,6 +105,8 @@ final class SnowRenderer {
 
     // MARK: Setup / teardown
 
+    /// Attach a transparent `CAMetalLayer`, build the pipelines/sampler, bake the
+    /// shape atlas, and allocate the vertex rings. Safe to call repeatedly.
     func setup(in view: NSView, screenBounds: CGRect) {
         teardown()
         guard let dev = MetalSystem.device,
@@ -131,6 +133,7 @@ final class SnowRenderer {
         buildBuffers(device: dev)
     }
 
+    /// Detach the Metal layer and drop all GPU resources.
     func teardown() {
         metalLayer?.removeFromSuperlayer()
         metalLayer = nil
@@ -141,6 +144,9 @@ final class SnowRenderer {
 
     // MARK: Per-frame render
 
+    /// Emit one textured quad per flake plus the pile triangle-strip into the
+    /// current ring buffers, then encode the frame. Triple-buffered behind the
+    /// in-flight semaphore exactly like the rain renderer.
     func render(system: SnowSystem, screenBounds: CGRect) {
         guard let layer    = metalLayer,
               let idxBuf   = indexBuf,
@@ -190,6 +196,9 @@ final class SnowRenderer {
 
     // MARK: Private — vertex building
 
+    /// Append one flake as a rotated, radius-scaled quad whose UVs address the
+    /// flake's cell in the atlas. Folds the half-size into the rotation so each
+    /// corner is `center + R(θ)·(±hs, ±hs)`.
     private func buildFlakeQuad(_ f: SnowFlake, sw: Float, sh: Float,
                                 into ptr: UnsafeMutablePointer<RainVertex>,
                                 count: inout Int) {
@@ -215,6 +224,8 @@ final class SnowRenderer {
         emit( 1,  1, u1, v1)   // 3
     }
 
+    /// Append the settled-pile polygon as a triangle strip: a (floor, top) vertex
+    /// pair per `heightMap` column, so adjacent columns form the filled slope.
     private func buildPile(_ hm: [CGFloat], screenBounds: CGRect,
                            sw: Float, sh: Float,
                            into ptr: UnsafeMutablePointer<RainVertex>,
@@ -252,6 +263,9 @@ final class SnowRenderer {
 
     // MARK: Private — setup helpers
 
+    /// Build the two pipelines: textured flakes (`snowFlakeFragment`) and the
+    /// flat-white pile (reusing `dropFragment`). Both share `mainVertex` and the
+    /// `RainVertex` layout, with source-over alpha blending.
     private func buildPipelines(device dev: MTLDevice) {
         guard let lib    = dev.makeDefaultLibrary(),
               let vert   = lib.makeFunction(name: "mainVertex"),
@@ -279,6 +293,8 @@ final class SnowRenderer {
         pilePipeline  = pipe(pileF)
     }
 
+    /// Linear + mipmapped, clamp-to-edge sampler — antialiases the baked shapes
+    /// as the tiny on-screen quads sample down the atlas.
     private func buildSampler(device dev: MTLDevice) {
         let d = MTLSamplerDescriptor()
         d.minFilter = .linear
@@ -348,6 +364,8 @@ final class SnowRenderer {
         atlasTexture = tex
     }
 
+    /// Allocate the triple-buffered flake and pile vertex rings and the shared
+    /// quad→triangle index buffer (used only by the flake draw).
     private func buildBuffers(device dev: MTLDevice) {
         let opts: MTLResourceOptions = dev.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         let stride = MemoryLayout<RainVertex>.stride
@@ -374,6 +392,9 @@ final class SnowRenderer {
 
     // MARK: Private — Metal encode + present
 
+    /// Encode and present one frame: clear to transparent, draw the pile strip
+    /// (behind), then the textured flake quads (in front), and signal the
+    /// in-flight semaphore on completion. Early-outs must `signal()` to stay balanced.
     private func encode(drawable: (any CAMetalDrawable)?,
                         cmdQueue: MTLCommandQueue,
                         pileBuf: MTLBuffer, pCnt: Int,

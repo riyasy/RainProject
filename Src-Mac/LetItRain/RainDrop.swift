@@ -1,16 +1,23 @@
 import CoreGraphics
 
+/// One falling rain drop and the lifecycle it owns: it falls, lands on the
+/// `physicsFloor`, spawns a short-lived splatter burst, then recycles itself.
+/// A `RainDrop` is reused for the life of the app — `reset(windX:)` respawns it
+/// rather than allocating a new one — so the per-frame drop array stays stable.
 struct RainDrop {
     var pos: CGPoint
     var vel: CGPoint          // var — direction changes are applied live
-    let trailLength: CGFloat
-    var touchedGround = false
-    var isDead = false
-    var splatterTime: Double = 0
+    let trailLength: CGFloat  // length of the visual streak behind `pos`
+    var touchedGround = false // true once landed; then the splatter phase runs
+    var isDead = false        // flagged for recycling at the end of the tick
+    var splatterTime: Double = 0   // seconds since landing (drives the burst fade)
     var splatters: [Splatter] = []
 
     private let screenBounds: CGRect
 
+    /// Spawn a drop falling at `kVelY` with horizontal `windX`. Pass
+    /// `stagger: true` for the initial fill so drops start scattered down the
+    /// screen instead of all entering from the top edge at once.
     init(screenBounds: CGRect, windX: CGFloat, stagger: Bool = false) {
         self.screenBounds = screenBounds
         trailLength = .random(in: kTrailMin...kTrailMax)
@@ -45,6 +52,8 @@ struct RainDrop {
         }
     }
 
+    /// Recycle a dead drop back to a fresh fall. Keeps the splatter array's
+    /// capacity so respawning never reallocates.
     mutating func reset(windX: CGFloat) {
         touchedGround = false
         isDead = false
@@ -56,6 +65,9 @@ struct RainDrop {
 
     // MARK: Private
 
+    /// Random spawn point. X is drawn across the screen plus a third-width margin
+    /// on each side (so wind-blown drops can enter from off-screen); Y starts just
+    /// above the top edge, or anywhere down the screen when `stagger` is set.
     private static func randomSpawn(in b: CGRect, stagger: Bool) -> CGPoint {
         let xMargin = b.width / 3
         let x = CGFloat.random(in: (b.minX - xMargin)...(b.maxX + xMargin))
@@ -65,6 +77,9 @@ struct RainDrop {
         return CGPoint(x: x, y: y)
     }
 
+    /// Emit the landing burst: `kSplatterCount` droplets launched up-and-outward
+    /// from the impact point. Each angle is biased left (20–70°) or right
+    /// (110–160°) of vertical so the burst fans to the sides rather than straight up.
     mutating func spawnSplatters(floorY: CGFloat) {
         splatters.reserveCapacity(kSplatterCount)
         for _ in 0..<kSplatterCount {

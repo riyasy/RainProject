@@ -5,13 +5,19 @@ private let kMaxSnowFraction: CGFloat = 0.35  // snow pile capped at 35% of scre
 private let kSnowColumnSpacing: CGFloat = 12   // ~12 pt per pile column (downsampled)
 private let kSnowMaxColumns = 160
 
+/// Owns the live snowflakes and the settled-snow pile. The pile is stored as a
+/// downsampled `heightMap` (one height per ~12 pt column); flakes that settle
+/// add to their column, and `smoothHeightMap()` relaxes the columns into organic
+/// slopes. Stepped once per frame by `update(dt:time:targetCount:)`.
 struct SnowSystem {
     var flakes: [SnowFlake] = []
     var heightMap: [CGFloat]    // settled snow height per pile column (pt above floor)
 
     private let screenBounds: CGRect
-    private let maxHeight: CGFloat
+    private let maxHeight: CGFloat   // per-column height cap (kMaxSnowFraction of screen height)
 
+    /// Build the pile columns (sized to the screen width) and the initial,
+    /// staggered flake population.
     init(screenBounds: CGRect, count: Int) {
         self.screenBounds = screenBounds
         self.maxHeight    = screenBounds.height * kMaxSnowFraction
@@ -20,6 +26,9 @@ struct SnowSystem {
         flakes    = (0..<count).map { _ in SnowFlake(screenBounds: screenBounds, stagger: true) }
     }
 
+    /// Advance one frame: reconcile the flake count to `targetCount`, move every
+    /// flake, fold settled flakes into the pile (respawning them), respawn ones
+    /// that drift off-screen, and relax the pile.
     mutating func update(dt: CGFloat, time: Double, targetCount: Int) {
         // Reconcile flake count
         if flakes.count < targetCount {
@@ -45,11 +54,13 @@ struct SnowSystem {
         smoothHeightMap()
     }
 
+    /// Flatten the settled pile back to zero (keeps the column count).
     mutating func clearSnow() {
         heightMap = [CGFloat](repeating: 0, count: heightMap.count)
     }
 
-    // Map a screen x-coordinate to a pile column index (clamped).
+    /// Map a screen x-coordinate to a pile column index (clamped to `0..<count`).
+    /// Shared by `SnowSystem` (accumulating) and `SnowFlake` (settling test).
     static func column(forX x: CGFloat, screenBounds: CGRect, count: Int) -> Int {
         let frac = (x - screenBounds.minX) / max(screenBounds.width, 1)
         let raw  = frac * CGFloat(count)

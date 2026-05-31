@@ -1,7 +1,18 @@
 import Cocoa
 
+/// Which particle subsystem is active. The raw values are persisted in
+/// `UserDefaults`, so don't renumber them.
 enum ParticleMode: Int { case rain = 0, snow = 1 }
 
+/// The app's controller and the hub for everything that isn't rendering.
+///
+/// Owns the transparent overlay window, the menu-bar status item and settings
+/// panel, the persisted settings, the per-frame `CADisplayLink`, the physics
+/// state (`drops` / `snowSystem`), and the two Metal renderers. Exactly one
+/// renderer + subsystem is live at a time, selected by `settingsMode`.
+///
+/// Everything here runs on the main thread (the display link fires on main),
+/// with the sole exception of the Dock query dispatched to `dockQueue`.
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Overlay window
@@ -18,6 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsB: Float        = 1.0
     private var settingsMode: ParticleMode = .rain
 
+    /// `UserDefaults` keys for the persisted settings.
     private enum Keys {
         static let intensity = "intensity"
         static let direction = "direction"
@@ -59,6 +71,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - App lifecycle
 
+    /// Build everything once the app finishes launching: load saved settings,
+    /// show the menu-bar item and overlay window, ask for Accessibility (for Dock
+    /// detection), start the animation, and rebuild on display reconfiguration.
     func applicationDidFinishLaunching(_ notification: Notification) {
         loadSettings()
         setupMenuBar()
@@ -72,6 +87,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    /// Resolution / display-arrangement changed: resize the overlay to the new
+    /// main-screen frame and rebuild the animation against the new geometry.
     @objc private func screenParametersChanged() {
         window.setFrame(NSScreen.main?.frame ?? .zero, display: true)
         setupAnimation()
@@ -79,6 +96,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Overlay window
 
+    /// Create the full-screen overlay: borderless, transparent, click-through,
+    /// at the screen-saver window level so it floats above normal windows.
     private func setupOverlayWindow() {
         let screenFrame = NSScreen.main?.frame ?? .zero
         window = TransparentWindow(contentRect: screenFrame,
@@ -93,6 +112,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Animation
 
+    /// (Re)build the active subsystem from scratch. Idempotent: tears down both
+    /// renderers and the timers, captures current screen geometry, then sets up
+    /// only the renderer + particle state for `settingsMode` and (re)starts the
+    /// display link. Called on launch, on mode switch, and on display changes.
     private func setupAnimation() {
         displayLink?.invalidate()
         displayLink = nil
@@ -167,6 +190,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Per-frame tick
 
+    /// Display-link callback: compute the frame's delta-time and advance the
+    /// active subsystem. `dt` is clamped to 50 ms so a stall (e.g. app paused)
+    /// can't teleport particles across the screen in one step; the first frame
+    /// uses the link's nominal duration since there's no previous timestamp.
     @objc private func tick(_ link: CADisplayLink) {
         let dt: CGFloat = lastTimestamp < 0 ? CGFloat(link.duration)
             : CGFloat(min(link.targetTimestamp - lastTimestamp, 0.05))
@@ -180,9 +207,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Advance and draw one rain frame: reconcile the drop count to the intensity
+    /// setting, then for each drop either fall (applying the live wind) or, once
+    /// it has landed, animate its splatter burst until the burst expires and the
+    /// drop is recycled. Finally hand the whole list to the renderer.
     private func tickRain(dt: CGFloat) {
         let wx = windX(forDirection: settingsDirection)
         let target = settingsIntensity
+        // Grow or shrink the pool to match the current intensity slider.
         if drops.count != target {
             if drops.count < target {
                 drops += (drops.count..<target).map { _ in RainDrop(screenBounds: screenBounds, windX: wx) }
@@ -193,22 +225,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         for i in drops.indices {
             if !drops[i].touchedGround {
-                drops[i].vel.x = wx
+                drops[i].vel.x = wx                       // direction slider can change mid-fall
                 drops[i].updateDrop(dt: dt, dockObstacle: dockObstacle)
             } else {
+                // Landed: tick the live splatter droplets and age the burst.
                 for j in drops[i].splatters.indices where drops[i].splatters[j].isAlive {
                     drops[i].splatters[j].update(dt: dt, screenBounds: screenBounds, dockObstacle: dockObstacle)
                 }
                 drops[i].splatterTime += Double(dt)
                 if drops[i].splatterTime >= kSplatterDuration { drops[i].isDead = true }
             }
-            if drops[i].isDead { drops[i].reset(windX: wx) }
+            if drops[i].isDead { drops[i].reset(windX: wx) }   // recycle in place
         }
 
         rainRenderer.render(drops: drops, screenBounds: screenBounds,
                             color: (r: settingsR, g: settingsG, b: settingsB))
     }
 
+    /// Advance and draw one snow frame. `SnowSystem` owns count reconciliation,
+    /// motion, settling, and the pile, so this just steps it and renders.
     private func tickSnow(dt: CGFloat) {
         snowSystem?.update(dt: dt, time: lastTimestamp, targetCount: settingsIntensity)
         if let system = snowSystem {
@@ -218,6 +253,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Accessibility
 
+    /// Prompt for Accessibility on first launch if not already trusted. The
+    /// permission lets `DockDetector` read the Dock's exact icon-bar bounds;
+    /// without it rain just lands on the screen floor everywhere.
     private func requestAccessibilityIfNeeded() {
         guard !AXIsProcessTrusted() else { return }
         let opts = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true]
@@ -226,6 +264,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Menu bar
 
+    /// Install the menu-bar status item whose button toggles the settings panel.
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem?.button?.image = NSImage(systemSymbolName: "cloud.rain.fill",
@@ -234,6 +273,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.button?.target = self
     }
 
+    /// Show or hide the settings panel (built lazily on first use), positioning
+    /// it just below the status-item button.
     @objc private func toggleSettings() {
         if settingsPanel == nil { buildSettingsPanel() }
         guard let panel = settingsPanel else { return }
@@ -246,6 +287,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Center the panel horizontally under the status-item button, just below it.
     private func positionPanel(_ panel: NSPanel) {
         guard let btn = statusItem?.button,
               let btnWindow = btn.window else { return }
@@ -256,6 +298,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         ))
     }
 
+    /// Lazily build the floating settings panel and wire its `on*` callbacks back
+    /// to this delegate: each writes the corresponding setting, persists it, and
+    /// (for a mode change) rebuilds the animation.
     private func buildSettingsPanel() {
         let vc = SettingsViewController()
         vc.intensity = settingsIntensity
@@ -285,8 +330,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settingsPanel = panel
     }
 
+    /// Store a chosen drop color as plain device-RGB floats for the renderer.
     private func applyColor(_ c: NSColor) {
-        let rgb = c.usingColorSpace(.deviceRGB) ?? c
+        let rgb = c.usingColorSpace(.deviceRGB) ?? c   // normalize so .redComponent etc. are valid
         settingsR = Float(rgb.redComponent)
         settingsG = Float(rgb.greenComponent)
         settingsB = Float(rgb.blueComponent)
@@ -294,6 +340,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Persistence
 
+    /// Load persisted settings, leaving each at its default if absent.
     private func loadSettings() {
         let d = UserDefaults.standard
         if let v = d.object(forKey: Keys.intensity) as? Int   { settingsIntensity = v }
@@ -305,6 +352,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
            let m = ParticleMode(rawValue: v)                   { settingsMode = m }
     }
 
+    /// Persist all current settings (called after any settings-panel change).
     private func saveSettings() {
         let d = UserDefaults.standard
         d.set(settingsIntensity,      forKey: Keys.intensity)

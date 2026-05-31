@@ -15,6 +15,10 @@ enum DockDetector {
 
     // MARK: Private
 
+    /// Compiled once and reused. Asks System Events for the Dock process's icon
+    /// list bounds: `{x, y, width, height}` in Quartz (top-left origin) points.
+    /// Only ever executed from `AppDelegate.dockQueue`, so the single shared
+    /// instance is never used from two threads at once.
     private static let compiledScript: NSAppleScript? = NSAppleScript(source: """
         tell application "System Events"
             tell application process "Dock"
