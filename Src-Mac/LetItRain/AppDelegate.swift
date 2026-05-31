@@ -190,9 +190,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func tickSnow(dt: CGFloat) {
         snowSystem?.update(dt: dt, time: lastTimestamp, targetCount: settingsIntensity)
         if let system = snowSystem {
-            snowRenderer.render(system: system, screenBounds: screenBounds,
-                                rebuildPile: system.pileDirty)
-            snowSystem?.pileDirty = false
+            snowRenderer.render(system: system, screenBounds: screenBounds)
         }
     }
 

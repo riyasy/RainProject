@@ -31,3 +31,13 @@ fragment float4 splatterFragment(V2F in [[stage_in]]) {
     if (length(in.uv) > 1.0) discard_fragment();
     return in.col;
 }
+
+// Snowflake — sample the baked shape atlas (white shape, coverage in the alpha
+// channel) and tint by the vertex color. The texture supplies the antialiased
+// shape; the vertex color supplies the flake's opacity.
+fragment float4 snowFlakeFragment(V2F in [[stage_in]],
+                                  texture2d<float> atlas [[texture(0)]],
+                                  sampler smp [[sampler(0)]]) {
+    float cov = atlas.sample(smp, in.uv).a;
+    return float4(in.col.rgb, in.col.a * cov);
+}
