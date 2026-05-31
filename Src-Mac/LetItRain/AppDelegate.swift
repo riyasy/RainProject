@@ -45,6 +45,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastTimestamp: CFTimeInterval = -1
     private var pollTimer: Timer?
 
+    /// Serial queue for the Dock AppleScript query. NSAppleScript isn't safe to
+    /// use from multiple threads at once, but it's fine on one dedicated thread —
+    /// so the (slow, synchronous) query runs here instead of stalling the main
+    /// thread, and `DockDetector` is only ever touched from this queue.
+    private let dockQueue = DispatchQueue(label: "com.letxt.SnowMan.LetItRain.dock",
+                                          qos: .utility)
+
     // MARK: - Menu bar
 
     private var statusItem: NSStatusItem?
@@ -124,14 +131,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Dock detection is only meaningful for rain (drops/splatters land on the
-    /// Dock's top edge). The synchronous NSAppleScript query must run on the
-    /// main thread (not thread-safe), so it's kept off the hot path in snow mode.
+    /// Dock's top edge), so it's kept off entirely in snow mode. The timer fires
+    /// on the main run loop but only schedules the work — the synchronous query
+    /// runs on `dockQueue`.
     private func startDockPolling() {
-        dockObstacle = DockDetector.currentFrame()
+        refreshDockObstacle()
         pollTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            let updated = DockDetector.currentFrame()
-            if updated != self.dockObstacle { self.dockObstacle = updated }
+            self?.refreshDockObstacle()
+        }
+    }
+
+    /// Run the Dock query off the main thread, then apply the result back on main
+    /// (so `dockObstacle` stays single-threaded — written and read only on main).
+    private func refreshDockObstacle() {
+        let screenHeight = screenBounds.height   // read NSScreen-derived value on main
+        dockQueue.async { [weak self] in
+            let updated = DockDetector.currentFrame(screenHeight: screenHeight)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if updated != self.dockObstacle { self.dockObstacle = updated }
+            }
         }
     }
 

@@ -6,8 +6,11 @@ import Cocoa
 /// floor across the whole width (same behavior as snow).
 enum DockDetector {
 
-    static func currentFrame() -> CGRect {
-        appleScriptFrame() ?? .zero
+    /// `screenHeight` (the main screen's full height) is passed in by the caller
+    /// rather than read from `NSScreen` here, so this can run off the main thread
+    /// without touching AppKit. Used to flip Quartz (top-left) to AppKit (bottom-left).
+    static func currentFrame(screenHeight: CGFloat) -> CGRect {
+        appleScriptFrame(screenHeight: screenHeight) ?? .zero
     }
 
     // MARK: Private
@@ -24,7 +27,7 @@ enum DockDetector {
 
     /// Requires Accessibility permission (System Settings → Privacy → Accessibility).
     /// The first Apple Event sent also triggers an Automation permission dialog.
-    private static func appleScriptFrame() -> CGRect? {
+    private static func appleScriptFrame(screenHeight: CGFloat) -> CGRect? {
         guard AXIsProcessTrusted() else { return nil }
         guard let scr = compiledScript else { return nil }
         var error: NSDictionary?
@@ -35,9 +38,9 @@ enum DockDetector {
         let qy = CGFloat(result.atIndex(2)?.int32Value ?? 0)
         let w  = CGFloat(result.atIndex(3)?.int32Value ?? 0)
         let h  = CGFloat(result.atIndex(4)?.int32Value ?? 0)
-        guard let screen = NSScreen.main, w > 0, h > 0 else { return nil }
+        guard w > 0, h > 0 else { return nil }
 
         // Convert Quartz (top-left origin) → AppKit (bottom-left origin)
-        return CGRect(x: x, y: screen.frame.height - qy - h, width: w, height: h)
+        return CGRect(x: x, y: screenHeight - qy - h, width: w, height: h)
     }
 }
