@@ -67,7 +67,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Menu bar
 
     private var statusItem: NSStatusItem?
-    private var settingsPanel: NSPanel?
+    private var settingsPopover: NSPopover?
 
     // MARK: - App lifecycle
 
@@ -273,35 +273,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.button?.target = self
     }
 
-    /// Show or hide the settings panel (built lazily on first use), positioning
-    /// it just below the status-item button.
+    /// Show or hide the settings popover (built lazily on first use), anchored to
+    /// the status-item button so it gets the native menu-bar window look.
     @objc private func toggleSettings() {
-        if settingsPanel == nil { buildSettingsPanel() }
-        guard let panel = settingsPanel else { return }
-        if panel.isVisible {
-            panel.orderOut(nil)
+        if settingsPopover == nil { buildSettingsPopover() }
+        guard let popover = settingsPopover, let btn = statusItem?.button else { return }
+        if popover.isShown {
+            popover.performClose(nil)
         } else {
-            positionPanel(panel)
-            panel.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+            popover.show(relativeTo: btn.bounds, of: btn, preferredEdge: .maxY)
+            // The rain overlay lives at `.screenSaver` level and covers the whole
+            // screen; lift the popover window above it so rain isn't painted over
+            // the settings UI.
+            if let win = popover.contentViewController?.view.window {
+                win.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
+            }
         }
     }
 
-    /// Center the panel horizontally under the status-item button, just below it.
-    private func positionPanel(_ panel: NSPanel) {
-        guard let btn = statusItem?.button,
-              let btnWindow = btn.window else { return }
-        let btnRect = btnWindow.convertToScreen(btn.frame)
-        panel.setFrameOrigin(NSPoint(
-            x: btnRect.midX - panel.frame.width / 2,
-            y: btnRect.minY - panel.frame.height - 6
-        ))
-    }
-
-    /// Lazily build the floating settings panel and wire its `on*` callbacks back
-    /// to this delegate: each writes the corresponding setting, persists it, and
-    /// (for a mode change) rebuilds the animation.
-    private func buildSettingsPanel() {
+    /// Lazily build the settings popover and wire its `on*` callbacks back to this
+    /// delegate: each writes the corresponding setting, persists it, and (for a mode
+    /// change) rebuilds the animation. `.transient` makes it dismiss on outside click.
+    private func buildSettingsPopover() {
         let vc = SettingsViewController()
         vc.intensity = settingsIntensity
         vc.direction = settingsDirection
@@ -319,15 +313,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         vc.onQuit = { NSApp.terminate(nil) }
 
-        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 300, height: 250),
-                            styleMask: [.titled, .closable, .nonactivatingPanel],
-                            backing: .buffered, defer: false)
-        panel.title = "Let It Rain"
-        panel.contentViewController = vc
-        panel.isFloatingPanel = true
-        panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
-        panel.hidesOnDeactivate = false
-        settingsPanel = panel
+        let popover = NSPopover()
+        popover.contentViewController = vc
+        popover.contentSize = NSSize(width: 300, height: 318)
+        popover.behavior = .transient
+        popover.animates = true
+        settingsPopover = popover
     }
 
     /// Store a chosen drop color as plain device-RGB floats for the renderer.
