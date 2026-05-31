@@ -19,3 +19,51 @@ Win32/
 *.user
 *.suo
 *.resinclude
+
+################################################################################
+# macOS
+################################################################################
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+################################################################################
+# Xcode / Swift (Src-Mac)
+################################################################################
+# Build products
+build/
+DerivedData/
+*.moved-aside
+
+# User-specific Xcode state (per-developer, should never be committed)
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.resolved
+
+# Misc Xcode
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.playground/playground.xcworkspace
+
+################################################################################
+# Claude Code artifacts
+################################################################################
+.claude/
+.claude.json
+CLAUDE.md
+CLAUDE.local.md
+tmpclaude-*
+**/tmpclaude-*
