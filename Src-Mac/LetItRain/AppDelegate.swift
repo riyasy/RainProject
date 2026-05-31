@@ -36,7 +36,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Subsystems
 
-    private let renderer     = MetalRenderer()
+    private let rainRenderer = RainRenderer()
     private let snowRenderer = SnowRenderer()
 
     // MARK: - Timing
@@ -99,12 +99,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         cv.wantsLayer = true
 
         // Teardown both renderers; set up only the active one.
-        renderer.teardown()
+        rainRenderer.teardown()
         snowRenderer.teardown()
 
         switch settingsMode {
         case .rain:
-            renderer.setup(in: cv, screenBounds: screenBounds)
+            rainRenderer.setup(in: cv, screenBounds: screenBounds)
             let wx = windX(forDirection: settingsDirection)
             drops = (0..<settingsIntensity).map { _ in
                 RainDrop(screenBounds: screenBounds, windX: wx, stagger: true)
@@ -137,6 +137,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func startDisplayLink() {
         lastTimestamp = -1
+        // CADisplayLink retains its target, so this forms a retain cycle with
+        // AppDelegate. That's intentional and harmless: AppDelegate lives for the
+        // whole app, and setupAnimation() invalidates the old link (breaking the
+        // cycle) before creating a new one.
         let link = window.displayLink(target: self, selector: #selector(tick(_:)))
         link.add(to: .main, forMode: .common)
         displayLink = link
@@ -158,9 +162,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func tickRain(dt: CGFloat) {
+        let wx = windX(forDirection: settingsDirection)
         let target = settingsIntensity
         if drops.count != target {
-            let wx = windX(forDirection: settingsDirection)
             if drops.count < target {
                 drops += (drops.count..<target).map { _ in RainDrop(screenBounds: screenBounds, windX: wx) }
             } else {
@@ -168,7 +172,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        let wx = windX(forDirection: settingsDirection)
         for i in drops.indices {
             if !drops[i].touchedGround {
                 drops[i].vel.x = wx
@@ -183,8 +186,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if drops[i].isDead { drops[i].reset(windX: wx) }
         }
 
-        renderer.render(drops: drops, screenBounds: screenBounds,
-                        color: (r: settingsR, g: settingsG, b: settingsB))
+        rainRenderer.render(drops: drops, screenBounds: screenBounds,
+                            color: (r: settingsR, g: settingsG, b: settingsB))
     }
 
     private func tickSnow(dt: CGFloat) {

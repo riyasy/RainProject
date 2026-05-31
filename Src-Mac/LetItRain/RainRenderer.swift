@@ -12,7 +12,7 @@ struct RainVertex {
 
 // MARK: - Renderer
 
-final class MetalRenderer {
+final class RainRenderer {
 
     private(set) var metalLayer: CAMetalLayer?
 
@@ -38,7 +38,7 @@ final class MetalRenderer {
     // MARK: Setup
 
     func setup(in view: NSView, screenBounds: CGRect) {
-        guard let dev = MTLCreateSystemDefaultDevice() else { return }
+        guard let dev = MetalSystem.device else { return }
         device = dev
         commandQueue = dev.makeCommandQueue()
 
@@ -74,48 +74,51 @@ final class MetalRenderer {
               let idxBuf   = indexBuf,
               let cmdQueue = commandQueue,
               let dev      = device,
-              dropVtxBufs.count  == MetalRenderer.kMaxInFlight,
-              splatVtxBufs.count == MetalRenderer.kMaxInFlight else { return }
+              dropVtxBufs.count  == RainRenderer.kMaxInFlight,
+              splatVtxBufs.count == RainRenderer.kMaxInFlight else { return }
 
-        // Claim a free in-flight slot, then advance to its buffer ring index.
-        // From here on, every exit path must signal() exactly once (the command
-        // buffer's completion handler, or the early-outs in encode()).
-        inFlight.wait()
-        frameIndex = (frameIndex + 1) % MetalRenderer.kMaxInFlight
-        let dropBuf  = dropVtxBufs[frameIndex]
-        let splatBuf = splatVtxBufs[frameIndex]
+        // autoreleasepool bounds the per-frame transient objects (the
+        // CAMetalDrawable and its screen-sized texture, command buffer, etc.)
+        // so they don't accumulate between run-loop drains.
+        autoreleasepool {
+            // Claim a free in-flight slot, then advance to its buffer ring index.
+            // From here on, every exit path must signal() exactly once (the command
+            // buffer's completion handler, or the early-outs in encode()).
+            inFlight.wait()
+            frameIndex = (frameIndex + 1) % RainRenderer.kMaxInFlight
+            let dropBuf  = dropVtxBufs[frameIndex]
+            let splatBuf = splatVtxBufs[frameIndex]
 
-        let sw = Float(screenBounds.width), sh = Float(screenBounds.height)
+            let sw = Float(screenBounds.width), sh = Float(screenBounds.height)
 
-        let dPtr = dropBuf.contents().bindMemory(to: RainVertex.self,
-                                                  capacity: MetalRenderer.kMaxDropVerts)
-        let sPtr = splatBuf.contents().bindMemory(to: RainVertex.self,
-                                                   capacity: MetalRenderer.kMaxSplatVerts)
-        var dCnt = 0, sCnt = 0
-        let (cr, cg, cb) = color
+            let dPtr = dropBuf.contents().assumingMemoryBound(to: RainVertex.self)
+            let sPtr = splatBuf.contents().assumingMemoryBound(to: RainVertex.self)
+            var dCnt = 0, sCnt = 0
+            let (cr, cg, cb) = color
 
-        for drop in drops {
-            if !drop.touchedGround {
-                buildDropQuad(drop: drop, screenBounds: screenBounds,
-                              sw: sw, sh: sh, r: cr, g: cg, b: cb,
-                              into: dPtr, count: &dCnt)
-            } else {
-                buildSplatterQuads(drop: drop, sw: sw, sh: sh,
-                                   r: cr, g: cg, b: cb,
-                                   into: sPtr, count: &sCnt)
+            for drop in drops {
+                if !drop.touchedGround {
+                    buildDropQuad(drop: drop, screenBounds: screenBounds,
+                                  sw: sw, sh: sh, r: cr, g: cg, b: cb,
+                                  into: dPtr, count: &dCnt)
+                } else {
+                    buildSplatterQuads(drop: drop, sw: sw, sh: sh,
+                                       r: cr, g: cg, b: cb,
+                                       into: sPtr, count: &sCnt)
+                }
             }
-        }
 
-        if !dev.hasUnifiedMemory {
-            if dCnt > 0 { dropBuf.didModifyRange(0..<dCnt  * MemoryLayout<RainVertex>.stride) }
-            if sCnt > 0 { splatBuf.didModifyRange(0..<sCnt * MemoryLayout<RainVertex>.stride) }
-        }
+            if !dev.hasUnifiedMemory {
+                if dCnt > 0 { dropBuf.didModifyRange(0..<dCnt  * MemoryLayout<RainVertex>.stride) }
+                if sCnt > 0 { splatBuf.didModifyRange(0..<sCnt * MemoryLayout<RainVertex>.stride) }
+            }
 
-        encode(drawable: layer.nextDrawable(),
-               cmdQueue: cmdQueue,
-               dropBuf: dropBuf, dCnt: dCnt,
-               splatBuf: splatBuf, sCnt: sCnt,
-               idxBuf: idxBuf)
+            encode(drawable: layer.nextDrawable(),
+                   cmdQueue: cmdQueue,
+                   dropBuf: dropBuf, dCnt: dCnt,
+                   splatBuf: splatBuf, sCnt: sCnt,
+                   idxBuf: idxBuf)
+        }
     }
 
     // MARK: Private — setup helpers
@@ -151,15 +154,15 @@ final class MetalRenderer {
         let opts: MTLResourceOptions = dev.hasUnifiedMemory ? .storageModeShared : .storageModeManaged
         let stride = MemoryLayout<RainVertex>.stride
         frameIndex = 0
-        dropVtxBufs = (0..<MetalRenderer.kMaxInFlight).compactMap { _ in
-            dev.makeBuffer(length: MetalRenderer.kMaxDropVerts  * stride, options: opts)
+        dropVtxBufs = (0..<RainRenderer.kMaxInFlight).compactMap { _ in
+            dev.makeBuffer(length: RainRenderer.kMaxDropVerts  * stride, options: opts)
         }
-        splatVtxBufs = (0..<MetalRenderer.kMaxInFlight).compactMap { _ in
-            dev.makeBuffer(length: MetalRenderer.kMaxSplatVerts * stride, options: opts)
+        splatVtxBufs = (0..<RainRenderer.kMaxInFlight).compactMap { _ in
+            dev.makeBuffer(length: RainRenderer.kMaxSplatVerts * stride, options: opts)
         }
 
         // Each quad (4 verts) → 2 triangles (6 indices): [0,1,2, 1,3,2]
-        let maxQuads = max(MetalRenderer.kMaxDropVerts, MetalRenderer.kMaxSplatVerts) / 4
+        let maxQuads = max(RainRenderer.kMaxDropVerts, RainRenderer.kMaxSplatVerts) / 4
         var idx = [UInt16](repeating: 0, count: maxQuads * 6)
         for q in 0..<maxQuads {
             let b = UInt16(q * 4)
@@ -180,7 +183,7 @@ final class MetalRenderer {
                                 count: inout Int) {
         let h = drop.pos, t = drop.trailTail
         guard screenBounds.contains(h) || screenBounds.contains(t) else { return }
-        guard count + 4 <= MetalRenderer.kMaxDropVerts else { return }
+        guard count + 4 <= RainRenderer.kMaxDropVerts else { return }
 
         let v = drop.vel
         let mag = (v.x * v.x + v.y * v.y).squareRoot()
@@ -204,7 +207,7 @@ final class MetalRenderer {
                                      count: inout Int) {
         let alpha = Float(max(0, 1 - drop.splatterTime / kSplatterDuration)) * 0.7
         for sp in drop.splatters where sp.isAlive {
-            guard count + 4 <= MetalRenderer.kMaxSplatVerts else { break }
+            guard count + 4 <= RainRenderer.kMaxSplatVerts else { break }
             let cx = Float(sp.pos.x) / sw * 2 - 1, cy = Float(sp.pos.y) / sh * 2 - 1
             let rx = Float(sp.radius) / sw * 2
             let ry = Float(sp.radius) / sh * 2

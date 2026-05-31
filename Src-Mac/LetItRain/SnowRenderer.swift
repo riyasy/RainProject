@@ -107,7 +107,7 @@ final class SnowRenderer {
 
     func setup(in view: NSView, screenBounds: CGRect) {
         teardown()
-        guard let dev = MTLCreateSystemDefaultDevice(),
+        guard let dev = MetalSystem.device,
               let viewLayer = view.layer else { return }
         device = dev
         commandQueue = dev.makeCommandQueue()
@@ -151,39 +151,41 @@ final class SnowRenderer {
               flakeVtxBufs.count == SnowRenderer.kMaxInFlight,
               pileVtxBufs.count  == SnowRenderer.kMaxInFlight else { return }
 
-        inFlight.wait()
-        frameIndex = (frameIndex + 1) % SnowRenderer.kMaxInFlight
-        let flakeBuf = flakeVtxBufs[frameIndex]
-        let pileBuf  = pileVtxBufs[frameIndex]
+        // autoreleasepool bounds the per-frame transient objects (the
+        // CAMetalDrawable and its screen-sized texture, command buffer, etc.).
+        autoreleasepool {
+            inFlight.wait()
+            frameIndex = (frameIndex + 1) % SnowRenderer.kMaxInFlight
+            let flakeBuf = flakeVtxBufs[frameIndex]
+            let pileBuf  = pileVtxBufs[frameIndex]
 
-        let sw = Float(screenBounds.width), sh = Float(screenBounds.height)
-        let stride = MemoryLayout<RainVertex>.stride
+            let sw = Float(screenBounds.width), sh = Float(screenBounds.height)
+            let stride = MemoryLayout<RainVertex>.stride
 
-        // ── Flake quads ─────────────────────────────────────────────────────
-        let fPtr = flakeBuf.contents().bindMemory(to: RainVertex.self,
-                                                  capacity: SnowRenderer.kMaxFlakeVerts)
-        var fCnt = 0
-        for flake in system.flakes {
-            guard fCnt + 4 <= SnowRenderer.kMaxFlakeVerts else { break }
-            buildFlakeQuad(flake, sw: sw, sh: sh, into: fPtr, count: &fCnt)
+            // ── Flake quads ─────────────────────────────────────────────────
+            let fPtr = flakeBuf.contents().assumingMemoryBound(to: RainVertex.self)
+            var fCnt = 0
+            for flake in system.flakes {
+                guard fCnt + 4 <= SnowRenderer.kMaxFlakeVerts else { break }
+                buildFlakeQuad(flake, sw: sw, sh: sh, into: fPtr, count: &fCnt)
+            }
+
+            // ── Settled pile triangle strip ─────────────────────────────────
+            let pPtr = pileBuf.contents().assumingMemoryBound(to: RainVertex.self)
+            var pCnt = 0
+            buildPile(system.heightMap, screenBounds: screenBounds,
+                      sw: sw, sh: sh, into: pPtr, count: &pCnt)
+
+            if !dev.hasUnifiedMemory {
+                if fCnt > 0 { flakeBuf.didModifyRange(0..<fCnt * stride) }
+                if pCnt > 0 { pileBuf.didModifyRange(0..<pCnt * stride) }
+            }
+
+            encode(drawable: layer.nextDrawable(), cmdQueue: cmdQueue,
+                   pileBuf: pileBuf, pCnt: pCnt,
+                   flakeBuf: flakeBuf, fCnt: fCnt,
+                   idxBuf: idxBuf, atlas: atlas, sampler: smp)
         }
-
-        // ── Settled pile triangle strip ─────────────────────────────────────
-        let pPtr = pileBuf.contents().bindMemory(to: RainVertex.self,
-                                                 capacity: SnowRenderer.kMaxPileVerts)
-        var pCnt = 0
-        buildPile(system.heightMap, screenBounds: screenBounds,
-                  sw: sw, sh: sh, into: pPtr, count: &pCnt)
-
-        if !dev.hasUnifiedMemory {
-            if fCnt > 0 { flakeBuf.didModifyRange(0..<fCnt * stride) }
-            if pCnt > 0 { pileBuf.didModifyRange(0..<pCnt * stride) }
-        }
-
-        encode(drawable: layer.nextDrawable(), cmdQueue: cmdQueue,
-               pileBuf: pileBuf, pCnt: pCnt,
-               flakeBuf: flakeBuf, fCnt: fCnt,
-               idxBuf: idxBuf, atlas: atlas, sampler: smp)
     }
 
     // MARK: Private — vertex building
