@@ -19,14 +19,16 @@ public:
 	ParticleType PartType;
 	bool StartWithWindows;
 	bool AllowHide;
+	bool SimpleSnowHeap;
 
 	explicit Setting(const int maxParticles = 10,
 		const int windSpeed = 3,
 		const COLORREF ParticleColor = 0x00AAAAAA,
 		const ParticleType partType = RAIN,
 		const bool startWithWindows = false,
-		const bool allowHide = false)
-		: MaxParticles(maxParticles), WindSpeed(windSpeed), ParticleColor(ParticleColor), PartType(partType), StartWithWindows(startWithWindows), AllowHide(allowHide)
+		const bool allowHide = false,
+		const bool simpleSnowHeap = false)
+		: MaxParticles(maxParticles), WindSpeed(windSpeed), ParticleColor(ParticleColor), PartType(partType), StartWithWindows(startWithWindows), AllowHide(allowHide), SimpleSnowHeap(simpleSnowHeap)
 	{
 	}
 };

@@ -16,6 +16,7 @@ public:
 	void SetRainColor(COLORREF color);
 	void SetSceneBounds(RECT sceneRect, float scaleFactor);
 	void InvalidateSpriteCache();
+	void ClearSnowAccumulation();
 
 	int Width = 100;
 	int Height = 100;
@@ -35,6 +36,14 @@ public:
 
 	int MaxSnowHeight = 0;
 	std::vector<uint8_t> ScenePixels;
+
+	// "Simple snow heap" mode: settled snow as a per-column height (pixels)
+	// instead of the per-pixel ScenePixels accumulation — O(Width) memory and
+	// per-frame cost. Selected at runtime via the settings checkbox.
+	bool SimpleSnowHeap = false;
+	std::vector<float> ColumnHeights;
+	int SnowColumnWidth = 1; // width in pixels of each ColumnHeights entry (DPI-scaled)
+
 	std::unique_ptr<FastNoiseLite> pNoiseGen;
 
 private:

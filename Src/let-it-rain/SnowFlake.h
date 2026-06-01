@@ -21,8 +21,17 @@ public:
 
 	void UpdatePosition(float deltaSeconds, double clockTime);
 	static void SettleSnow(DisplayData* pDispData);
+	// "Simple snow heap" mode: relax the per-column heightmap (slope clamp) and
+	// draw it as a single smooth filled silhouette.
+	static void SmoothSnowHeap(DisplayData* pDispData);
 	void Draw(ID2D1DeviceContext* dc, const D2D1::Matrix3x2F& baseTransform) const;
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
+	static void DrawSettledSnowSimple(ID2D1DeviceContext* dc, const DisplayData* pDispData);
+
+	// Width (in logical px, DPI-scaled at runtime) of each simple-heap column.
+	// Public because DisplayData sizes the ColumnHeights array from it.
+	// bigger = chunkier bumps, fewer/wider mounds 
+	static constexpr float SNOW_COLUMN_WIDTH_BASE = 6.0f;
 
 private:
 	// Snowflake shape types
@@ -40,6 +49,14 @@ private:
 	static constexpr uint8_t SNOW_COLOR = 1;
 	static constexpr uint8_t AIR_COLOR = 0;
 	static constexpr int SNOW_FLOW_RATE = 3;
+
+	// Simple heightmap heap tuning
+	// px column growth per settled flake (scaled by flake size and DPI)
+	// bigger = faster buildup & taller per-flake splash   
+	static constexpr float SNOW_DEPOSIT_SCALE = 1.5f; 
+	// max adjacent-column height delta as a fraction of column width (angle of repose)
+	// bigger = steeper/pointier piles; smaller = flatter/smoother
+	static constexpr float SNOW_SLOPE_RATIO = 0.6f;   
 
 	// Resolution for pre-rendered sprites
 	static constexpr float SPRITE_SIZE = 64.0f/8;

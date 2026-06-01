@@ -12,4 +12,5 @@ public:
 	virtual void UpdateParticleColor(DWORD color) = 0;
 	virtual void UpdateParticleType(ParticleType partType) = 0;
 	virtual void UpdateAllowHide(bool allowHide) = 0;
+	virtual void UpdateSnowHeapMode(bool simpleSnowHeap) = 0;
 };

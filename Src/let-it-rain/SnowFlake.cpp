@@ -2,6 +2,7 @@
 #include "RandomGenerator.h"
 #include "MathUtil.h"
 #include "FastNoiseLite.h"
+#include <algorithm>
 #include <array>
 
 SnowFlake::SnowFlake(DisplayData * pDispData) :
@@ -118,6 +119,37 @@ void SnowFlake::UpdatePosition(const float deltaSeconds, double clockTime)
 
 	Pos.x += Vel.x * deltaSeconds;
 	Pos.y += Vel.y * deltaSeconds;
+
+	if (pDisplayData->SimpleSnowHeap)
+	{
+		// Heightmap settling: deposit into the flake's column when it reaches
+		// that column's surface; otherwise keep falling.
+		if (Pos.x < -pDisplayData->Width * 0.5f || Pos.x >= pDisplayData->Width * 1.5f ||
+			Pos.y < -pDisplayData->Height * 0.5f)
+		{
+			ReSpawn();
+			return;
+		}
+		const int numCols = static_cast<int>(pDisplayData->ColumnHeights.size());
+		if (numCols > 0 && Pos.x >= 0.0f && Pos.x < static_cast<float>(pDisplayData->Width))
+		{
+			int col = static_cast<int>(Pos.x) / pDisplayData->SnowColumnWidth;
+			if (col >= numCols) col = numCols - 1;
+			const float surfaceY = pDisplayData->Height - pDisplayData->ColumnHeights[col];
+			if (Pos.y >= surfaceY)
+			{
+				const float deposit = (std::max)(1.0f, Size * SNOW_DEPOSIT_SCALE * pDisplayData->ScaleFactor);
+				float& h = pDisplayData->ColumnHeights[col];
+				h = (std::min)(h + deposit, static_cast<float>(pDisplayData->Height - 1));
+				ReSpawn();
+			}
+		}
+		else if (Pos.y >= pDisplayData->Height)
+		{
+			ReSpawn(); // fell past the bottom in the off-screen side margins
+		}
+		return;
+	}
 
 	if (Pos.x < -pDisplayData->Width * 0.5f ||
 		Pos.x >= pDisplayData->Width * 1.5f ||
@@ -421,6 +453,60 @@ void SnowFlake::DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDisp
 			}
 		}
 	}
+}
+
+void SnowFlake::SmoothSnowHeap(DisplayData* pDispData)
+{
+	std::vector<float>& h = pDispData->ColumnHeights;
+	const int n = static_cast<int>(h.size());
+	if (n < 2) return;
+
+	// Slope-clamp passes (forward then backward): no column may sit more than
+	// maxSlope above a neighbour, so peaks slump into smooth slopes. Expressed
+	// relative to column width so the repose angle is resolution-independent.
+	const float maxSlope = pDispData->SnowColumnWidth * SNOW_SLOPE_RATIO;
+	for (int x = 1; x < n; ++x)
+	{
+		if (h[x] > h[x - 1] + maxSlope) h[x] = h[x - 1] + maxSlope;
+	}
+	for (int x = n - 2; x >= 0; --x)
+	{
+		if (h[x] > h[x + 1] + maxSlope) h[x] = h[x + 1] + maxSlope;
+	}
+}
+
+void SnowFlake::DrawSettledSnowSimple(ID2D1DeviceContext* dc, const DisplayData* pDispData)
+{
+	const std::vector<float>& h = pDispData->ColumnHeights;
+	const int numCols = static_cast<int>(h.size());
+	const int width = pDispData->Width;
+	const int cellW = pDispData->SnowColumnWidth;
+	if (numCols < 1 || width < 1 || cellW < 1) return;
+
+	Microsoft::WRL::ComPtr<ID2D1Factory> factory;
+	dc->GetFactory(factory.GetAddressOf());
+	Microsoft::WRL::ComPtr<ID2D1PathGeometry> geometry;
+	if (FAILED(factory->CreatePathGeometry(geometry.GetAddressOf()))) return;
+	Microsoft::WRL::ComPtr<ID2D1GeometrySink> sink;
+	if (FAILED(geometry->Open(sink.GetAddressOf()))) return;
+
+	const float left = static_cast<float>(pDispData->SceneRect.left);
+	const float top = static_cast<float>(pDispData->SceneRect.top);
+	const float bottom = top + pDispData->Height;
+
+	// Filled silhouette: left edge -> across the coarse column tops -> right edge.
+	sink->BeginFigure(D2D1::Point2F(left, bottom), D2D1_FIGURE_BEGIN_FILLED);
+	for (int i = 0; i < numCols; ++i)
+	{
+		sink->AddLine(D2D1::Point2F(left + static_cast<float>(i * cellW), bottom - h[i]));
+	}
+	// Extend the last column's height to the right edge, then close along the bottom.
+	sink->AddLine(D2D1::Point2F(left + static_cast<float>(width), bottom - h[numCols - 1]));
+	sink->AddLine(D2D1::Point2F(left + static_cast<float>(width), bottom));
+	sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+	sink->Close();
+
+	dc->FillGeometry(geometry.Get(), pDispData->DropColorBrush.Get());
 }
 
 bool SnowFlake::CanSnowFlowInto(const int x, const int y, const DisplayData* pDispData)

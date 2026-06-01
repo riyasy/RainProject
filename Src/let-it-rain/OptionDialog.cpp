@@ -14,7 +14,8 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
                              const COLORREF particleColor,
                              const ParticleType partType,
                              const bool startWithWindows,
-                             const bool allowHide)
+                             const bool allowHide,
+                             const bool simpleSnowHeap)
 	: hInstance(hInstance),
 	  hDialog(nullptr),
 	  MaxParticles(maxParticles),
@@ -22,9 +23,24 @@ OptionsDialog::OptionsDialog(const HINSTANCE hInstance,
 	  ParticleColor(particleColor),
 	  PartType(partType),
 	  StartWithWindows(startWithWindows),
-	  AllowHide(allowHide)
+	  AllowHide(allowHide),
+	  SimpleSnowHeap(simpleSnowHeap)
 {
 	pThis = this;
+}
+
+// Rain mode shows the Wind Direction controls; Snow mode replaces them with the
+// "Simple snow heap" checkbox in the same spot.
+static void SetSnowUiVisible(const HWND hWnd, const bool snow)
+{
+	const int windControls[] = {
+		IDC_STATIC_WIND, IDC_SLIDER2, IDC_STATIC_WIND_LEFT, IDC_STATIC_WIND_RIGHT
+	};
+	for (const int id : windControls)
+	{
+		ShowWindow(GetDlgItem(hWnd, id), snow ? SW_HIDE : SW_SHOW);
+	}
+	ShowWindow(GetDlgItem(hWnd, IDC_CHECK_SIMPLE_SNOW), snow ? SW_SHOW : SW_HIDE);
 }
 
 void OptionsDialog::SubscribeToChange(CallBackWindow* subscriber)
@@ -77,8 +93,13 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			else
 			{
 				SendMessage(GetDlgItem(hWnd, IDC_RADIO2), BM_SETCHECK, BST_CHECKED, 0);
-				SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), WM_ENABLE, FALSE, 0);
-			}			
+			}
+
+			// Initialize the simple-snow-heap checkbox and show the correct
+			// control group for the current particle type.
+			SendMessage(GetDlgItem(hWnd, IDC_CHECK_SIMPLE_SNOW), BM_SETCHECK,
+				pThis->SimpleSnowHeap ? BST_CHECKED : BST_UNCHECKED, 0);
+			SetSnowUiVisible(hWnd, pThis->PartType == SNOW);
 
 			// Initialize startup checkbox
 			SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_SETCHECK,
@@ -145,7 +166,7 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 		}
 		else if (controlId == IDC_RADIO1 && HIWORD(wParam) == BN_CLICKED)
 		{
-			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), WM_ENABLE, TRUE, 0);
+			SetSnowUiVisible(hWnd, false);
 			pThis->PartType = RAIN;
 			for (CallBackWindow* subscriber : subscribers)
 			{
@@ -154,7 +175,7 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 		}
 		else if (controlId == IDC_RADIO2 && HIWORD(wParam) == BN_CLICKED)
 		{
-			SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), WM_ENABLE, FALSE, 0);
+			SetSnowUiVisible(hWnd, true);
 			pThis->PartType = SNOW;
 			for (CallBackWindow* subscriber : subscribers)
 			{
@@ -174,6 +195,15 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			for (CallBackWindow* subscriber : subscribers)
 			{
 				subscriber->UpdateAllowHide(pThis->AllowHide);
+			}
+		}
+		else if (controlId == IDC_CHECK_SIMPLE_SNOW && HIWORD(wParam) == BN_CLICKED)
+		{
+			const LRESULT checkState = SendMessage(GetDlgItem(hWnd, IDC_CHECK_SIMPLE_SNOW), BM_GETCHECK, 0, 0);
+			pThis->SimpleSnowHeap = (checkState == BST_CHECKED);
+			for (CallBackWindow* subscriber : subscribers)
+			{
+				subscriber->UpdateSnowHeapMode(pThis->SimpleSnowHeap);
 			}
 		}
 		return TRUE;

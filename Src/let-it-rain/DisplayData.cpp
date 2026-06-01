@@ -1,5 +1,7 @@
 #include "DisplayData.h"
 #include "FastNoiseLite.h"
+#include "SnowFlake.h"
+#include <algorithm>
 #include <memory>
 
 DisplayData::DisplayData(ID2D1DeviceContext * dc) : DC(dc)
@@ -48,6 +50,8 @@ void DisplayData::SetSceneBounds(const RECT sceneRect, const float scaleFactor)
 	{
 		ScenePixels.clear();
 		ScenePixels.shrink_to_fit();
+		ColumnHeights.clear();
+		ColumnHeights.shrink_to_fit();
 	}
 
 	//wchar_t buffer[100];
@@ -69,8 +73,27 @@ void DisplayData::SetSceneBounds(const RECT sceneRect, const float scaleFactor)
 	{
 		ScenePixels.resize(Height * Width);
 		// std::vector::resize zero-initializes POD types like uint8_t
+
+		// Simple snow heap: coarse columns (DPI-scaled) so each settled flake
+		// makes a discernible bump and snow builds up visibly.
+		SnowColumnWidth = (std::max)(1, static_cast<int>(SnowFlake::SNOW_COLUMN_WIDTH_BASE * ScaleFactor + 0.5f));
+		const int numColumns = (Width + SnowColumnWidth - 1) / SnowColumnWidth;
+		ColumnHeights.assign(numColumns, 0.0f);
+
 		MaxSnowHeight = Height - 2;
 	}
+}
+
+void DisplayData::ClearSnowAccumulation()
+{
+	// Reset both heap representations so switching modes never shows a
+	// half-converted pile.
+	if (!ScenePixels.empty())
+	{
+		std::fill(ScenePixels.begin(), ScenePixels.end(), static_cast<uint8_t>(0));
+		MaxSnowHeight = Height - 2;
+	}
+	std::fill(ColumnHeights.begin(), ColumnHeights.end(), 0.0f);
 }
 
 bool DisplayData::IsSame(const RECT& l, const RECT& r)

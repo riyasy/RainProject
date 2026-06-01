@@ -90,13 +90,15 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	{
 		pOptionsDlg = new OptionsDialog(AppInstance, GeneralSettings.MaxParticles, GeneralSettings.WindSpeed,
 		                                GeneralSettings.ParticleColor, GeneralSettings.PartType,
-		                                GeneralSettings.StartWithWindows, GeneralSettings.AllowHide);
+		                                GeneralSettings.StartWithWindows, GeneralSettings.AllowHide,
+		                                GeneralSettings.SimpleSnowHeap);
 		pOptionsDlg->Create();
 	}
 
 	InitDirect2D(window);
 	pDisplaySpecificData = std::make_unique<DisplayData>(Dc.Get());
 	pDisplaySpecificData->SetRainColor(GeneralSettings.ParticleColor);
+	pDisplaySpecificData->SimpleSnowHeap = GeneralSettings.SimpleSnowHeap;
 	HandleWindowBoundsChange(window, false);
 
 	// Apply the AllowHide setting from saved configuration
@@ -128,6 +130,17 @@ void DisplayWindow::UpdateParticleColor(const COLORREF color)
 void DisplayWindow::UpdateParticleType(const ParticleType partType)
 {
 	GeneralSettings.PartType = partType;
+}
+
+void DisplayWindow::UpdateSnowHeapMode(const bool simpleSnowHeap)
+{
+	GeneralSettings.SimpleSnowHeap = simpleSnowHeap;
+	if (pDisplaySpecificData)
+	{
+		pDisplaySpecificData->SimpleSnowHeap = simpleSnowHeap;
+		// Clear the heap so we never show a half-converted pile after switching.
+		pDisplaySpecificData->ClearSnowAccumulation();
+	}
 }
 
 void DisplayWindow::UpdateAllowHide(const bool allowHide)
@@ -787,7 +800,14 @@ void DisplayWindow::DrawSnowFlakes()
 
 	if (!SnowFlakes.empty())
 	{
-		SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData.get());
+		if (pDisplaySpecificData->SimpleSnowHeap)
+		{
+			SnowFlake::DrawSettledSnowSimple(Dc.Get(), pDisplaySpecificData.get());
+		}
+		else
+		{
+			SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData.get());
+		}
 	}
 
 #ifdef SHOW_FPS
@@ -904,7 +924,14 @@ void DisplayWindow::UpdateSnowFlakes()
 	{
 		flake.UpdatePosition(0.01f, CurrentTime);
 	}
-	SnowFlake::SettleSnow(pDisplaySpecificData.get());
+	if (pDisplaySpecificData->SimpleSnowHeap)
+	{
+		SnowFlake::SmoothSnowHeap(pDisplaySpecificData.get());
+	}
+	else
+	{
+		SnowFlake::SettleSnow(pDisplaySpecificData.get());
+	}
 }
 
 void DisplayWindow::SetInstanceToHwnd(const HWND hWnd, const LPARAM lParam)
@@ -958,6 +985,7 @@ HRESULT DisplayWindow::RecreateDeviceResources(const HWND hWnd)
 		InitDirect2D(hWnd);
 		pDisplaySpecificData = std::make_unique<DisplayData>(Dc.Get());
 		pDisplaySpecificData->SetRainColor(GeneralSettings.ParticleColor);
+		pDisplaySpecificData->SimpleSnowHeap = GeneralSettings.SimpleSnowHeap;
 		HandleWindowBoundsChange(hWnd, true);
 		return S_OK;
 	}
