@@ -27,6 +27,10 @@ public:
 	// Allow reusing an existing RainDrop object without reallocating
 	void Reset(int windDirectionFactor, DisplayData* pDispData);
 
+	// Raindrop count per Intensity unit. Public because
+	// DisplayWindow::UpdateRainDrops uses it to size the drop pool.
+	static constexpr int RAIN_DROP_MULTIPLIER = 3;
+
 private:
 	static constexpr int MAX_SPLUTTER_FRAME_COUNT_ = 50;
 	static constexpr int MAX_SPLATTER_PER_RAINDROP_ = 3;

@@ -567,7 +567,7 @@ void DisplayWindow::HandleWindowBoundsChange(const HWND window, const bool clear
 		pDisplaySpecificData->SetSceneBounds(sceneRect, scaleFactor);
 
 		// Reserve memory to avoid reallocations and fragmentation
-		RainDrops.reserve(GeneralSettings.MaxParticles * 3);
+		RainDrops.reserve(GeneralSettings.MaxParticles * RainDrop::RAIN_DROP_MULTIPLIER);
 
 		//std::wostringstream  oss;
 		//oss << "Monitor Name: " << MonitorDat.Name.c_str() << ", "
@@ -862,7 +862,7 @@ void DisplayWindow::UpdateRainDrops()
 		}
 	}
 
-	const int noOfDropsToGenerate = GeneralSettings.MaxParticles * 3 - countOfFallingDrops;
+	const int noOfDropsToGenerate = GeneralSettings.MaxParticles * RainDrop::RAIN_DROP_MULTIPLIER - countOfFallingDrops;
 
 	// Generate new raindrops (emplace so constructor runs in-place)
 	if (noOfDropsToGenerate > 0)
