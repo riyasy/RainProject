@@ -35,7 +35,7 @@ final class RainRenderer {
     // buffer than the GPU is still reading for frame N, so there's no read/write
     // hazard on a shared buffer. The semaphore caps the CPU to kMaxInFlight frames
     // ahead — every wait() is balanced by exactly one signal().
-    private static let kMaxInFlight = 3
+    private static let kMaxInFlight = 2
     private let inFlight = DispatchSemaphore(value: kMaxInFlight)
     private var frameIndex = 0
 
@@ -56,6 +56,10 @@ final class RainRenderer {
         layer.pixelFormat = .bgra8Unorm
         layer.isOpaque = false
         layer.framebufferOnly = true
+        // Each drawable is a full-screen surface (≈24 MB on Retina), so cap the
+        // pool to 2 — double-buffering is plenty for this overlay and saves one
+        // screen-sized surface vs. the default of 3. Matches kMaxInFlight.
+        layer.maximumDrawableCount = 2
         layer.frame = view.bounds
         let scale = NSScreen.main?.backingScaleFactor ?? 1.0
         layer.contentsScale = scale
