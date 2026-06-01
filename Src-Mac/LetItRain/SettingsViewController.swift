@@ -1,5 +1,21 @@
 import Cocoa
 
+/// A linear slider cell that draws a plain, uniform track instead of the default
+/// leading accent "fill". Used for the bidirectional direction slider so it reads
+/// as symmetric around its center (0) rather than like a progress bar filled from
+/// the left — matching the Windows trackbar.
+private final class CenteredSliderCell: NSSliderCell {
+    override func drawBar(inside rect: NSRect, flipped: Bool) {
+        let thickness = min(rect.height, 3)
+        var bar = rect
+        bar.origin.y += (bar.height - thickness) / 2
+        bar.size.height = thickness
+        let radius = thickness / 2
+        NSColor.tertiaryLabelColor.setFill()
+        NSBezierPath(roundedRect: bar, xRadius: radius, yRadius: radius).fill()
+    }
+}
+
 /// The programmatic settings panel (mode toggle, intensity, direction, drop
 /// color, Quit). It holds no app state: the initial values are pushed in before
 /// presentation, and every change is reported through the `on*` callbacks, which
@@ -21,7 +37,6 @@ final class SettingsViewController: NSViewController {
     var dropColor: NSColor      = NSColor(calibratedRed: 0.6, green: 0.82, blue: 1.0, alpha: 1.0)
 
     private var intensitySlider = NSSlider()
-    private var intensityLabel  = NSTextField(labelWithString: "")
     private var directionSlider = NSSlider()
     private var directionLabel  = NSTextField(labelWithString: "")
     private var colorWell       = NSColorWell()
@@ -47,8 +62,8 @@ final class SettingsViewController: NSViewController {
     // MARK: - UI construction
 
     /// Lay out every control by hand (no Auto Layout): a top-down cursor `top`
-    /// is decremented as each row is added. The intensity slider's 2–50 range maps
-    /// to 20–500 particles (×10); direction is an integer −5…+5 with tick stops.
+    /// is decremented as each row is added. Intensity is a base unit (5–50) with
+    /// no numeric readout; direction is an integer −5…+5 with tick stops.
     private func buildUI() {
         let pad: CGFloat = 18
         let w   = view.bounds.width - pad * 2
@@ -86,7 +101,7 @@ final class SettingsViewController: NSViewController {
             return f
         }
 
-        func addSliderRow(title: String, slider: NSSlider, valLabel: NSTextField,
+        func addSliderRow(title: String, slider: NSSlider, valLabel: NSTextField? = nil,
                           min: Double, max: Double, value: Double,
                           action: Selector, intSteps: Bool = false) -> [NSView] {
             top -= 16
@@ -94,8 +109,10 @@ final class SettingsViewController: NSViewController {
             lbl.frame = NSRect(x: pad, y: top, width: 120, height: 14)
             view.addSubview(lbl)
 
-            valLabel.frame = NSRect(x: view.bounds.width - pad - 50, y: top, width: 50, height: 14)
-            view.addSubview(valLabel)
+            if let valLabel {
+                valLabel.frame = NSRect(x: view.bounds.width - pad - 50, y: top, width: 50, height: 14)
+                view.addSubview(valLabel)
+            }
 
             top -= 22
             slider.minValue = min; slider.maxValue = max
@@ -108,17 +125,21 @@ final class SettingsViewController: NSViewController {
             slider.frame = NSRect(x: pad, y: top, width: w, height: 18)
             view.addSubview(slider)
             top -= 14
-            return [lbl, valLabel, slider]
+            var views: [NSView] = [lbl, slider]
+            if let valLabel { views.append(valLabel) }
+            return views
         }
 
         // ── Intensity (always visible) ─────────────────────────────────────
-        // Slider value is the base intensity unit (5–50); rain/snow scale it.
-        intensityLabel.stringValue = "\(intensity)"
-        _ = addSliderRow(title: "Intensity", slider: intensitySlider, valLabel: intensityLabel,
+        // No numeric readout: the base unit (5–50) is meaningless to the user, so
+        // the slider stands alone — matching the Windows dialog.
+        _ = addSliderRow(title: "Intensity", slider: intensitySlider,
                          min: 5, max: 50, value: Double(intensity),
                          action: #selector(intensityChanged))
 
         // ── Direction (rain only) ──────────────────────────────────────────
+        // Bidirectional: a plain (unfilled) track so it reads symmetric around 0.
+        directionSlider.cell = CenteredSliderCell()
         directionLabel.stringValue = formatDirection(direction)
         let dirViews = addSliderRow(title: "Direction", slider: directionSlider,
                                     valLabel: directionLabel,
@@ -195,9 +216,7 @@ final class SettingsViewController: NSViewController {
     }
 
     @objc private func intensityChanged(_ sender: NSSlider) {
-        let units = Int(sender.intValue)   // base intensity (5…50); scaled per mode
-        intensityLabel.stringValue = "\(units)"
-        onIntensity?(units)
+        onIntensity?(Int(sender.intValue))   // base intensity (5…50); scaled per mode
     }
 
     @objc private func directionChanged(_ sender: NSSlider) {
