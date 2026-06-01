@@ -7,6 +7,9 @@
 #include <memory>
 
 #pragma comment(lib, "wtsapi32.lib")
+#ifdef SHOW_FPS
+#pragma comment(lib, "dwrite.lib")
+#endif
 
 #include "CPUUsageTracker.h"
 #include "Global.h"
@@ -312,6 +315,17 @@ void DisplayWindow::Animate()
 
 	Accumulator += frameTime;
 
+#ifdef SHOW_FPS
+	FpsFrameCount++;
+	FpsElapsed += frameTime;
+	if (FpsElapsed >= 0.5)
+	{
+		CurrentFps = static_cast<float>(FpsFrameCount / FpsElapsed);
+		FpsFrameCount = 0;
+		FpsElapsed = 0.0;
+	}
+#endif
+
 	if (Accumulator > 1) 
 	{
 		// If there are large gaps in animation due to screen stuck
@@ -440,6 +454,10 @@ void DisplayWindow::InitDirect2D(const HWND hWnd)
 	description.BufferCount = 2;
 	description.SampleDesc.Count = 1;
 	description.AlphaMode = DXGI_ALPHA_MODE_PREMULTIPLIED;
+	// Waitable swap chain: the render loop waits on a per-monitor vsync signal
+	// instead of blocking inside Present, so several monitors (with different
+	// refresh rates) can be driven independently from a single thread.
+	description.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
 	RECT rect = {};
 	GetClientRect(hWnd, &rect);
@@ -450,6 +468,15 @@ void DisplayWindow::InitDirect2D(const HWND hWnd)
 	                                            &description,
 	                                            nullptr,
 	                                            SwapChain.GetAddressOf()));
+
+	// Acquire the frame-latency waitable object and cap queued frames to 1 so the
+	// waitable tracks this monitor's vsync cadence (one signal per vblank).
+	{
+		ComPtr<IDXGISwapChain2> swapChain2;
+		HR(SwapChain.As(&swapChain2));
+		HR(swapChain2->SetMaximumFrameLatency(1));
+		FrameLatencyWaitable = swapChain2->GetFrameLatencyWaitableObject();
+	}
 
 	// Create a single-threaded Direct2D factory with debugging information
 	D2D1_FACTORY_OPTIONS options = {};
@@ -499,6 +526,16 @@ void DisplayWindow::InitDirect2D(const HWND hWnd)
 	HR(Visual->SetContent(SwapChain.Get()));
 	HR(Target->SetRoot(Visual.Get()));
 	HR(DcompDevice->Commit());
+
+#ifdef SHOW_FPS
+	HR(DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
+	                       reinterpret_cast<IUnknown**>(DWriteFactory.GetAddressOf())));
+	HR(DWriteFactory->CreateTextFormat(L"Segoe UI", nullptr,
+	                                   DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL,
+	                                   DWRITE_FONT_STRETCH_NORMAL, 14.0f, L"en-us",
+	                                   FpsTextFormat.GetAddressOf()));
+	HR(Dc->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 0.0f, 0.85f), FpsBrush.GetAddressOf()));
+#endif
 }
 
 void DisplayWindow::HandleWindowBoundsChange(const HWND window, const bool clearDrops)
@@ -705,6 +742,15 @@ void DisplayWindow::DrawRainDrops()
 		drop.Draw(Dc.Get());
 	}
 
+#ifdef SHOW_FPS
+	{
+		wchar_t fpsText[32];
+		swprintf_s(fpsText, L"FPS: %.1f", CurrentFps);
+		const D2D1_SIZE_F size = Dc->GetSize();
+		const D2D1_RECT_F rect = D2D1::RectF(size.width - 100.0f, 6.0f, size.width - 6.0f, 26.0f);
+		Dc->DrawText(fpsText, static_cast<UINT32>(wcslen(fpsText)), FpsTextFormat.Get(), rect, FpsBrush.Get());
+	}
+#endif
 	const HRESULT endDrawHr = Dc->EndDraw();
 	if (FAILED(endDrawHr))
 	{
@@ -744,6 +790,15 @@ void DisplayWindow::DrawSnowFlakes()
 		SnowFlake::DrawSettledSnow(Dc.Get(), pDisplaySpecificData.get());
 	}
 
+#ifdef SHOW_FPS
+	{
+		wchar_t fpsText[32];
+		swprintf_s(fpsText, L"FPS: %.1f", CurrentFps);
+		const D2D1_SIZE_F size = Dc->GetSize();
+		const D2D1_RECT_F rect = D2D1::RectF(size.width - 100.0f, 6.0f, size.width - 6.0f, 26.0f);
+		Dc->DrawText(fpsText, static_cast<UINT32>(wcslen(fpsText)), FpsTextFormat.Get(), rect, FpsBrush.Get());
+	}
+#endif
 	const HRESULT endDrawHr = Dc->EndDraw();
 	if (FAILED(endDrawHr))
 	{
@@ -870,8 +925,20 @@ void DisplayWindow::ReleaseDeviceResources()
 	{
 		Dc->SetTarget(nullptr);
 	}
+#ifdef SHOW_FPS
+	FpsBrush.Reset();
+	FpsTextFormat.Reset();
+	DWriteFactory.Reset();
+#endif
 	Bitmap.Reset();
 	Surface.Reset();
+	// Close the waitable handle before dropping the swap chain that owns it;
+	// InitDirect2D() acquires a fresh one when resources are recreated.
+	if (FrameLatencyWaitable)
+	{
+		CloseHandle(FrameLatencyWaitable);
+		FrameLatencyWaitable = nullptr;
+	}
 	SwapChain.Reset();
 	Target.Reset();
 	Visual.Reset();
@@ -902,5 +969,12 @@ HRESULT DisplayWindow::RecreateDeviceResources(const HWND hWnd)
 
 DisplayWindow::~DisplayWindow()
 {
-	// unique_ptr will clean up automatically
+	// unique_ptr will clean up automatically.
+	// Destructor does not go through ReleaseDeviceResources(), so close the
+	// waitable handle here too (guarded against an already-released swap chain).
+	if (FrameLatencyWaitable)
+	{
+		CloseHandle(FrameLatencyWaitable);
+		FrameLatencyWaitable = nullptr;
+	}
 };

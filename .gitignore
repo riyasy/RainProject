@@ -19,6 +19,8 @@ Win32/
 *.user
 *.suo
 *.resinclude
+AppPackages
+BundleArtifacts
 
 ################################################################################
 # macOS

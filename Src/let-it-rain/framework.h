@@ -22,6 +22,7 @@
 #define UNICODE
 #endif
 
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
 #endif
@@ -42,3 +43,6 @@
 #pragma comment(lib, "comctl32.lib")
 
 #define WM_TRAYICON (WM_USER + 1)
+
+// Uncomment to enable on-screen FPS counter (top-right corner). No code runs when commented out.
+// #define SHOW_FPS

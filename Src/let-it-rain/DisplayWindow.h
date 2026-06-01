@@ -10,6 +10,9 @@
 #include <memory>
 
 #include "framework.h"
+#ifdef SHOW_FPS
+#include <dwrite.h>
+#endif
 #include "RainDrop.h"
 #include "CallBackWindow.h"
 #include "OptionDialog.h"
@@ -49,6 +52,16 @@ public:
 
 	~DisplayWindow() override;
 
+	// Frame-pacing support for the single-threaded, multi-swap-chain render loop.
+	// The waitable object signals when this monitor's swap chain can accept a new
+	// frame (i.e. at that monitor's vsync), letting one thread drive several
+	// monitors at their own independent refresh rates.
+	HANDLE GetFrameLatencyWaitable() const { return FrameLatencyWaitable; }
+	// True only when Animate() will actually render and present this frame
+	// (not session-locked, not device-lost, and the swap chain/handle exists).
+	// The loop must not consume the waitable of a non-renderable window.
+	bool IsRenderable() const { return !IsSessionLocked && !IsDeviceLost && FrameLatencyWaitable != nullptr; }
+
 private:
 	ComPtr<ID3D11Device> Direct3dDevice;
 	ComPtr<IDXGIDevice> DxgiDevice;
@@ -62,6 +75,10 @@ private:
 	ComPtr<IDCompositionDevice> DcompDevice;
 	ComPtr<IDCompositionTarget> Target;
 	ComPtr<IDCompositionVisual> Visual;
+
+	// Frame-latency waitable object for this swap chain (DXGI 1.3+). Owned here:
+	// re-acquired in InitDirect2D(), closed in ReleaseDeviceResources()/destructor.
+	HANDLE FrameLatencyWaitable = nullptr;
 
 	static HINSTANCE AppInstance;
 	static OptionsDialog* pOptionsDlg;
@@ -78,6 +95,15 @@ private:
 	// Session / device state
 	bool IsSessionLocked = false;
 	bool IsDeviceLost = false;
+
+#ifdef SHOW_FPS
+	ComPtr<IDWriteFactory> DWriteFactory;
+	ComPtr<IDWriteTextFormat> FpsTextFormat;
+	ComPtr<ID2D1SolidColorBrush> FpsBrush;
+	int FpsFrameCount = 0;
+	double FpsElapsed = 0.0;
+	float CurrentFps = 0.0f;
+#endif
 
 	static Setting GeneralSettings;
 
