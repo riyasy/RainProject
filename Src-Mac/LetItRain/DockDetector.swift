@@ -2,15 +2,23 @@ import Cocoa
 
 /// Detects the Dock icon bar's frame in AppKit coordinates (bottom-left origin).
 /// Primary method: System Events via AppleScript (exact icon bar bounds).
-/// Fallback: NSScreen.visibleFrame difference (reserved strip, full width).
+/// Fallback: an empty rect — no Dock obstacle, so rain lands on the real screen
+/// floor across the whole width (same behavior as snow).
 enum DockDetector {
 
-    static func currentFrame() -> CGRect {
-        appleScriptFrame() ?? visibleFrameRect()
+    /// `screenHeight` (the main screen's full height) is passed in by the caller
+    /// rather than read from `NSScreen` here, so this can run off the main thread
+    /// without touching AppKit. Used to flip Quartz (top-left) to AppKit (bottom-left).
+    static func currentFrame(screenHeight: CGFloat) -> CGRect {
+        appleScriptFrame(screenHeight: screenHeight) ?? .zero
     }
 
     // MARK: Private
 
+    /// Compiled once and reused. Asks System Events for the Dock process's icon
+    /// list bounds: `{x, y, width, height}` in Quartz (top-left origin) points.
+    /// Only ever executed from `AppDelegate.dockQueue`, so the single shared
+    /// instance is never used from two threads at once.
     private static let compiledScript: NSAppleScript? = NSAppleScript(source: """
         tell application "System Events"
             tell application process "Dock"
@@ -23,7 +31,7 @@ enum DockDetector {
 
     /// Requires Accessibility permission (System Settings → Privacy → Accessibility).
     /// The first Apple Event sent also triggers an Automation permission dialog.
-    private static func appleScriptFrame() -> CGRect? {
+    private static func appleScriptFrame(screenHeight: CGFloat) -> CGRect? {
         guard AXIsProcessTrusted() else { return nil }
         guard let scr = compiledScript else { return nil }
         var error: NSDictionary?
@@ -34,24 +42,9 @@ enum DockDetector {
         let qy = CGFloat(result.atIndex(2)?.int32Value ?? 0)
         let w  = CGFloat(result.atIndex(3)?.int32Value ?? 0)
         let h  = CGFloat(result.atIndex(4)?.int32Value ?? 0)
-        guard let screen = NSScreen.main, w > 0, h > 0 else { return nil }
+        guard w > 0, h > 0 else { return nil }
 
         // Convert Quartz (top-left origin) → AppKit (bottom-left origin)
-        return CGRect(x: x, y: screen.frame.height - qy - h, width: w, height: h)
-    }
-
-    /// Approximates the Dock reserved strip from the difference between
-    /// NSScreen.frame and NSScreen.visibleFrame. Covers the full strip width/height
-    /// rather than just the icon bar — used when Accessibility is not granted.
-    private static func visibleFrameRect() -> CGRect {
-        guard let screen = NSScreen.main else { return .zero }
-        let sf = screen.frame, vf = screen.visibleFrame
-        if sf.width > vf.width {
-            let w = sf.width - vf.width
-            return CGRect(x: vf.origin.x > 0 ? 0 : vf.maxX, y: 0, width: w, height: sf.height)
-        } else if vf.origin.y > 0 {
-            return CGRect(x: 0, y: 0, width: sf.width, height: vf.origin.y)
-        }
-        return .zero
+        return CGRect(x: x, y: screenHeight - qy - h, width: w, height: h)
     }
 }

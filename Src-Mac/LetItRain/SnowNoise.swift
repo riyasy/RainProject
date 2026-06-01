@@ -22,9 +22,13 @@ enum SnowNoise {
         return source + source   // doubled to avoid index wrapping
     }()
 
+    /// Perlin's 6t⁵−15t⁴+10t³ ease curve — smooths interpolation across cells.
     private static func fade(_ t: Double) -> Double { t * t * t * (t * (t * 6 - 15) + 10) }
+
+    /// Linear interpolation from `a` to `b` by `t`.
     private static func lerp(_ t: Double, _ a: Double, _ b: Double) -> Double { a + t * (b - a) }
 
+    /// Dot of the cell-corner gradient (picked by `hash`) with the offset vector.
     private static func grad(_ hash: Int, _ x: Double, _ y: Double, _ z: Double) -> Double {
         let h = hash & 15
         let u = h < 8 ? x : y
@@ -32,8 +36,11 @@ enum SnowNoise {
         return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v)
     }
 
+    /// Sample the noise field at `(x, y, z)`. Output is roughly in `[-1, 1]`.
+    /// Hashes the eight surrounding lattice corners, takes each corner gradient's
+    /// dot with the fractional offset, and trilinearly blends them via `fade`.
     static func value(_ x: Double, _ y: Double, _ z: Double) -> Double {
-        let xi = Int(floor(x)) & 255
+        let xi = Int(floor(x)) & 255   // lattice cell, wrapped to the 0–255 table
         let yi = Int(floor(y)) & 255
         let zi = Int(floor(z)) & 255
         let xf = x - floor(x), yf = y - floor(y), zf = z - floor(z)

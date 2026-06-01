@@ -7,25 +7,38 @@ private let kNoiseScale: Double          = 0.01
 private let kSnowMinRadius: CGFloat      = 0.8
 private let kSnowMaxRadius: CGFloat      = 2.5
 
-enum SnowUpdateResult { case settled, offScreen, falling }
+/// Outcome of advancing a flake one step, telling `SnowSystem` what to do next.
+enum SnowUpdateResult {
+    case settled    // reached the pile — accumulate its height and respawn
+    case offScreen  // drifted out of bounds — respawn
+    case falling    // still in the air — keep it
+}
 
+/// The four flake silhouettes. `SnowRenderer` bakes one atlas cell per case.
 enum SnowflakeShape { case simple, crystal, hexagon, star }
 
+/// One snowflake: a drifting body with momentum, a fixed shape/size, and a
+/// spin. Motion is driven by a Perlin-noise *acceleration* field (see `update`)
+/// rather than a fixed velocity, so neighbouring flakes fall at different rates.
 struct SnowFlake {
     var pos: CGPoint
     var vel: CGPoint
     let radius: CGFloat
     let shape: SnowflakeShape
-    var rotation: Double
-    let rotationSpeed: Double
+    var rotation: Double           // current spin angle (radians)
+    let rotationSpeed: Double      // constant spin rate (radians/s), can be negative
 
     private let screenBounds: CGRect
 
+    /// Spawn a flake with a random size, shape (weighted 40/30/20/10 toward the
+    /// simpler shapes), spin, and x-position across a half-width-wider band than
+    /// the screen. `stagger: true` scatters the initial fill down the screen;
+    /// otherwise it enters just above the top edge.
     init(screenBounds: CGRect, stagger: Bool = false) {
         self.screenBounds = screenBounds
         radius       = CGFloat.random(in: kSnowMinRadius...kSnowMaxRadius)
         rotation     = Double.random(in: 0...(2 * .pi))
-        rotationSpeed = Double.random(in: -0.2...0.2)
+        rotationSpeed = Double.random(in: -2.0...2.0)
         vel          = CGPoint(x: 0, y: -CGFloat.random(in: 5...10))
 
         let r = Int.random(in: 0...99)
@@ -38,6 +51,9 @@ struct SnowFlake {
         pos = CGPoint(x: x, y: y)
     }
 
+    /// Integrate one step and report whether the flake settled, went off-screen,
+    /// or is still falling. `time` advances the noise field's third axis so the
+    /// drift evolves over time; `heightMap` gives the pile height to settle onto.
     mutating func update(dt: CGFloat, time: Double,
                          heightMap: [CGFloat], screenBounds: CGRect) -> SnowUpdateResult {
         // 3D Perlin noise field drives an *acceleration* (matches the Windows build):

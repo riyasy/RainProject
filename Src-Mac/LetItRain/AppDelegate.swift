@@ -1,7 +1,18 @@
 import Cocoa
 
+/// Which particle subsystem is active. The raw values are persisted in
+/// `UserDefaults`, so don't renumber them.
 enum ParticleMode: Int { case rain = 0, snow = 1 }
 
+/// The app's controller and the hub for everything that isn't rendering.
+///
+/// Owns the transparent overlay window, the menu-bar status item and settings
+/// panel, the persisted settings, the per-frame `CADisplayLink`, the physics
+/// state (`drops` / `snowSystem`), and the two Metal renderers. Exactly one
+/// renderer + subsystem is live at a time, selected by `settingsMode`.
+///
+/// Everything here runs on the main thread (the display link fires on main),
+/// with the sole exception of the Dock query dispatched to `dockQueue`.
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Overlay window
@@ -18,6 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsB: Float        = 1.0
     private var settingsMode: ParticleMode = .rain
 
+    /// `UserDefaults` keys for the persisted settings.
     private enum Keys {
         static let intensity = "intensity"
         static let direction = "direction"
@@ -36,7 +48,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Subsystems
 
-    private let renderer     = MetalRenderer()
+    private let rainRenderer = RainRenderer()
     private let snowRenderer = SnowRenderer()
 
     // MARK: - Timing
@@ -45,13 +57,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastTimestamp: CFTimeInterval = -1
     private var pollTimer: Timer?
 
+    /// Serial queue for the Dock AppleScript query. NSAppleScript isn't safe to
+    /// use from multiple threads at once, but it's fine on one dedicated thread —
+    /// so the (slow, synchronous) query runs here instead of stalling the main
+    /// thread, and `DockDetector` is only ever touched from this queue.
+    private let dockQueue = DispatchQueue(label: "com.letxt.SnowMan.LetItRain.dock",
+                                          qos: .utility)
+
     // MARK: - Menu bar
 
     private var statusItem: NSStatusItem?
-    private var settingsPanel: NSPanel?
+    private var settingsPopover: NSPopover?
 
     // MARK: - App lifecycle
 
+    /// Build everything once the app finishes launching: load saved settings,
+    /// show the menu-bar item and overlay window, ask for Accessibility (for Dock
+    /// detection), start the animation, and rebuild on display reconfiguration.
     func applicationDidFinishLaunching(_ notification: Notification) {
         loadSettings()
         setupMenuBar()
@@ -65,6 +87,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    /// Resolution / display-arrangement changed: resize the overlay to the new
+    /// main-screen frame and rebuild the animation against the new geometry.
     @objc private func screenParametersChanged() {
         window.setFrame(NSScreen.main?.frame ?? .zero, display: true)
         setupAnimation()
@@ -72,6 +96,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Overlay window
 
+    /// Create the full-screen overlay: borderless, transparent, click-through,
+    /// at the screen-saver window level so it floats above normal windows.
     private func setupOverlayWindow() {
         let screenFrame = NSScreen.main?.frame ?? .zero
         window = TransparentWindow(contentRect: screenFrame,
@@ -86,6 +112,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Animation
 
+    /// (Re)build the active subsystem from scratch. Idempotent: tears down both
+    /// renderers and the timers, captures current screen geometry, then sets up
+    /// only the renderer + particle state for `settingsMode` and (re)starts the
+    /// display link. Called on launch, on mode switch, and on display changes.
     private func setupAnimation() {
         displayLink?.invalidate()
         displayLink = nil
@@ -93,42 +123,66 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         pollTimer = nil
 
         screenBounds = NSScreen.main?.frame ?? .zero
-        dockObstacle = DockDetector.currentFrame()
+        dockObstacle = .zero
 
         let cv = window.contentView!
         cv.wantsLayer = true
 
         // Teardown both renderers; set up only the active one.
-        renderer.teardown()
+        rainRenderer.teardown()
         snowRenderer.teardown()
 
         switch settingsMode {
         case .rain:
-            renderer.setup(in: cv, screenBounds: screenBounds)
+            rainRenderer.setup(in: cv, screenBounds: screenBounds)
             let wx = windX(forDirection: settingsDirection)
             drops = (0..<settingsIntensity).map { _ in
                 RainDrop(screenBounds: screenBounds, windX: wx, stagger: true)
             }
             snowSystem = nil
+            startDockPolling()
 
         case .snow:
             snowRenderer.setup(in: cv, screenBounds: screenBounds)
             snowSystem = SnowSystem(screenBounds: screenBounds, count: settingsIntensity)
             drops = []
+            // Snow never reads dockObstacle (it settles on the screen floor /
+            // heightMap), so no AppleScript Dock polling in snow mode.
         }
 
         startDisplayLink()
+    }
 
-        // NSAppleScript must run on the main thread (not thread-safe).
+    /// Dock detection is only meaningful for rain (drops/splatters land on the
+    /// Dock's top edge), so it's kept off entirely in snow mode. The timer fires
+    /// on the main run loop but only schedules the work — the synchronous query
+    /// runs on `dockQueue`.
+    private func startDockPolling() {
+        refreshDockObstacle()
         pollTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            let updated = DockDetector.currentFrame()
-            if updated != self.dockObstacle { self.dockObstacle = updated }
+            self?.refreshDockObstacle()
+        }
+    }
+
+    /// Run the Dock query off the main thread, then apply the result back on main
+    /// (so `dockObstacle` stays single-threaded — written and read only on main).
+    private func refreshDockObstacle() {
+        let screenHeight = screenBounds.height   // read NSScreen-derived value on main
+        dockQueue.async { [weak self] in
+            let updated = DockDetector.currentFrame(screenHeight: screenHeight)
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if updated != self.dockObstacle { self.dockObstacle = updated }
+            }
         }
     }
 
     private func startDisplayLink() {
         lastTimestamp = -1
+        // CADisplayLink retains its target, so this forms a retain cycle with
+        // AppDelegate. That's intentional and harmless: AppDelegate lives for the
+        // whole app, and setupAnimation() invalidates the old link (breaking the
+        // cycle) before creating a new one.
         let link = window.displayLink(target: self, selector: #selector(tick(_:)))
         link.add(to: .main, forMode: .common)
         displayLink = link
@@ -136,6 +190,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Per-frame tick
 
+    /// Display-link callback: compute the frame's delta-time and advance the
+    /// active subsystem. `dt` is clamped to 50 ms so a stall (e.g. app paused)
+    /// can't teleport particles across the screen in one step; the first frame
+    /// uses the link's nominal duration since there's no previous timestamp.
     @objc private func tick(_ link: CADisplayLink) {
         let dt: CGFloat = lastTimestamp < 0 ? CGFloat(link.duration)
             : CGFloat(min(link.targetTimestamp - lastTimestamp, 0.05))
@@ -149,10 +207,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Advance and draw one rain frame: reconcile the drop count to the intensity
+    /// setting, then for each drop either fall (applying the live wind) or, once
+    /// it has landed, animate its splatter burst until the burst expires and the
+    /// drop is recycled. Finally hand the whole list to the renderer.
     private func tickRain(dt: CGFloat) {
+        let wx = windX(forDirection: settingsDirection)
         let target = settingsIntensity
+        // Grow or shrink the pool to match the current intensity slider.
         if drops.count != target {
-            let wx = windX(forDirection: settingsDirection)
             if drops.count < target {
                 drops += (drops.count..<target).map { _ in RainDrop(screenBounds: screenBounds, windX: wx) }
             } else {
@@ -160,36 +223,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        let wx = windX(forDirection: settingsDirection)
         for i in drops.indices {
             if !drops[i].touchedGround {
-                drops[i].vel.x = wx
+                drops[i].vel.x = wx                       // direction slider can change mid-fall
                 drops[i].updateDrop(dt: dt, dockObstacle: dockObstacle)
             } else {
+                // Landed: tick the live splatter droplets and age the burst.
                 for j in drops[i].splatters.indices where drops[i].splatters[j].isAlive {
                     drops[i].splatters[j].update(dt: dt, screenBounds: screenBounds, dockObstacle: dockObstacle)
                 }
                 drops[i].splatterTime += Double(dt)
                 if drops[i].splatterTime >= kSplatterDuration { drops[i].isDead = true }
             }
-            if drops[i].isDead { drops[i].reset(windX: wx) }
+            if drops[i].isDead { drops[i].reset(windX: wx) }   // recycle in place
         }
 
-        renderer.render(drops: drops, screenBounds: screenBounds,
-                        color: (r: settingsR, g: settingsG, b: settingsB))
+        rainRenderer.render(drops: drops, screenBounds: screenBounds,
+                            color: (r: settingsR, g: settingsG, b: settingsB))
     }
 
+    /// Advance and draw one snow frame. `SnowSystem` owns count reconciliation,
+    /// motion, settling, and the pile, so this just steps it and renders.
     private func tickSnow(dt: CGFloat) {
         snowSystem?.update(dt: dt, time: lastTimestamp, targetCount: settingsIntensity)
         if let system = snowSystem {
-            snowRenderer.render(system: system, screenBounds: screenBounds,
-                                rebuildPile: system.pileDirty)
-            snowSystem?.pileDirty = false
+            snowRenderer.render(system: system, screenBounds: screenBounds)
         }
     }
 
     // MARK: - Accessibility
 
+    /// Prompt for Accessibility on first launch if not already trusted. The
+    /// permission lets `DockDetector` read the Dock's exact icon-bar bounds;
+    /// without it rain just lands on the screen floor everywhere.
     private func requestAccessibilityIfNeeded() {
         guard !AXIsProcessTrusted() else { return }
         let opts = [kAXTrustedCheckOptionPrompt.takeRetainedValue() as String: true]
@@ -198,6 +264,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Menu bar
 
+    /// Install the menu-bar status item whose button toggles the settings panel.
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem?.button?.image = NSImage(systemSymbolName: "cloud.rain.fill",
@@ -206,29 +273,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.button?.target = self
     }
 
+    /// Show or hide the settings popover (built lazily on first use), anchored to
+    /// the status-item button so it gets the native menu-bar window look.
     @objc private func toggleSettings() {
-        if settingsPanel == nil { buildSettingsPanel() }
-        guard let panel = settingsPanel else { return }
-        if panel.isVisible {
-            panel.orderOut(nil)
+        if settingsPopover == nil { buildSettingsPopover() }
+        guard let popover = settingsPopover, let btn = statusItem?.button else { return }
+        if popover.isShown {
+            popover.performClose(nil)
         } else {
-            positionPanel(panel)
-            panel.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+            popover.show(relativeTo: btn.bounds, of: btn, preferredEdge: .maxY)
+            // The rain overlay lives at `.screenSaver` level and covers the whole
+            // screen; lift the popover window above it so rain isn't painted over
+            // the settings UI.
+            if let win = popover.contentViewController?.view.window {
+                win.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
+            }
         }
     }
 
-    private func positionPanel(_ panel: NSPanel) {
-        guard let btn = statusItem?.button,
-              let btnWindow = btn.window else { return }
-        let btnRect = btnWindow.convertToScreen(btn.frame)
-        panel.setFrameOrigin(NSPoint(
-            x: btnRect.midX - panel.frame.width / 2,
-            y: btnRect.minY - panel.frame.height - 6
-        ))
-    }
-
-    private func buildSettingsPanel() {
+    /// Lazily build the settings popover and wire its `on*` callbacks back to this
+    /// delegate: each writes the corresponding setting, persists it, and (for a mode
+    /// change) rebuilds the animation. `.transient` makes it dismiss on outside click.
+    private func buildSettingsPopover() {
         let vc = SettingsViewController()
         vc.intensity = settingsIntensity
         vc.direction = settingsDirection
@@ -246,19 +313,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         vc.onQuit = { NSApp.terminate(nil) }
 
-        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 300, height: 250),
-                            styleMask: [.titled, .closable, .nonactivatingPanel],
-                            backing: .buffered, defer: false)
-        panel.title = "Let It Rain"
-        panel.contentViewController = vc
-        panel.isFloatingPanel = true
-        panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.maximumWindow)))
-        panel.hidesOnDeactivate = false
-        settingsPanel = panel
+        let popover = NSPopover()
+        popover.contentViewController = vc
+        popover.contentSize = NSSize(width: 300, height: 318)
+        popover.behavior = .transient
+        popover.animates = true
+        settingsPopover = popover
     }
 
+    /// Store a chosen drop color as plain device-RGB floats for the renderer.
     private func applyColor(_ c: NSColor) {
-        let rgb = c.usingColorSpace(.deviceRGB) ?? c
+        let rgb = c.usingColorSpace(.deviceRGB) ?? c   // normalize so .redComponent etc. are valid
         settingsR = Float(rgb.redComponent)
         settingsG = Float(rgb.greenComponent)
         settingsB = Float(rgb.blueComponent)
@@ -266,6 +331,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Persistence
 
+    /// Load persisted settings, leaving each at its default if absent.
     private func loadSettings() {
         let d = UserDefaults.standard
         if let v = d.object(forKey: Keys.intensity) as? Int   { settingsIntensity = v }
@@ -277,6 +343,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
            let m = ParticleMode(rawValue: v)                   { settingsMode = m }
     }
 
+    /// Persist all current settings (called after any settings-panel change).
     private func saveSettings() {
         let d = UserDefaults.standard
         d.set(settingsIntensity,      forKey: Keys.intensity)

@@ -10,6 +10,9 @@ class TransparentWindow: NSWindow {
 
 // MARK: - Entry point
 
+/// Manual `@main` entry point. The app has no storyboard/SwiftUI lifecycle, so
+/// we bootstrap `NSApplication` by hand and install `AppDelegate`. The delegate
+/// is held by `NSApplication` for the process lifetime.
 @main
 class AppMain: NSObject {
     static func main() {

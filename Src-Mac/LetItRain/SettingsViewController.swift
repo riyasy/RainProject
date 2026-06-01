@@ -1,13 +1,20 @@
 import Cocoa
 
+/// The programmatic settings panel (mode toggle, intensity, direction, drop
+/// color, Quit). It holds no app state: the initial values are pushed in before
+/// presentation, and every change is reported through the `on*` callbacks, which
+/// `AppDelegate` applies and persists. Direction and color rows live in
+/// `rainOnlyViews` and are hidden in snow mode.
 final class SettingsViewController: NSViewController {
 
+    // Change callbacks, wired up by AppDelegate.
     var onIntensity: ((Int)          -> Void)?
     var onDirection: ((Int)          -> Void)?
     var onColor:     ((NSColor)      -> Void)?
     var onMode:      ((ParticleMode) -> Void)?
     var onQuit:      (() -> Void)?
 
+    // Seed values, set by AppDelegate before the panel is shown.
     var intensity: Int          = 200
     var direction: Int          = 0
     var mode: ParticleMode      = .rain
@@ -26,16 +33,34 @@ final class SettingsViewController: NSViewController {
     // MARK: - View lifecycle
 
     override func loadView() {
-        view = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 250))
+        // Plain transparent view: the hosting NSPopover supplies the native
+        // vibrancy material, shadow, and rounded corners.
+        view = NSView(frame: NSRect(x: 0, y: 0, width: 300, height: 318))
+        preferredContentSize = view.bounds.size
         buildUI()
     }
 
+    /// Repo and contact links, mirrored from the Windows settings dialog.
+    private let gitHubURL = URL(string: "https://github.com/riyasy/RainProject")!
+    private let contactEmail = "ryftools@outlook.com"
+
     // MARK: - UI construction
 
+    /// Lay out every control by hand (no Auto Layout): a top-down cursor `top`
+    /// is decremented as each row is added. The intensity slider's 2–50 range maps
+    /// to 20–500 particles (×10); direction is an integer −5…+5 with tick stops.
     private func buildUI() {
         let pad: CGFloat = 18
         let w   = view.bounds.width - pad * 2
-        var top = view.bounds.height - pad   // 232
+        var top = view.bounds.height - pad
+
+        // ── Title / header ─────────────────────────────────────────────────
+        let title = NSTextField(labelWithString: "Let It Rain")
+        title.font = .boldSystemFont(ofSize: 14)
+        title.alignment = .center
+        title.frame = NSRect(x: pad, y: top - 20, width: w, height: 20)
+        view.addSubview(title)
+        top -= 20 + 14   // reserve exactly the strip added to the view height
 
         // ── Mode toggle ────────────────────────────────────────────────────
         modeControl = NSSegmentedControl(labels: ["Rain", "Snow"],
@@ -100,29 +125,61 @@ final class SettingsViewController: NSViewController {
                                     action: #selector(directionChanged), intSteps: true)
         rainOnlyViews += dirViews
 
-        // ── Drop Color (rain only) ─────────────────────────────────────────
+        // ── Drop Color (rain only): label + well share one row ─────────────
         top -= 16
+        top -= 22
         let clrLbl = headerLabel("Drop Color")
-        clrLbl.frame = NSRect(x: pad, y: top, width: 100, height: 14)
+        clrLbl.frame = NSRect(x: pad, y: top + 4, width: 100, height: 14)   // centered on the 22pt well
         view.addSubview(clrLbl)
         rainOnlyViews.append(clrLbl)
 
-        top -= 28
         colorWell.color = dropColor
         colorWell.target = self; colorWell.action = #selector(colorChanged)
-        colorWell.frame = NSRect(x: pad, y: top, width: 44, height: 22)
+        colorWell.frame = NSRect(x: pad + 100, y: top, width: 44, height: 22)
         view.addSubview(colorWell)
         rainOnlyViews.append(colorWell)
+
+        // ── Footer (always visible): GitHub link, contact email, Quit ───────
+        let sep = NSBox()
+        sep.boxType = .separator
+        sep.frame = NSRect(x: pad, y: 64, width: w, height: 1)
+        view.addSubview(sep)
+
+        // GitHub icon + link, mirroring the Windows settings dialog button.
+        let gitHub = NSButton(title: " GitHub", target: self, action: #selector(openGitHub))
+        gitHub.isBordered = false
+        gitHub.bezelStyle = .recessed
+        gitHub.imagePosition = .imageLeading
+        gitHub.contentTintColor = .labelColor
+        if let icon = NSImage(named: "GitHubIcon") {
+            icon.isTemplate = true
+            icon.size = NSSize(width: 16, height: 16)
+            gitHub.image = icon
+        }
+        gitHub.sizeToFit()
+        gitHub.frame = NSRect(x: pad, y: 38, width: gitHub.frame.width, height: 20)
+        view.addSubview(gitHub)
+
+        // Contact email as a mailto link.
+        let email = NSButton(title: contactEmail, target: self, action: #selector(openEmail))
+        email.isBordered = false
+        email.bezelStyle = .recessed
+        email.contentTintColor = .secondaryLabelColor
+        email.font = .systemFont(ofSize: 11)
+        email.sizeToFit()
+        email.frame = NSRect(x: pad, y: 14, width: email.frame.width, height: 16)
+        view.addSubview(email)
 
         // ── Quit ───────────────────────────────────────────────────────────
         let btn = NSButton(title: "Quit", target: self, action: #selector(quit))
         btn.bezelStyle = .rounded
-        btn.frame = NSRect(x: view.bounds.width - pad - 64, y: pad - 4, width: 64, height: 22)
+        btn.frame = NSRect(x: view.bounds.width - pad - 64, y: 22, width: 64, height: 22)
         view.addSubview(btn)
 
         updateModeVisibility()
     }
 
+    /// Show the direction/color rows only in rain mode.
     private func updateModeVisibility() {
         let isRain = mode == .rain
         rainOnlyViews.forEach { $0.isHidden = !isRain }
@@ -137,7 +194,7 @@ final class SettingsViewController: NSViewController {
     }
 
     @objc private func intensityChanged(_ sender: NSSlider) {
-        let drops = Int(sender.intValue) * 10
+        let drops = Int(sender.intValue) * 10   // slider 2…50 → 20…500 particles
         intensityLabel.stringValue = "\(drops)"
         onIntensity?(drops)
     }
@@ -154,8 +211,17 @@ final class SettingsViewController: NSViewController {
 
     @objc private func quit() { onQuit?() }
 
+    @objc private func openGitHub() { NSWorkspace.shared.open(gitHubURL) }
+
+    @objc private func openEmail() {
+        if let url = URL(string: "mailto:\(contactEmail)") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     // MARK: - Helpers
 
+    /// Render the direction value as an arrow + magnitude (e.g. "← 3", "↓", "→ 2").
     private func formatDirection(_ d: Int) -> String {
         switch d {
         case ..<0: return "← \(-d)"
