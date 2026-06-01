@@ -43,17 +43,7 @@ void DisplayData::InvalidateSnowAtlas()
 
 void DisplayData::SetSceneBounds(const RECT sceneRect, const float scaleFactor)
 {
-	if (!IsSame(SceneRect, sceneRect) && !ScenePixels.empty())
-	{
-		ScenePixels.clear();
-		ScenePixels.shrink_to_fit();
-		ColumnHeights.clear();
-		ColumnHeights.shrink_to_fit();
-	}
-
-	//wchar_t buffer[100];
-	//swprintf_s(buffer, L"Width: %d, Height: %d\n", Width, Height);
-	//OutputDebugStringW(buffer);
+	const bool boundsChanged = !IsSame(SceneRect, sceneRect);
 
 	SceneRect = sceneRect;
 	ScaleFactor = scaleFactor;
@@ -66,19 +56,45 @@ void DisplayData::SetSceneBounds(const RECT sceneRect, const float scaleFactor)
 	Width = SceneRect.right - SceneRect.left;
 	Height = SceneRect.bottom - SceneRect.top;
 
-	if (ScenePixels.empty())
+	// Per-column heightmap (simple mode): tiny, sized for every mode. Coarse
+	// columns (DPI-scaled) so each settled flake makes a discernible bump.
+	if (boundsChanged || ColumnHeights.empty())
 	{
-		ScenePixels.resize(Height * Width);
-		// std::vector::resize zero-initializes POD types like uint8_t
-
-		// Simple snow heap: coarse columns (DPI-scaled) so each settled flake
-		// makes a discernible bump and snow builds up visibly.
 		SnowColumnWidth = (std::max)(1, static_cast<int>(SnowFlake::SNOW_COLUMN_WIDTH_BASE * ScaleFactor + 0.5f));
 		const int numColumns = (Width + SnowColumnWidth - 1) / SnowColumnWidth;
 		ColumnHeights.assign(numColumns, 0.0f);
+	}
 
+	// Per-pixel buffer: allocated only in per-pixel mode, freed in simple mode.
+	AllocateOrFreeScenePixels(boundsChanged);
+}
+
+void DisplayData::AllocateOrFreeScenePixels(const bool forceRealloc)
+{
+	if (SimpleSnowHeap)
+	{
+		// Simple (heightmap) mode never touches the per-pixel buffer — release it.
+		if (!ScenePixels.empty())
+		{
+			ScenePixels.clear();
+			ScenePixels.shrink_to_fit();
+		}
+		return;
+	}
+
+	// Per-pixel mode: (re)allocate a zeroed buffer on first use or bounds change.
+	if (forceRealloc || ScenePixels.empty())
+	{
+		ScenePixels.assign(static_cast<size_t>(Width) * Height, 0); // zero-initialized
 		MaxSnowHeight = Height - 2;
 	}
+}
+
+void DisplayData::ApplySnowHeapMode(const bool simple)
+{
+	SimpleSnowHeap = simple;
+	AllocateOrFreeScenePixels(false); // free (simple) or allocate (per-pixel)
+	ClearSnowAccumulation();          // reset so we never show a half-converted pile
 }
 
 void DisplayData::ClearSnowAccumulation()

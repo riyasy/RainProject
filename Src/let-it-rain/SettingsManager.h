@@ -27,7 +27,7 @@ public:
 		const ParticleType partType = RAIN,
 		const bool startWithWindows = false,
 		const bool allowHide = false,
-		const bool simpleSnowHeap = false)
+		const bool simpleSnowHeap = true)
 		: MaxParticles(maxParticles), WindSpeed(windSpeed), ParticleColor(ParticleColor), PartType(partType), StartWithWindows(startWithWindows), AllowHide(allowHide), SimpleSnowHeap(simpleSnowHeap)
 	{
 	}

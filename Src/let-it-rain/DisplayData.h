@@ -17,6 +17,9 @@ public:
 	void SetSceneBounds(RECT sceneRect, float scaleFactor);
 	void InvalidateSnowAtlas();
 	void ClearSnowAccumulation();
+	// Switch settle representation: frees the per-pixel buffer in simple mode,
+	// (re)allocates it in per-pixel mode, then clears the heap.
+	void ApplySnowHeapMode(bool simple);
 
 	int Width = 100;
 	int Height = 100;
@@ -50,5 +53,8 @@ public:
 	std::unique_ptr<FastNoiseLite> pNoiseGen;
 
 private:
+	// Allocate the per-pixel ScenePixels buffer in per-pixel mode, or free it in
+	// simple mode. forceRealloc re-creates it (e.g. after a scene-bounds change).
+	void AllocateOrFreeScenePixels(bool forceRealloc);
 	static bool IsSame(const RECT& l, const RECT& r);
 };

@@ -137,9 +137,8 @@ void DisplayWindow::UpdateSnowHeapMode(const bool simpleSnowHeap)
 	GeneralSettings.SimpleSnowHeap = simpleSnowHeap;
 	if (pDisplaySpecificData)
 	{
-		pDisplaySpecificData->SimpleSnowHeap = simpleSnowHeap;
-		// Clear the heap so we never show a half-converted pile after switching.
-		pDisplaySpecificData->ClearSnowAccumulation();
+		// Frees/allocates the per-pixel buffer to match the mode, then clears the heap.
+		pDisplaySpecificData->ApplySnowHeapMode(simpleSnowHeap);
 	}
 }
 
