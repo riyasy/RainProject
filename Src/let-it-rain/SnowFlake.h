@@ -3,7 +3,8 @@
 #include "Vector2.h"
 #include "DisplayData.h"
 #include <cstdint>
-#include <d2d1_1.h>
+#include <vector>
+#include <d2d1_3.h>
 
 #define TWO_PI 6.28318530718f
 #define PI 3.14159265359f
@@ -24,7 +25,8 @@ public:
 	// "Simple snow heap" mode: relax the per-column heightmap (slope clamp) and
 	// draw it as a single smooth filled silhouette.
 	static void SmoothSnowHeap(DisplayData* pDispData);
-	void Draw(ID2D1DeviceContext* dc, const D2D1::Matrix3x2F& baseTransform) const;
+	// Draw all falling flakes in one batched sprite call (atlas + ID2D1SpriteBatch).
+	static void DrawFallingFlakes(ID2D1DeviceContext3* dc3, const std::vector<SnowFlake>& flakes, DisplayData* pDispData);
 	static void DrawSettledSnow(ID2D1DeviceContext* dc, const DisplayData* pDispData);
 	static void DrawSettledSnowSimple(ID2D1DeviceContext* dc, const DisplayData* pDispData);
 
@@ -77,12 +79,12 @@ private:
 	void Spawn();
 	void ReSpawn();
 
-	void GenerateSprite(ID2D1DeviceContext* dc, int shapeIndex) const;
+	// Build the 2x2 shape atlas into pDispData->SnowAtlas.
+	static void GenerateAtlas(ID2D1DeviceContext* dc, DisplayData* pDispData);
 
-	// Helper methods for drawing different snowflake shapes
-	// Changed to ID2D1RenderTarget to support drawing to BitmapRenderTarget
-	void DrawSimpleSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const;
-	void DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const;
-	void DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const;
-	void DrawStarSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const;
+	// Helper methods for drawing each shape into the atlas render target.
+	static void DrawSimpleSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, DisplayData* pDispData);
+	static void DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, DisplayData* pDispData);
+	static void DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, DisplayData* pDispData);
+	static void DrawStarSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, DisplayData* pDispData);
 };

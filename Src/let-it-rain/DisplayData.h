@@ -1,6 +1,6 @@
 #pragma once
 
-#include <d2d1.h>
+#include <d2d1_3.h>
 #include <vector>
 #include <dcomp.h>
 #include <wrl/client.h>
@@ -15,7 +15,7 @@ public:
 	~DisplayData();
 	void SetRainColor(COLORREF color);
 	void SetSceneBounds(RECT sceneRect, float scaleFactor);
-	void InvalidateSpriteCache();
+	void InvalidateSnowAtlas();
 	void ClearSnowAccumulation();
 
 	int Width = 100;
@@ -31,8 +31,11 @@ public:
 	// Single brush reused for all splatter draws — opacity is set dynamically at draw time
 	Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> SplatterColorBrush;
 
-	// Cache for pre-rendered snowflakes (one per shape type)
-	std::vector<Microsoft::WRL::ComPtr<ID2D1Bitmap>> SpriteCache;
+	// Snow flakes are drawn with one batched sprite call: a 2x2 atlas of the
+	// four shapes plus a reused sprite batch. Both are device-dependent (rebuilt
+	// on device loss); the atlas is also rebuilt on particle-color change.
+	Microsoft::WRL::ComPtr<ID2D1Bitmap> SnowAtlas;
+	Microsoft::WRL::ComPtr<ID2D1SpriteBatch> SnowSpriteBatch;
 
 	int MaxSnowHeight = 0;
 	std::vector<uint8_t> ScenePixels;

@@ -3,7 +3,7 @@
 #include <wrl.h>
 #include <dxgi1_3.h>
 #include <d3d11_2.h>
-#include <d2d1_2.h>
+#include <d2d1_3.h>
 #include <dcomp.h>
 #include <wtsapi32.h>
 #include <vector>
@@ -71,6 +71,7 @@ private:
 	ComPtr<ID2D1Factory2> D2Factory;
 	ComPtr<ID2D1Device1> D2Device;
 	ComPtr<ID2D1DeviceContext> Dc;
+	ComPtr<ID2D1DeviceContext3> Dc3; // QI of Dc; used for batched snow sprites
 	ComPtr<IDXGISurface2> Surface;
 	ComPtr<ID2D1Bitmap1> Bitmap;
 	ComPtr<IDCompositionDevice> DcompDevice;

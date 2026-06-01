@@ -508,6 +508,8 @@ void DisplayWindow::InitDirect2D(const HWND hWnd)
 	// and exposes drawing commands
 	HR(D2Device->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE,
 	                                 Dc.GetAddressOf()));
+	// Sprite batches (batched snow drawing) require ID2D1DeviceContext3 (Windows 10+).
+	HR(Dc.As(&Dc3));
 	// Retrieve the swap chain's back buffer
 	HR(SwapChain->GetBuffer(
 		0, // index
@@ -786,17 +788,8 @@ void DisplayWindow::DrawSnowFlakes()
 	Dc->BeginDraw();
 	Dc->Clear();
 
-	// Read the current transform once — avoids N redundant GetTransform calls inside Draw()
-	D2D1::Matrix3x2F baseTransform;
-	Dc->GetTransform(&baseTransform);
-
-	for (const auto & flake : SnowFlakes)
-	{
-		flake.Draw(Dc.Get(), baseTransform);
-	}
-
-	// Restore transform once after the loop (each Draw only sets, never restores)
-	Dc->SetTransform(baseTransform);
+	// Draw all falling flakes in a single batched sprite call.
+	SnowFlake::DrawFallingFlakes(Dc3.Get(), SnowFlakes, pDisplaySpecificData.get());
 
 	if (!SnowFlakes.empty())
 	{
@@ -970,6 +963,7 @@ void DisplayWindow::ReleaseDeviceResources()
 	Target.Reset();
 	Visual.Reset();
 	DcompDevice.Reset();
+	Dc3.Reset();
 	Dc.Reset();
 	D2Device.Reset();
 	D2Factory.Reset();

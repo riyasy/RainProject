@@ -11,8 +11,6 @@ DisplayData::DisplayData(ID2D1DeviceContext * dc) : DC(dc)
 		pNoiseGen = std::make_unique<FastNoiseLite>();
 		pNoiseGen->SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 	}
-	// Reserve space for the 4 snowflake types
-	SpriteCache.resize(4);
 }
 
 DisplayData::~DisplayData()
@@ -32,16 +30,15 @@ void DisplayData::SetRainColor(const COLORREF color)
 	// Single splatter brush — opacity is changed dynamically at draw time via SetOpacity()
 	DC->CreateSolidColorBrush(D2D1::ColorF(red, green, blue, 1.0f), SplatterColorBrush.GetAddressOf());
 
-	// Color changed, so cached sprites are invalid
-	InvalidateSpriteCache();
+	// Color changed, so the colored snow atlas is invalid
+	InvalidateSnowAtlas();
 }
 
-void DisplayData::InvalidateSpriteCache()
+void DisplayData::InvalidateSnowAtlas()
 {
-	for (auto& bitmap : SpriteCache)
-	{
-		bitmap = nullptr;
-	}
+	// Atlas is colored with the current particle color; drop it so it is
+	// rebuilt on the next snow frame.
+	SnowAtlas.Reset();
 }
 
 void DisplayData::SetSceneBounds(const RECT sceneRect, const float scaleFactor)

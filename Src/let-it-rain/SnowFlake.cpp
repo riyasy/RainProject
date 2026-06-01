@@ -193,96 +193,110 @@ void SnowFlake::UpdatePosition(const float deltaSeconds, double clockTime)
 	}
 }
 
-void SnowFlake::GenerateSprite(ID2D1DeviceContext* dc, int shapeIndex) const
+void SnowFlake::GenerateAtlas(ID2D1DeviceContext* dc, DisplayData* pDispData)
 {
-	// Create a compatible render target (bitmap)
+	// 2x2 grid of SPRITE_SIZE cells: Simple, Crystal (top row), Hexagon, Star.
 	Microsoft::WRL::ComPtr<ID2D1BitmapRenderTarget> bmpRT;
-
-	// Create a square sprite canvas
-	D2D1_SIZE_F size = D2D1::SizeF(SPRITE_SIZE, SPRITE_SIZE);
-
-	HRESULT hr = dc->CreateCompatibleRenderTarget(size, &bmpRT);
-	if (FAILED(hr)) return;
+	const D2D1_SIZE_F size = D2D1::SizeF(SPRITE_SIZE * 2.0f, SPRITE_SIZE * 2.0f);
+	if (FAILED(dc->CreateCompatibleRenderTarget(size, &bmpRT))) return;
 
 	bmpRT->BeginDraw();
 	bmpRT->Clear(D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f)); // Transparent
 
-	// Draw center of the sprite
-	D2D1_POINT_2F center = D2D1::Point2F(SPRITE_SIZE / 2.0f, SPRITE_SIZE / 2.0f);
+	const float half = SPRITE_SIZE / 2.0f;
+	const float s = SPRITE_SIZE;
 
-	// Draw the shape upright (rotation 0)
-	switch (static_cast<SnowflakeShape>(shapeIndex))
-	{
-	case SnowflakeShape::Simple:
-		DrawSimpleSnowflake(bmpRT.Get(), center, SPRITE_BASE_DRAW_SIZE);
-		break;
-	case SnowflakeShape::Crystal:
-		DrawCrystalSnowflake(bmpRT.Get(), center, SPRITE_BASE_DRAW_SIZE);
-		break;
-	case SnowflakeShape::Hexagon:
-		DrawHexagonSnowflake(bmpRT.Get(), center, SPRITE_BASE_DRAW_SIZE);
-		break;
-	case SnowflakeShape::Star:
-		DrawStarSnowflake(bmpRT.Get(), center, SPRITE_BASE_DRAW_SIZE);
-		break;
-	}
+	// Each shape is clipped to its cell so overflow (e.g. star spikes that exceed
+	// the half-cell) does not bleed into neighbouring cells in the atlas.
+	bmpRT->PushAxisAlignedClip(D2D1::RectF(0, 0, s, s), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	DrawSimpleSnowflake(bmpRT.Get(), D2D1::Point2F(half, half), SPRITE_BASE_DRAW_SIZE, pDispData);
+	bmpRT->PopAxisAlignedClip();
+
+	bmpRT->PushAxisAlignedClip(D2D1::RectF(s, 0, s * 2.0f, s), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	DrawCrystalSnowflake(bmpRT.Get(), D2D1::Point2F(s + half, half), SPRITE_BASE_DRAW_SIZE, pDispData);
+	bmpRT->PopAxisAlignedClip();
+
+	bmpRT->PushAxisAlignedClip(D2D1::RectF(0, s, s, s * 2.0f), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	DrawHexagonSnowflake(bmpRT.Get(), D2D1::Point2F(half, s + half), SPRITE_BASE_DRAW_SIZE, pDispData);
+	bmpRT->PopAxisAlignedClip();
+
+	bmpRT->PushAxisAlignedClip(D2D1::RectF(s, s, s * 2.0f, s * 2.0f), D2D1_ANTIALIAS_MODE_PER_PRIMITIVE);
+	DrawStarSnowflake(bmpRT.Get(), D2D1::Point2F(s + half, s + half), SPRITE_BASE_DRAW_SIZE, pDispData);
+	bmpRT->PopAxisAlignedClip();
 
 	bmpRT->EndDraw();
 
-	// Store result in cache
 	Microsoft::WRL::ComPtr<ID2D1Bitmap> bitmap;
-	hr = bmpRT->GetBitmap(&bitmap);
-	if (SUCCEEDED(hr))
+	if (SUCCEEDED(bmpRT->GetBitmap(&bitmap)))
 	{
-		pDisplayData->SpriteCache[shapeIndex] = bitmap;
+		pDispData->SnowAtlas = bitmap;
 	}
 }
 
-void SnowFlake::Draw(ID2D1DeviceContext* dc, const D2D1::Matrix3x2F& baseTransform) const
+void SnowFlake::DrawFallingFlakes(ID2D1DeviceContext3* dc3, const std::vector<SnowFlake>& flakes, DisplayData* pDispData)
 {
-	if (MathUtil::IsPointInRect(pDisplayData->SceneRectNorm, Pos))
+	if (flakes.empty()) return;
+
+	// Lazily (re)build the colored atlas and the reusable sprite batch.
+	if (pDispData->SnowAtlas == nullptr)
 	{
-		const int shapeIndex = static_cast<int>(Shape);
-
-		// Lazy Load: If sprite doesn't exist, create it
-		if (pDisplayData->SpriteCache[shapeIndex] == nullptr)
-		{
-			GenerateSprite(dc, shapeIndex);
-		}
-
-		ID2D1Bitmap* pBitmap = pDisplayData->SpriteCache[shapeIndex].Get();
-		if (pBitmap)
-		{
-			const D2D1_POINT_2F center = D2D1::Point2F(
-				Pos.x + pDisplayData->SceneRect.left,
-				Pos.y + pDisplayData->SceneRect.top
-			);
-
-			const float drawWidth  = SPRITE_SIZE * Size * pDisplayData->ScaleFactor;
-			const float drawHeight = SPRITE_SIZE * Size * pDisplayData->ScaleFactor;
-
-			const D2D1_RECT_F destRect = D2D1::RectF(
-				center.x - drawWidth  / 2.0f,
-				center.y - drawHeight / 2.0f,
-				center.x + drawWidth  / 2.0f,
-				center.y + drawHeight / 2.0f
-			);
-
-			// Apply rotation on top of the caller-supplied base transform.
-			// No GetTransform needed here — caller reads it once before the loop.
-			// No restore needed here — caller restores once after the loop.
-			const D2D1::Matrix3x2F rotMatrix =
-				D2D1::Matrix3x2F::Rotation(Rotation * 180.0f / PI, center);
-			dc->SetTransform(rotMatrix * baseTransform);
-
-			dc->DrawBitmap(pBitmap, destRect);
-		}
+		GenerateAtlas(dc3, pDispData);
+		if (pDispData->SnowAtlas == nullptr) return;
 	}
+	if (pDispData->SnowSpriteBatch == nullptr)
+	{
+		if (FAILED(dc3->CreateSpriteBatch(pDispData->SnowSpriteBatch.GetAddressOf()))) return;
+	}
+
+	// Reused scratch buffers (single-threaded; refilled each call, capacity kept).
+	static std::vector<D2D1_RECT_F> dests;
+	static std::vector<D2D1_RECT_U> srcs;
+	static std::vector<D2D1_COLOR_F> colors;
+	static std::vector<D2D1_MATRIX_3X2_F> transforms;
+	dests.clear(); srcs.clear(); colors.clear(); transforms.clear();
+
+	const float left = static_cast<float>(pDispData->SceneRect.left);
+	const float top = static_cast<float>(pDispData->SceneRect.top);
+	const D2D1_COLOR_F white = D2D1::ColorF(1.0f, 1.0f, 1.0f, 1.0f); // atlas is pre-colored; no tint
+
+	// Source rects are in atlas pixels (D2D1_RECT_U); each shape is one of the
+	// 2x2 cells. Derive cell size from the atlas's actual pixel size (DPI-safe).
+	const D2D1_SIZE_U atlasPx = pDispData->SnowAtlas->GetPixelSize();
+	const UINT32 cellW = atlasPx.width / 2;
+	const UINT32 cellH = atlasPx.height / 2;
+
+	for (const SnowFlake& f : flakes)
+	{
+		if (!MathUtil::IsPointInRect(pDispData->SceneRectNorm, f.Pos)) continue;
+
+		const float cx = f.Pos.x + left;
+		const float cy = f.Pos.y + top;
+		const float halfDraw = SPRITE_SIZE * f.Size * pDispData->ScaleFactor * 0.5f;
+		dests.push_back(D2D1::RectF(cx - halfDraw, cy - halfDraw, cx + halfDraw, cy + halfDraw));
+
+		const int idx = static_cast<int>(f.Shape);
+		const UINT32 sx = static_cast<UINT32>(idx % 2) * cellW;
+		const UINT32 sy = static_cast<UINT32>(idx / 2) * cellH;
+		srcs.push_back(D2D1::RectU(sx, sy, sx + cellW, sy + cellH));
+
+		colors.push_back(white);
+		transforms.push_back(D2D1::Matrix3x2F::Rotation(f.Rotation * 180.0f / PI, D2D1::Point2F(cx, cy)));
+	}
+
+	if (dests.empty()) return;
+
+	ID2D1SpriteBatch* batch = pDispData->SnowSpriteBatch.Get();
+	batch->Clear();
+	batch->AddSprites(static_cast<UINT32>(dests.size()), dests.data(), srcs.data(), colors.data(), transforms.data());
+
+	// Sprite batch requires aliased AA; sprite edges are pre-antialiased in the atlas.
+	const D2D1_ANTIALIAS_MODE prevAA = dc3->GetAntialiasMode();
+	dc3->SetAntialiasMode(D2D1_ANTIALIAS_MODE_ALIASED);
+	dc3->DrawSpriteBatch(batch, pDispData->SnowAtlas.Get());
+	dc3->SetAntialiasMode(prevAA);
 }
 
-// NOTE: All helpers now take ID2D1RenderTarget* to support BitmapRenderTarget
-
-void SnowFlake::DrawSimpleSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const
+void SnowFlake::DrawSimpleSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, DisplayData* pDispData)
 {
 	// For simple snowflakes, just draw an ellipse with slight variations
 	const float radiusX = 1.0f * size;
@@ -290,14 +304,14 @@ void SnowFlake::DrawSimpleSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center,
 
 	// Draw the ellipse
 	D2D1_ELLIPSE ellipse = D2D1::Ellipse(center, radiusX, radiusY);
-	rt->FillEllipse(ellipse, pDisplayData->DropColorBrush.Get());
+	rt->FillEllipse(ellipse, pDispData->DropColorBrush.Get());
 }
 
-void SnowFlake::DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const
+void SnowFlake::DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, DisplayData* pDispData)
 {
 	// Draw a small center circle
 	D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.5f, size * 0.5f);
-	rt->FillEllipse(centerCircle, pDisplayData->DropColorBrush.Get());
+	rt->FillEllipse(centerCircle, pDispData->DropColorBrush.Get());
 
 	// Draw 6 arms for the crystal (60 degrees apart)
 	const int numArms = 6;
@@ -313,7 +327,7 @@ void SnowFlake::DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center
 		D2D1_POINT_2F endPoint = D2D1::Point2F(endX, endY);
 
 		// Draw the main arm
-		rt->DrawLine(center, endPoint, pDisplayData->DropColorBrush.Get(), size * 0.2f);
+		rt->DrawLine(center, endPoint, pDispData->DropColorBrush.Get(), size * 0.2f);
 
 		// Draw small branches (2 per arm)
 		float branchLength = baseLength * 0.4f;
@@ -328,18 +342,18 @@ void SnowFlake::DrawCrystalSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center
 		float branch1EndX = midX + cos(branch1Angle) * branchLength;
 		float branch1EndY = midY + sin(branch1Angle) * branchLength;
 		D2D1_POINT_2F branch1End = D2D1::Point2F(branch1EndX, branch1EndY);
-		rt->DrawLine(midPoint, branch1End, pDisplayData->DropColorBrush.Get(), size * 0.15f);
+		rt->DrawLine(midPoint, branch1End, pDispData->DropColorBrush.Get(), size * 0.15f);
 
 		// Second branch
 		float branch2Angle = angle - branchAngleOffset;
 		float branch2EndX = midX + cos(branch2Angle) * branchLength;
 		float branch2EndY = midY + sin(branch2Angle) * branchLength;
 		D2D1_POINT_2F branch2End = D2D1::Point2F(branch2EndX, branch2EndY);
-		rt->DrawLine(midPoint, branch2End, pDisplayData->DropColorBrush.Get(), size * 0.15f);
+		rt->DrawLine(midPoint, branch2End, pDispData->DropColorBrush.Get(), size * 0.15f);
 	}
 }
 
-void SnowFlake::DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const
+void SnowFlake::DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, DisplayData* pDispData)
 {
 	// Draw a hexagon shape using lines
 	constexpr int sides = 6;
@@ -358,7 +372,7 @@ void SnowFlake::DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center
 
 	// Draw the hexagon outline
 	for (int i = 0; i < sides; ++i) {
-		rt->DrawLine(points[i], points[i + 1], pDisplayData->DropColorBrush.Get(), size * 0.2f);
+		rt->DrawLine(points[i], points[i + 1], pDispData->DropColorBrush.Get(), size * 0.2f);
 	}
 
 	// Draw inner details (spokes)
@@ -366,21 +380,21 @@ void SnowFlake::DrawHexagonSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center
 		rt->DrawLine(
 			center,
 			points[i],
-			pDisplayData->DropColorBrush.Get(),
+			pDispData->DropColorBrush.Get(),
 			size * 0.15f
 		);
 	}
 
 	// Draw center circle
 	const D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.4f, size * 0.4f);
-	rt->FillEllipse(centerCircle, pDisplayData->DropColorBrush.Get());
+	rt->FillEllipse(centerCircle, pDispData->DropColorBrush.Get());
 }
 
-void SnowFlake::DrawStarSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size) const
+void SnowFlake::DrawStarSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, float size, DisplayData* pDispData)
 {
 	// Draw a small center circle
 	D2D1_ELLIPSE centerCircle = D2D1::Ellipse(center, size * 0.4f, size * 0.4f);
-	rt->FillEllipse(centerCircle, pDisplayData->DropColorBrush.Get());
+	rt->FillEllipse(centerCircle, pDispData->DropColorBrush.Get());
 
 	// Draw a star pattern with 12 spikes
 	const int numSpikes = 12;
@@ -397,7 +411,7 @@ void SnowFlake::DrawStarSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, f
 		D2D1_POINT_2F endPoint = D2D1::Point2F(endX, endY);
 
 		// Draw the spike
-		rt->DrawLine(center, endPoint, pDisplayData->DropColorBrush.Get(), size * 0.15f);
+		rt->DrawLine(center, endPoint, pDispData->DropColorBrush.Get(), size * 0.15f);
 
 		// Draw small intersecting lines between main spikes
 		if (i % 2 == 0) {
@@ -406,7 +420,7 @@ void SnowFlake::DrawStarSnowflake(ID2D1RenderTarget* rt, D2D1_POINT_2F center, f
 			float crossY = center.y + sin(crossAngle) * innerRadius;
 			D2D1_POINT_2F crossPoint = D2D1::Point2F(crossX, crossY);
 
-			rt->DrawLine(center, crossPoint, pDisplayData->DropColorBrush.Get(), size * 0.1f);
+			rt->DrawLine(center, crossPoint, pDispData->DropColorBrush.Get(), size * 0.1f);
 		}
 	}
 }
