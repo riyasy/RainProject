@@ -22,12 +22,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Settings
     // All accessed on the main thread (CADisplayLink fires on main).
 
-    private var settingsIntensity: Int  = 200
+    // Intensity is a base unit (5–50, the Windows build's "MaxParticles"); each
+    // mode scales it by its own multiplier (see rainDropCount / snowFlakeCount).
+    private var settingsIntensity: Int  = 25
     private var settingsDirection: Int  = 0
     private var settingsR: Float        = 0.6
     private var settingsG: Float        = 0.82
     private var settingsB: Float        = 1.0
     private var settingsMode: ParticleMode = .rain
+
+    /// Active particle counts for the current intensity. Rain and snow use
+    /// different multipliers (matching the Windows build) so the two platforms
+    /// render the same density for a given intensity setting.
+    private var rainDropCount: Int  { settingsIntensity * kRainDropMultiplier }
+    private var snowFlakeCount: Int { settingsIntensity * kSnowFlakeMultiplier }
 
     /// `UserDefaults` keys for the persisted settings.
     private enum Keys {
@@ -136,7 +144,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case .rain:
             rainRenderer.setup(in: cv, screenBounds: screenBounds)
             let wx = windX(forDirection: settingsDirection)
-            drops = (0..<settingsIntensity).map { _ in
+            drops = (0..<rainDropCount).map { _ in
                 RainDrop(screenBounds: screenBounds, windX: wx, stagger: true)
             }
             snowSystem = nil
@@ -144,7 +152,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         case .snow:
             snowRenderer.setup(in: cv, screenBounds: screenBounds)
-            snowSystem = SnowSystem(screenBounds: screenBounds, count: settingsIntensity)
+            snowSystem = SnowSystem(screenBounds: screenBounds, count: snowFlakeCount)
             drops = []
             // Snow never reads dockObstacle (it settles on the screen floor /
             // heightMap), so no AppleScript Dock polling in snow mode.
@@ -213,7 +221,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// drop is recycled. Finally hand the whole list to the renderer.
     private func tickRain(dt: CGFloat) {
         let wx = windX(forDirection: settingsDirection)
-        let target = settingsIntensity
+        let target = rainDropCount
         // Grow or shrink the pool to match the current intensity slider.
         if drops.count != target {
             if drops.count < target {
@@ -245,7 +253,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Advance and draw one snow frame. `SnowSystem` owns count reconciliation,
     /// motion, settling, and the pile, so this just steps it and renders.
     private func tickSnow(dt: CGFloat) {
-        snowSystem?.update(dt: dt, time: lastTimestamp, targetCount: settingsIntensity)
+        snowSystem?.update(dt: dt, time: lastTimestamp, targetCount: snowFlakeCount)
         if let system = snowSystem {
             snowRenderer.render(system: system, screenBounds: screenBounds)
         }
@@ -334,7 +342,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Load persisted settings, leaving each at its default if absent.
     private func loadSettings() {
         let d = UserDefaults.standard
-        if let v = d.object(forKey: Keys.intensity) as? Int   { settingsIntensity = v }
+        // Intensity is now a 5–50 base unit. Older builds stored the raw particle
+        // count (20–500, i.e. the old slider position ×10); fold those back to a
+        // slider position so existing users keep roughly the same intensity.
+        if let v = d.object(forKey: Keys.intensity) as? Int {
+            settingsIntensity = min(max(v > 50 ? v / 10 : v, 5), 50)
+        }
         if let v = d.object(forKey: Keys.direction) as? Int   { settingsDirection = v }
         if let v = d.object(forKey: Keys.colorR)    as? Float { settingsR = v }
         if let v = d.object(forKey: Keys.colorG)    as? Float { settingsG = v }

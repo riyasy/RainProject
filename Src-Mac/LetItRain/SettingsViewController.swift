@@ -15,7 +15,7 @@ final class SettingsViewController: NSViewController {
     var onQuit:      (() -> Void)?
 
     // Seed values, set by AppDelegate before the panel is shown.
-    var intensity: Int          = 200
+    var intensity: Int          = 25   // base unit (5–50); scaled per mode
     var direction: Int          = 0
     var mode: ParticleMode      = .rain
     var dropColor: NSColor      = NSColor(calibratedRed: 0.6, green: 0.82, blue: 1.0, alpha: 1.0)
@@ -112,9 +112,10 @@ final class SettingsViewController: NSViewController {
         }
 
         // ── Intensity (always visible) ─────────────────────────────────────
+        // Slider value is the base intensity unit (5–50); rain/snow scale it.
         intensityLabel.stringValue = "\(intensity)"
         _ = addSliderRow(title: "Intensity", slider: intensitySlider, valLabel: intensityLabel,
-                         min: 2, max: 50, value: Double(intensity / 10),
+                         min: 5, max: 50, value: Double(intensity),
                          action: #selector(intensityChanged))
 
         // ── Direction (rain only) ──────────────────────────────────────────
@@ -194,9 +195,9 @@ final class SettingsViewController: NSViewController {
     }
 
     @objc private func intensityChanged(_ sender: NSSlider) {
-        let drops = Int(sender.intValue) * 10   // slider 2…50 → 20…500 particles
-        intensityLabel.stringValue = "\(drops)"
-        onIntensity?(drops)
+        let units = Int(sender.intValue)   // base intensity (5…50); scaled per mode
+        intensityLabel.stringValue = "\(units)"
+        onIntensity?(units)
     }
 
     @objc private func directionChanged(_ sender: NSSlider) {

@@ -7,6 +7,16 @@ private let kNoiseScale: Double          = 0.01
 private let kSnowMinRadius: CGFloat      = 0.8
 private let kSnowMaxRadius: CGFloat      = 2.5
 
+// Falling-flake count per intensity unit. Mirrors the Windows build's
+// SnowFlake::SNOW_FLAKE_MULTIPLIER; tuned together with kSnowEdgeMargin so the
+// on-screen density stays constant while fewer off-screen flakes are simulated.
+let kSnowFlakeMultiplier = 14
+
+// Horizontal off-screen spawn/despawn margin, as a fraction of screen width
+// (drift headroom for seamless edges). Smaller = fewer off-screen flakes
+// simulated; too small risks flakes popping in/out at the edges under drift.
+let kSnowEdgeMargin: CGFloat = 0.2
+
 /// Outcome of advancing a flake one step, telling `SnowSystem` what to do next.
 enum SnowUpdateResult {
     case settled    // reached the pile — accumulate its height and respawn
@@ -44,7 +54,7 @@ struct SnowFlake {
         let r = Int.random(in: 0...99)
         shape = r < 40 ? .simple : r < 70 ? .crystal : r < 90 ? .hexagon : .star
 
-        let xMargin = screenBounds.width * 0.5
+        let xMargin = screenBounds.width * kSnowEdgeMargin
         let x = CGFloat.random(in: (screenBounds.minX - xMargin)...(screenBounds.maxX + xMargin))
         let y = stagger ? CGFloat.random(in: screenBounds.minY...screenBounds.maxY)
                         : screenBounds.maxY + radius
@@ -87,7 +97,7 @@ struct SnowFlake {
             if pos.y - radius <= floor { return .settled }
         }
 
-        let margin = screenBounds.width * 0.5
+        let margin = screenBounds.width * kSnowEdgeMargin
         if pos.x < screenBounds.minX - margin || pos.x > screenBounds.maxX + margin
             || pos.y < screenBounds.minY - radius {
             return .offScreen

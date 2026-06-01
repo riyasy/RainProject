@@ -7,6 +7,11 @@ let kVelY: CGFloat          = -900  // px/s downward (AppKit y-up)
 let kTrailMin: CGFloat      = 30
 let kTrailMax: CGFloat      = 100
 
+// Falling-drop count per intensity unit. Mirrors the Windows build's
+// RainDrop::RAIN_DROP_MULTIPLIER so both platforms render the same rain density
+// for a given intensity setting.
+let kRainDropMultiplier     = 3
+
 let kSplatterCount          = 3
 let kSplatterSpeed: CGFloat = 210
 let kGravity: CGFloat       = 500

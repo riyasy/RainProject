@@ -88,7 +88,7 @@ final class SnowRenderer {
     // Triple-buffered vertex data + semaphore — same hazard avoidance as the
     // rain renderer: the CPU writes the next frame into a different buffer than
     // the GPU is still reading.
-    private static let kMaxInFlight = 3
+    private static let kMaxInFlight = 2
     private let inFlight = DispatchSemaphore(value: kMaxInFlight)
     private var frameIndex = 0
 
@@ -99,7 +99,8 @@ final class SnowRenderer {
     private static let kAtlasCell = 128            // px per shape cell
     private static let kAtlasSize = 256            // 2×2 atlas
 
-    private static let kMaxFlakes     = 500
+    // Max flakes the buffers can hold: intensity 50 × kSnowFlakeMultiplier (14) = 700.
+    private static let kMaxFlakes     = 700
     private static let kMaxFlakeVerts = kMaxFlakes * 4
     private static let kMaxPileVerts  = 400        // ≥ 2 × max pile columns
 
@@ -119,6 +120,10 @@ final class SnowRenderer {
         layer.pixelFormat = .bgra8Unorm
         layer.isOpaque = false
         layer.framebufferOnly = true
+        // Each drawable is a full-screen surface (≈24 MB on Retina), so cap the
+        // pool to 2 — double-buffering is plenty for this overlay and saves one
+        // screen-sized surface vs. the default of 3. Matches kMaxInFlight.
+        layer.maximumDrawableCount = 2
         layer.frame = view.bounds
         let scale = NSScreen.main?.backingScaleFactor ?? 1.0
         layer.contentsScale = scale
