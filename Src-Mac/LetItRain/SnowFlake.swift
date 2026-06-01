@@ -1,15 +1,17 @@
 import CoreGraphics
 
-private let kSnowGravity: CGFloat        = 10
-private let kSnowMaxSpeed: CGFloat       = 75
-private let kNoiseIntensity: CGFloat     = 20
-private let kNoiseScale: Double          = 0.01
-private let kSnowMinRadius: CGFloat      = 0.8
-private let kSnowMaxRadius: CGFloat      = 2.5
+// Snow tuning knobs. Each note says what raising (↑) / lowering (↓) it does.
+private let kSnowGravity: CGFloat        = 10    // steady downward pull (accel). ↑ flakes fall faster & straighter; ↓ driftier, hangs longer.
+private let kSnowMaxSpeed: CGFloat       = 75    // speed cap (px/s). ↑ lets flakes move faster (more frantic gusts); ↓ keeps it calm.
+private let kNoiseIntensity: CGFloat     = 20    // strength of the noise-driven wind/swirl. ↑ wilder sideways drift & speed variation; ↓ straighter, uniform fall.
+private let kNoiseScale: Double          = 0.01  // noise frequency in space & time. ↑ tighter, more chaotic eddies; ↓ broad, slow-rolling gusts.
+private let kSnowMinRadius: CGFloat      = 0.8   // smallest flake (pt).
+private let kSnowMaxRadius: CGFloat      = 2.5   // largest flake (pt). ↑ both = chunkier snow; bigger flakes also settle faster (deposit ∝ radius).
 
 // Falling-flake count per intensity unit. Mirrors the Windows build's
 // SnowFlake::SNOW_FLAKE_MULTIPLIER; tuned together with kSnowEdgeMargin so the
 // on-screen density stays constant while fewer off-screen flakes are simulated.
+// ↑ denser snowfall per intensity step (more flakes, more CPU); ↓ sparser.
 let kSnowFlakeMultiplier = 14
 
 // Horizontal off-screen spawn/despawn margin, as a fraction of screen width

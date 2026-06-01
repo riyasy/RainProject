@@ -1,9 +1,11 @@
 import CoreGraphics
 
-private let kMaxSnowFraction: CGFloat = 0.35  // snow pile capped at 35% of screen height
-
-private let kSnowColumnSpacing: CGFloat = 12   // ~12 pt per pile column (downsampled)
-private let kSnowMaxColumns = 160
+// Settled-pile tuning knobs. Each note says what raising (↑) / lowering (↓) it does.
+private let kMaxSnowFraction: CGFloat = 0.35  // pile height cap, as a fraction of screen height.
+                                              // ↑ lets drifts grow taller before they stop accumulating; ↓ keeps the pile shallow.
+private let kSnowColumnSpacing: CGFloat = 12  // pt per pile column (the heightMap is downsampled to this).
+                                              // ↑ coarser, chunkier mounds (fewer columns); ↓ finer, smoother slopes (more columns, more CPU).
+private let kSnowMaxColumns = 160             // hard cap on column count, bounding pile cost on very wide screens.
 
 /// Owns the live snowflakes and the settled-snow pile. The pile is stored as a
 /// downsampled `heightMap` (one height per ~12 pt column); flakes that settle

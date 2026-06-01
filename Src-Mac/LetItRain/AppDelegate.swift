@@ -275,7 +275,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Install the menu-bar status item whose button toggles the settings panel.
     private func setupMenuBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        statusItem?.button?.image = NSImage(systemSymbolName: "cloud.rain.fill",
+        statusItem?.button?.image = NSImage(systemSymbolName: "umbrella.fill",
                                             accessibilityDescription: "Let It Rain")
         statusItem?.button?.action = #selector(toggleSettings)
         statusItem?.button?.target = self
