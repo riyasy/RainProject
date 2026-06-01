@@ -6,6 +6,7 @@
 
 DisplayData::DisplayData(ID2D1DeviceContext * dc) : DC(dc)
 {
+	dc->GetFactory(Factory.GetAddressOf());
 	if (pNoiseGen == nullptr)
 	{
 		pNoiseGen = std::make_unique<FastNoiseLite>();

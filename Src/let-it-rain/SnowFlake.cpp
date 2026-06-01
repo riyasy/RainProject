@@ -497,10 +497,9 @@ void SnowFlake::DrawSettledSnowSimple(ID2D1DeviceContext* dc, const DisplayData*
 	const int cellW = pDispData->SnowColumnWidth;
 	if (numCols < 1 || width < 1 || cellW < 1) return;
 
-	Microsoft::WRL::ComPtr<ID2D1Factory> factory;
-	dc->GetFactory(factory.GetAddressOf());
+	if (pDispData->Factory == nullptr) return;
 	Microsoft::WRL::ComPtr<ID2D1PathGeometry> geometry;
-	if (FAILED(factory->CreatePathGeometry(geometry.GetAddressOf()))) return;
+	if (FAILED(pDispData->Factory->CreatePathGeometry(geometry.GetAddressOf()))) return;
 	Microsoft::WRL::ComPtr<ID2D1GeometrySink> sink;
 	if (FAILED(geometry->Open(sink.GetAddressOf()))) return;
 

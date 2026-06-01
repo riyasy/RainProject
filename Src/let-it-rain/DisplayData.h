@@ -30,6 +30,10 @@ public:
 
 	ID2D1DeviceContext* DC;
 
+	// Cached D2D factory (from DC) for per-frame geometry creation — avoids a
+	// GetFactory call each frame. Refreshed with this DisplayData on device loss.
+	Microsoft::WRL::ComPtr<ID2D1Factory> Factory;
+
 	Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> DropColorBrush;
 	// Single brush reused for all splatter draws — opacity is set dynamically at draw time
 	Microsoft::WRL::ComPtr<ID2D1SolidColorBrush> SplatterColorBrush;

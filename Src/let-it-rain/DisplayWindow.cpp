@@ -836,7 +836,10 @@ void DisplayWindow::UpdateRainDrops()
 		drop.UpdatePosition(0.01f);
 	}
 
-	// Remove all raindrops that have expired using swap-and-pop to avoid shifting
+	// Remove expired raindrops (swap-and-pop) and, in the same pass, count the
+	// still-falling survivors. A kept element passes through the else-branch
+	// exactly once, so the tally is exact.
+	int countOfFallingDrops = 0;
 	for (size_t i = 0; i < RainDrops.size(); )
 	{
 		if (RainDrops[i].IsReadyForErase())
@@ -851,17 +854,11 @@ void DisplayWindow::UpdateRainDrops()
 		}
 		else
 		{
+			if (!RainDrops[i].DidTouchGround())
+			{
+				countOfFallingDrops++;
+			}
 			++i;
-		}
-	}
-
-	// Calculate the number of raindrops to generate
-	int countOfFallingDrops = 0;
-	for (const auto & drop : RainDrops)
-	{
-		if (!drop.DidTouchGround())
-		{
-			countOfFallingDrops++;
 		}
 	}
 
