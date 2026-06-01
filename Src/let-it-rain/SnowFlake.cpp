@@ -46,7 +46,7 @@ SnowFlake& SnowFlake::operator=(SnowFlake&& other) noexcept
 
 void SnowFlake::Spawn()
 {
-	Pos.x = RandomGenerator::GetInstance().GenerateFloat(-pDisplayData->Width / 2.0f, (pDisplayData->Width * 3) / 2.0f);
+	Pos.x = RandomGenerator::GetInstance().GenerateFloat(-SNOW_EDGE_MARGIN * pDisplayData->Width, (1.0f + SNOW_EDGE_MARGIN) * pDisplayData->Width);
 	Pos.y = RandomGenerator::GetInstance().GenerateFloat(-pDisplayData->Height / 2.0f, pDisplayData->Height / 1.0f);
 	Vel.x = 0.0f;
 	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f);
@@ -72,7 +72,7 @@ void SnowFlake::Spawn()
 
 void SnowFlake::ReSpawn()
 {
-	Pos.x = RandomGenerator::GetInstance().GenerateFloat(-pDisplayData->Width * 0.5f, pDisplayData->Width * 1.5f);
+	Pos.x = RandomGenerator::GetInstance().GenerateFloat(-SNOW_EDGE_MARGIN * pDisplayData->Width, (1.0f + SNOW_EDGE_MARGIN) * pDisplayData->Width);
 	Pos.y = -5.0f;
 	Vel.x = 0.0f;
 	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f);
@@ -124,7 +124,7 @@ void SnowFlake::UpdatePosition(const float deltaSeconds, double clockTime)
 	{
 		// Heightmap settling: deposit into the flake's column when it reaches
 		// that column's surface; otherwise keep falling.
-		if (Pos.x < -pDisplayData->Width * 0.5f || Pos.x >= pDisplayData->Width * 1.5f ||
+		if (Pos.x < -SNOW_EDGE_MARGIN * pDisplayData->Width || Pos.x >= (1.0f + SNOW_EDGE_MARGIN) * pDisplayData->Width ||
 			Pos.y < -pDisplayData->Height * 0.5f)
 		{
 			ReSpawn();
@@ -151,8 +151,8 @@ void SnowFlake::UpdatePosition(const float deltaSeconds, double clockTime)
 		return;
 	}
 
-	if (Pos.x < -pDisplayData->Width * 0.5f ||
-		Pos.x >= pDisplayData->Width * 1.5f ||
+	if (Pos.x < -SNOW_EDGE_MARGIN * pDisplayData->Width ||
+		Pos.x >= (1.0f + SNOW_EDGE_MARGIN) * pDisplayData->Width ||
 		Pos.y < -pDisplayData->Height * 0.5f ||
 		Pos.y >= pDisplayData->Height)
 	{

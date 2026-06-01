@@ -35,6 +35,11 @@ public:
 	// bigger = chunkier bumps, fewer/wider mounds 
 	static constexpr float SNOW_COLUMN_WIDTH_BASE = 6.0f;
 
+	// Falling-flake count per Intensity unit (snow). Public because
+	// DisplayWindow::UpdateSnowFlakes uses it to size the flake pool. Tuned
+	// together with SNOW_EDGE_MARGIN to keep on-screen density constant.
+	static constexpr int SNOW_FLAKE_MULTIPLIER = 14;
+
 private:
 	// Snowflake shape types
 	enum class SnowflakeShape {
@@ -51,6 +56,11 @@ private:
 	static constexpr uint8_t SNOW_COLOR = 1;
 	static constexpr uint8_t AIR_COLOR = 0;
 	static constexpr int SNOW_FLOW_RATE = 3;
+
+	// Horizontal off-screen spawn/despawn margin as a fraction of scene width
+	// (drift headroom for seamless edges). Smaller = fewer off-screen flakes
+	// simulated; too small risks flakes popping out at the edges under drift.
+	static constexpr float SNOW_EDGE_MARGIN = 0.2f;
 
 	// Simple heightmap heap tuning
 	// px column growth per settled flake (scaled by flake size and DPI)

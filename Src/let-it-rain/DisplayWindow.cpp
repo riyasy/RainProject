@@ -890,7 +890,7 @@ void DisplayWindow::UpdateRainDrops()
 
 void DisplayWindow::UpdateSnowFlakes()
 {
-	const int noOfFlakesToGenerate = GeneralSettings.MaxParticles * 20 - static_cast<int>(SnowFlakes.size());
+	const int noOfFlakesToGenerate = GeneralSettings.MaxParticles * SnowFlake::SNOW_FLAKE_MULTIPLIER - static_cast<int>(SnowFlakes.size());
 
 	if (noOfFlakesToGenerate > 0)
 	{
