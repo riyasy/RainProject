@@ -20,7 +20,10 @@ public:
 	SnowFlake(const SnowFlake&) = delete;
 	SnowFlake& operator=(const SnowFlake&) = delete;
 
-	void UpdatePosition(float deltaSeconds, double clockTime);
+	void UpdatePosition(float deltaSeconds, float noiseTime);
+	// Per-frame 3rd noise axis. Identical for every flake in a frame, so compute
+	// it once in DisplayWindow::UpdateSnowFlakes and pass it to UpdatePosition.
+	static float ComputeNoiseTime(double clockTime);
 	static void SettleSnow(DisplayData* pDispData);
 	// "Simple snow heap" mode: relax the per-column heightmap (volume-conserving
 	// diffusion, matching the macOS build) and draw it as a single filled silhouette.

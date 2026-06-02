@@ -23,6 +23,7 @@ RainDrop::RainDrop(RainDrop&& other) noexcept
 	Vel = other.Vel;
 	Radius = other.Radius;
 	DropTrailLength = other.DropTrailLength;
+	TrailDir = other.TrailDir;
 	TouchedGround = other.TouchedGround;
 	IsDead = other.IsDead;
 	SplatterTime = other.SplatterTime;
@@ -46,6 +47,7 @@ RainDrop& RainDrop::operator=(RainDrop&& other) noexcept
 		Vel = other.Vel;
 		Radius = other.Radius;
 		DropTrailLength = other.DropTrailLength;
+		TrailDir = other.TrailDir;
 		TouchedGround = other.TouchedGround;
 		IsDead = other.IsDead;
 		SplatterTime = other.SplatterTime;
@@ -92,6 +94,12 @@ void RainDrop::Initialize()
 	// Initialize velocity and physics parameters
 	Vel.x = WIND_MULTIPLIER * WindDirectionFactor * pDisplayData->ScaleFactor;
 	Vel.y = TERMINAL_VELOCITY_Y * pDisplayData->ScaleFactor;
+
+	// Cache the unit travel direction. Velocity is constant for the drop's
+	// lifetime, so Draw can find the trail start point without a per-frame sqrt.
+	const float velMag = std::sqrt(Vel.x * Vel.x + Vel.y * Vel.y);
+	TrailDir.x = Vel.x / velMag;
+	TrailDir.y = Vel.y / velMag;
 
 	// Initialize length of the rain drop trail
 	DropTrailLength = RandomGenerator::GetInstance().GenerateInt(30, 100) * pDisplayData->ScaleFactor;
@@ -167,7 +175,9 @@ void RainDrop::CreateSplatters()
 
 void RainDrop::Draw(ID2D1DeviceContext* dc) const
 {
-	const Vector2 prevPoint = MathUtil::FindFirstPoint(DropTrailLength, Pos, Vel);
+	// Trail start = current position stepped back along the cached unit direction
+	// (same result as the old MathUtil::FindFirstPoint, without the per-frame sqrt).
+	const Vector2 prevPoint(Pos.x - DropTrailLength * TrailDir.x, Pos.y - DropTrailLength * TrailDir.y);
 
 	if (MathUtil::IsPointInRect(pDisplayData->SceneRect, Pos) && MathUtil::IsPointInRect(
 		pDisplayData->SceneRect, prevPoint))

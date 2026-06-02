@@ -97,11 +97,14 @@ void SnowFlake::ReSpawn()
 	}
 }
 
-void SnowFlake::UpdatePosition(const float deltaSeconds, double clockTime)
+float SnowFlake::ComputeNoiseTime(const double clockTime)
 {
-	//const float t = static_cast<float>(clock()) * NOISE_TIMESCALE;
-	const float t = static_cast<float>(clockTime) * NOISE_TIMESCALE * 1000.0f;
-	const float noiseVal = pDisplayData->pNoiseGen->GetNoise(Pos.x, Pos.y, t);
+	return static_cast<float>(clockTime) * NOISE_TIMESCALE * 1000.0f;
+}
+
+void SnowFlake::UpdatePosition(const float deltaSeconds, const float noiseTime)
+{
+	const float noiseVal = pDisplayData->pNoiseGen->GetNoise(Pos.x, Pos.y, noiseTime);
 	const float angle = noiseVal * TWO_PI + PI * 0.5f;
 
 	// Motion magnitudes are px-based, so DPI-scale them to keep the fall speed and

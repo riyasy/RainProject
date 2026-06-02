@@ -600,7 +600,10 @@ void DisplayWindow::HandleTaskBarChange() const
 
 void DisplayWindow::FindSceneRect(RECT& sceneRect, float& scaleFactor) const
 {
-	std::vector<MonitorData> monitorDataList;
+	// Reused across calls (single-threaded; only the 2-sec timer / taskbar-change
+	// path) so the list isn't reallocated every invocation; cleared and refilled.
+	static std::vector<MonitorData> monitorDataList;
+	monitorDataList.clear();
 	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitorDataList));
 	for (const auto& monitorData : monitorDataList)
 	{
@@ -863,6 +866,9 @@ void DisplayWindow::UpdateRainDrops(const float deltaSeconds)
 	// Generate new raindrops (emplace so constructor runs in-place)
 	if (noOfDropsToGenerate > 0)
 	{
+		// Reserve up front so raising MaxParticles via settings (no bounds change)
+		// can't trigger a mid-loop reallocation of the whole vector.
+		RainDrops.reserve(RainDrops.size() + static_cast<size_t>(noOfDropsToGenerate));
 		for (int i = 0; i < noOfDropsToGenerate; ++i)
 		{
 			RainDrops.emplace_back(GeneralSettings.WindSpeed, pDisplaySpecificData.get());
@@ -904,10 +910,12 @@ void DisplayWindow::UpdateSnowFlakes(const float deltaSeconds)
 	}
 
 
-	// Move each snowflake to the next point
+	// Move each snowflake to the next point. The noise time is identical for every
+	// flake this frame, so compute it once here rather than per flake.
+	const float noiseTime = SnowFlake::ComputeNoiseTime(CurrentTime);
 	for (auto & flake : SnowFlakes)
 	{
-		flake.UpdatePosition(deltaSeconds, CurrentTime);
+		flake.UpdatePosition(deltaSeconds, noiseTime);
 	}
 	if (pDisplaySpecificData->SimpleSnowHeap)
 	{

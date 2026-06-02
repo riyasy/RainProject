@@ -58,6 +58,7 @@ private:
 	float Radius;
 
 	float DropTrailLength;
+	Vector2 TrailDir; // unit travel direction; cached so Draw needs no per-frame sqrt
 
 	bool TouchedGround = false;
 	bool IsDead = false;
