@@ -25,7 +25,7 @@ RainDrop::RainDrop(RainDrop&& other) noexcept
 	DropTrailLength = other.DropTrailLength;
 	TouchedGround = other.TouchedGround;
 	IsDead = other.IsDead;
-	CurrentFrameCountForSplatter = other.CurrentFrameCountForSplatter;
+	SplatterTime = other.SplatterTime;
 	Splatters = std::move(other.Splatters);
 
 	// Leave other in a safe state
@@ -48,7 +48,7 @@ RainDrop& RainDrop::operator=(RainDrop&& other) noexcept
 		DropTrailLength = other.DropTrailLength;
 		TouchedGround = other.TouchedGround;
 		IsDead = other.IsDead;
-		CurrentFrameCountForSplatter = other.CurrentFrameCountForSplatter;
+		SplatterTime = other.SplatterTime;
 		Splatters = std::move(other.Splatters);
 
 		other.pDisplayData = nullptr;
@@ -65,7 +65,7 @@ void RainDrop::Reset(int windDirectionFactor, DisplayData* pDispData)
 
 	TouchedGround = false;
 	IsDead = false;
-	CurrentFrameCountForSplatter = 0;
+	SplatterTime = 0.0f;
 
 	// Clear any previous splatters (value semantics)
 	Splatters.clear();
@@ -144,7 +144,8 @@ void RainDrop::UpdatePosition(const float deltaSeconds)
 		{
 			splatter.UpdatePosition(deltaSeconds);
 		}
-		IsDead = (++CurrentFrameCountForSplatter) >= MAX_SPLUTTER_FRAME_COUNT_;
+		SplatterTime += deltaSeconds;
+		IsDead = SplatterTime >= SPLATTER_DURATION_SECONDS;
 	}
 }
 
@@ -185,10 +186,9 @@ void RainDrop::Draw(ID2D1DeviceContext* dc) const
 	if (!Splatters.empty())
 	{
 		// Compute opacity for this frame once and set it on the shared brush.
-		// Alpha fades from 0.75 → 0.0 as CurrentFrameCountForSplatter goes from 0 → MAX.
+		// Alpha fades from 0.75 → 0.0 as SplatterTime goes from 0 → SPLATTER_DURATION_SECONDS.
 		const float alpha =
-			(1.0f - static_cast<float>(CurrentFrameCountForSplatter) /
-			         static_cast<float>(MAX_SPLUTTER_FRAME_COUNT_)) * 0.75f;
+			(std::max)(0.0f, 1.0f - SplatterTime / SPLATTER_DURATION_SECONDS) * 0.75f;
 		pDisplayData->SplatterColorBrush->SetOpacity(alpha);
 
 		for (const auto & splatter : Splatters)

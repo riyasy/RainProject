@@ -22,8 +22,8 @@ public:
 
 	void UpdatePosition(float deltaSeconds, double clockTime);
 	static void SettleSnow(DisplayData* pDispData);
-	// "Simple snow heap" mode: relax the per-column heightmap (slope clamp) and
-	// draw it as a single smooth filled silhouette.
+	// "Simple snow heap" mode: relax the per-column heightmap (volume-conserving
+	// diffusion, matching the macOS build) and draw it as a single filled silhouette.
 	static void SmoothSnowHeap(DisplayData* pDispData);
 	// Draw all falling flakes in one batched sprite call (atlas + ID2D1SpriteBatch).
 	static void DrawFallingFlakes(ID2D1DeviceContext3* dc3, const std::vector<SnowFlake>& flakes, DisplayData* pDispData);
@@ -32,12 +32,14 @@ public:
 
 	// Width (in logical px, DPI-scaled at runtime) of each simple-heap column.
 	// Public because DisplayData sizes the ColumnHeights array from it.
-	// bigger = chunkier bumps, fewer/wider mounds 
-	static constexpr float SNOW_COLUMN_WIDTH_BASE = 6.0f;
+	// Matches the macOS build's kSnowColumnSpacing (12 pt).
+	// ↑ coarser, chunkier mounds (fewer columns); ↓ finer, smoother slopes (more columns, more CPU).
+	static constexpr float SNOW_COLUMN_WIDTH_BASE = 12.0f;
 
 	// Falling-flake count per Intensity unit (snow). Public because
 	// DisplayWindow::UpdateSnowFlakes uses it to size the flake pool. Tuned
 	// together with SNOW_EDGE_MARGIN to keep on-screen density constant.
+	// ↑ denser snowfall per intensity step (more flakes, more CPU); ↓ sparser.
 	static constexpr int SNOW_FLAKE_MULTIPLIER = 14;
 
 private:
@@ -48,13 +50,20 @@ private:
 		Hexagon,    // Hexagon shape
 		Star        // Star shape with more branches
 	};
+	// Flake speed cap (px/s). ↑ lets flakes move faster (more frantic gusts); ↓ keeps it calm.
 	static constexpr float MAX_SPEED = 75.0f;
+	// Strength of the noise-driven wind/swirl. ↑ wilder sideways drift & speed
+	// variation; ↓ straighter, more uniform fall.
 	static constexpr float NOISE_INTENSITY = 20.0f;
-	static constexpr float NOISE_SCALE = 0.01f;
+	// How fast the noise field evolves over time (the noise's 3rd axis rate).
+	// ↑ faster-churning gusts; ↓ slow, lazily-shifting drift.
 	static constexpr float NOISE_TIMESCALE = 0.001f;
+	// Steady downward pull (accel). ↑ flakes fall faster & straighter; ↓ driftier, hangs longer.
 	static constexpr float GRAVITY = 10.0f;
+	// Per-pixel-mode scene cell values (not tuning knobs).
 	static constexpr uint8_t SNOW_COLOR = 1;
 	static constexpr uint8_t AIR_COLOR = 0;
+	// Per-pixel-mode settle flow chance (0–10). ↑ snow slumps/flows faster; ↓ stiffer, sticks in place.
 	static constexpr int SNOW_FLOW_RATE = 3;
 
 	// Horizontal off-screen spawn/despawn margin as a fraction of scene width
@@ -62,13 +71,28 @@ private:
 	// simulated; too small risks flakes popping out at the edges under drift.
 	static constexpr float SNOW_EDGE_MARGIN = 0.2f;
 
-	// Simple heightmap heap tuning
-	// px column growth per settled flake (scaled by flake size and DPI)
-	// bigger = faster buildup & taller per-flake splash   
-	static constexpr float SNOW_DEPOSIT_SCALE = 1.5f; 
-	// max adjacent-column height delta as a fraction of column width (angle of repose)
-	// bigger = steeper/pointier piles; smaller = flatter/smoother
-	static constexpr float SNOW_SLOPE_RATIO = 0.6f;   
+	// Flake size as a real radius (matches the macOS build's kSnowMin/MaxRadius),
+	// driving both the on-screen draw size and the settled-heap deposit so a flake
+	// that looks bigger also settles proportionally more snow.
+	// ↑ both = chunkier snow; bigger flakes also settle faster (deposit ∝ radius).
+	static constexpr float SNOW_MIN_RADIUS = 0.8f;
+	static constexpr float SNOW_MAX_RADIUS = 2.5f;
+	// On-screen half-size (px) per unit radius before DPI scaling (macOS kExtent).
+	// ↑ visually bigger flakes (same radii); ↓ smaller. Does not affect physics.
+	static constexpr float SNOW_DRAW_SCALE = 2.5f;
+
+	// Simple heightmap heap tuning (aligned with the macOS SnowSystem):
+	// per-flake deposit = radius * SNOW_DEPOSIT_FACTOR (DPI-scaled).
+	// ↑ faster pile buildup per settled flake; ↓ slower.
+	static constexpr float SNOW_DEPOSIT_FACTOR = 0.5f;
+	// Pile height cap as a fraction of scene height.
+	// ↑ lets drifts grow taller before they stop accumulating; ↓ keeps the pile shallow.
+	static constexpr float SNOW_MAX_HEIGHT_FRACTION = 0.35f;
+	// Volume-conserving slope relaxation: each pass moves SNOW_SMOOTH_RATE of any
+	// adjacent height excess above SNOW_SMOOTH_THRESHOLD (px, DPI-scaled) into the
+	// lower neighbour. bigger rate = faster smoothing; bigger threshold = steeper.
+	static constexpr float SNOW_SMOOTH_RATE = 0.08f;
+	static constexpr float SNOW_SMOOTH_THRESHOLD = 2.0f;
 
 	// Resolution for pre-rendered sprites
 	static constexpr float SPRITE_SIZE = 64.0f/8;
@@ -77,7 +101,7 @@ private:
 
 	Vector2 Pos;
 	Vector2 Vel;
-	float Size;          // Size of the snowflake
+	float Radius;        // Flake radius (logical units; see SNOW_MIN/MAX_RADIUS)
 	float Rotation;      // Current rotation angle
 	float RotationSpeed; // Speed of rotation
 	SnowflakeShape Shape; // Shape type of this snowflake

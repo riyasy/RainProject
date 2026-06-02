@@ -305,9 +305,9 @@ void DisplayWindow::Animate()
 		if (SUCCEEDED(RecreateDeviceResources(WindowHandle)))
 		{
 			IsDeviceLost = false;
-			// Reset timing so we don't get a burst of accumulated frames
+			// Reset timing so the first frame after recovery uses a nominal step
+			// instead of a huge elapsed-time jump.
 			CurrentTime = -1.0;
-			Accumulator = 0.0;
 		}
 		else
 		{
@@ -315,21 +315,29 @@ void DisplayWindow::Animate()
 		}
 	}
 
-	constexpr double dt = 0.01;
-
+	// Variable timestep (matches the macOS build): integrate exactly one step per
+	// rendered frame using the real elapsed time, clamped to 50 ms so a stall or a
+	// device-lost recovery can't produce a huge integration jump. All particle
+	// physics is time-scaled (× deltaSeconds), so rain/splatter/snow motion is
+	// frame-rate independent. (Snow settling is per-frame and intentionally runs
+	// faster on high-refresh monitors — it's Windows-only and low priority.)
+	const double newTime = GetCurrentTimeInSeconds();
+	float deltaSeconds;
 	if (CurrentTime < 0)
 	{
-		CurrentTime = GetCurrentTimeInSeconds();
+		// First frame after start/recovery: no previous timestamp — use a nominal step.
+		deltaSeconds = 1.0f / 60.0f;
 	}
-	const double newTime = GetCurrentTimeInSeconds();
-	const double frameTime = newTime - CurrentTime;
+	else
+	{
+		const double elapsed = newTime - CurrentTime;
+		deltaSeconds = static_cast<float>(elapsed > 0.05 ? 0.05 : elapsed);
+	}
 	CurrentTime = newTime;
-
-	Accumulator += frameTime;
 
 #ifdef SHOW_FPS
 	FpsFrameCount++;
-	FpsElapsed += frameTime;
+	FpsElapsed += deltaSeconds;
 	if (FpsElapsed >= 0.5)
 	{
 		CurrentFps = static_cast<float>(FpsFrameCount / FpsElapsed);
@@ -338,25 +346,13 @@ void DisplayWindow::Animate()
 	}
 #endif
 
-	if (Accumulator > 1) 
+	if (GeneralSettings.PartType == RAIN)
 	{
-		// If there are large gaps in animation due to screen stuck
-		// If Accumulator value is not decreased, large number of
-		// Updates will be called in while loop
-		Accumulator = dt;
+		UpdateRainDrops(deltaSeconds);
 	}
-
-	while (Accumulator >= dt)
+	else if (GeneralSettings.PartType == SNOW)
 	{
-		if (GeneralSettings.PartType == RAIN)
-		{
-			UpdateRainDrops();
-		}
-		else if (GeneralSettings.PartType == SNOW)
-		{
-			UpdateSnowFlakes();
-		}
-		Accumulator -= dt;
+		UpdateSnowFlakes(deltaSeconds);
 	}
 
 	try
@@ -828,12 +824,12 @@ void DisplayWindow::DrawSnowFlakes()
 	}
 }
 
-void DisplayWindow::UpdateRainDrops()
+void DisplayWindow::UpdateRainDrops(const float deltaSeconds)
 {
 	// Move each raindrop to the next point
 	for (auto & drop : RainDrops)
 	{
-		drop.UpdatePosition(0.01f);
+		drop.UpdatePosition(deltaSeconds);
 	}
 
 	// Remove expired raindrops (swap-and-pop) and, in the same pass, count the
@@ -884,7 +880,7 @@ void DisplayWindow::UpdateRainDrops()
 	}
 }
 
-void DisplayWindow::UpdateSnowFlakes()
+void DisplayWindow::UpdateSnowFlakes(const float deltaSeconds)
 {
 	const int noOfFlakesToGenerate = GeneralSettings.MaxParticles * SnowFlake::SNOW_FLAKE_MULTIPLIER - static_cast<int>(SnowFlakes.size());
 
@@ -911,7 +907,7 @@ void DisplayWindow::UpdateSnowFlakes()
 	// Move each snowflake to the next point
 	for (auto & flake : SnowFlakes)
 	{
-		flake.UpdatePosition(0.01f, CurrentTime);
+		flake.UpdatePosition(deltaSeconds, CurrentTime);
 	}
 	if (pDisplaySpecificData->SimpleSnowHeap)
 	{

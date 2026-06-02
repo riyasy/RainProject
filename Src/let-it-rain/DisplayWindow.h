@@ -90,9 +90,9 @@ private:
 	// Store snowflakes by value as well for locality and to enable pre-allocation
 	std::vector<SnowFlake> SnowFlakes;
 
-	// For animation
+	// For animation. CurrentTime is the previous frame's timestamp (seconds);
+	// -1 means "not yet seeded" (start or post-device-loss).
 	double CurrentTime = -1.0;
-	double Accumulator = 0.0;
 
 	// Session / device state
 	bool IsSessionLocked = false;
@@ -134,8 +134,8 @@ private:
 	static void ShowContextMenu(HWND hWnd);
 
 	static double GetCurrentTimeInSeconds();
-	void UpdateRainDrops();
-	void UpdateSnowFlakes();
+	void UpdateRainDrops(float deltaSeconds);
+	void UpdateSnowFlakes(float deltaSeconds);
 	void DrawRainDrops();
 	void DrawSnowFlakes();
 

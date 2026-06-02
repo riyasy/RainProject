@@ -29,15 +29,25 @@ public:
 
 	// Raindrop count per Intensity unit. Public because
 	// DisplayWindow::UpdateRainDrops uses it to size the drop pool.
+	// ↑ denser rain per intensity step (more drops, more CPU/GPU); ↓ sparser.
 	static constexpr int RAIN_DROP_MULTIPLIER = 3;
 
 private:
-	static constexpr int MAX_SPLUTTER_FRAME_COUNT_ = 50;
+	// Splatter burst lifetime in seconds (time-based, frame-rate independent).
+	// 0.5 s == the legacy 50-tick count at the fixed 0.01 s step, so the splatter
+	// fade is unchanged to an observer.
+	// ↑ splash lingers longer before fading out; ↓ vanishes quicker.
+	static constexpr float SPLATTER_DURATION_SECONDS = 0.5f;
+	// Droplets thrown up per landing. ↑ bushier splash; ↓ sparser.
 	static constexpr int MAX_SPLATTER_PER_RAINDROP_ = 3;
 
-	static constexpr float TERMINAL_VELOCITY_Y = 1000; //pixels per second
-	static constexpr float WIND_MULTIPLIER = 75; // pixels per second
+	// Drop fall speed (px/s). ↑ faster, straighter rain; ↓ slower, more wind-blown.
+	static constexpr float TERMINAL_VELOCITY_Y = 1000;
+	// Horizontal wind velocity per wind-direction unit (px/s).
+	// ↑ stronger slant at the slider extremes; ↓ gentler.
+	static constexpr float WIND_MULTIPLIER = 75;
 
+	// Splatter launch speed (px/s). ↑ higher & wider splash; ↓ smaller pop.
 	static constexpr float SPLATTER_STARTING_VELOCITY = 200.0f;
 
 	DisplayData* pDisplayData;
@@ -51,7 +61,7 @@ private:
 
 	bool TouchedGround = false;
 	bool IsDead = false;
-	int CurrentFrameCountForSplatter = 0;
+	float SplatterTime = 0.0f; // seconds since landing; drives the burst fade/expiry
 
 	// Use value semantics for splatters to avoid extra heap allocations
 	std::vector<Splatter> Splatters;

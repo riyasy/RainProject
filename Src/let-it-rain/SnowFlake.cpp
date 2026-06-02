@@ -16,7 +16,7 @@ SnowFlake::SnowFlake(SnowFlake&& other) noexcept
 {
 	Pos = other.Pos;
 	Vel = other.Vel;
-	Size = other.Size;
+	Radius = other.Radius;
 	Rotation = other.Rotation;
 	RotationSpeed = other.RotationSpeed;
 	Shape = other.Shape;
@@ -33,7 +33,7 @@ SnowFlake& SnowFlake::operator=(SnowFlake&& other) noexcept
 	{
 		Pos = other.Pos;
 		Vel = other.Vel;
-		Size = other.Size;
+		Radius = other.Radius;
 		Rotation = other.Rotation;
 		RotationSpeed = other.RotationSpeed;
 		Shape = other.Shape;
@@ -51,9 +51,9 @@ void SnowFlake::Spawn()
 	Vel.x = 0.0f;
 	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f);
 
-	Size = 0.5f + (RandomGenerator::GetInstance().GenerateFloat(0.0f, 0.8f)); // 0.5 to 1.3 base size for more variation
+	Radius = RandomGenerator::GetInstance().GenerateFloat(SNOW_MIN_RADIUS, SNOW_MAX_RADIUS);
 	Rotation = RandomGenerator::GetInstance().GenerateFloat(0.0f, TWO_PI); // Random initial rotation (in radians directly)
-	RotationSpeed = RandomGenerator::GetInstance().GenerateFloat(-0.2f, 0.2f); // Reduced rotation speed for smoother spinning
+	RotationSpeed = RandomGenerator::GetInstance().GenerateFloat(-2.0f, 2.0f); // rad/s; matches macOS rotationSpeed
 	// Randomly choose a snowflake shape
 	int shapeType = RandomGenerator::GetInstance().GenerateInt(0, 100);
 	if (shapeType < 40) {
@@ -78,9 +78,9 @@ void SnowFlake::ReSpawn()
 	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f);
 
 	// Visual properties
-	Size = 0.5f + RandomGenerator::GetInstance().GenerateFloat(0.0f, 0.8f); // 0.5 to 1.3 base size
+	Radius = RandomGenerator::GetInstance().GenerateFloat(SNOW_MIN_RADIUS, SNOW_MAX_RADIUS);
 	Rotation = RandomGenerator::GetInstance().GenerateFloat(0.0f, TWO_PI); // Random initial rotation (in radians)
-	RotationSpeed = RandomGenerator::GetInstance().GenerateFloat(-0.2f, 0.2f); // Reduced rotation speed
+	RotationSpeed = RandomGenerator::GetInstance().GenerateFloat(-2.0f, 2.0f); // rad/s; matches macOS rotationSpeed
 	// Randomly choose a snowflake shape (same distribution as in Spawn)
 	int shapeType = RandomGenerator::GetInstance().GenerateInt(0, 100);
 	if (shapeType < 40) {
@@ -138,9 +138,10 @@ void SnowFlake::UpdatePosition(const float deltaSeconds, double clockTime)
 			const float surfaceY = pDisplayData->Height - pDisplayData->ColumnHeights[col];
 			if (Pos.y >= surfaceY)
 			{
-				const float deposit = (std::max)(1.0f, Size * SNOW_DEPOSIT_SCALE * pDisplayData->ScaleFactor);
+				const float deposit = Radius * SNOW_DEPOSIT_FACTOR * pDisplayData->ScaleFactor;
+				const float maxHeight = pDisplayData->Height * SNOW_MAX_HEIGHT_FRACTION;
 				float& h = pDisplayData->ColumnHeights[col];
-				h = (std::min)(h + deposit, static_cast<float>(pDisplayData->Height - 1));
+				h = (std::min)(h + deposit, maxHeight);
 				ReSpawn();
 			}
 		}
@@ -271,7 +272,7 @@ void SnowFlake::DrawFallingFlakes(ID2D1DeviceContext3* dc3, const std::vector<Sn
 
 		const float cx = f.Pos.x + left;
 		const float cy = f.Pos.y + top;
-		const float halfDraw = SPRITE_SIZE * f.Size * pDispData->ScaleFactor * 0.5f;
+		const float halfDraw = f.Radius * SNOW_DRAW_SCALE * pDispData->ScaleFactor;
 		dests.push_back(D2D1::RectF(cx - halfDraw, cy - halfDraw, cx + halfDraw, cy + halfDraw));
 
 		const int idx = static_cast<int>(f.Shape);
@@ -473,19 +474,22 @@ void SnowFlake::SmoothSnowHeap(DisplayData* pDispData)
 {
 	std::vector<float>& h = pDispData->ColumnHeights;
 	const int n = static_cast<int>(h.size());
-	if (n < 2) return;
+	if (n < 3) return;
 
-	// Slope-clamp passes (forward then backward): no column may sit more than
-	// maxSlope above a neighbour, so peaks slump into smooth slopes. Expressed
-	// relative to column width so the repose angle is resolution-independent.
-	const float maxSlope = pDispData->SnowColumnWidth * SNOW_SLOPE_RATIO;
-	for (int x = 1; x < n; ++x)
+	// Volume-conserving diffusion (matches the macOS SnowSystem::smoothHeightMap):
+	// forward then backward, move a fraction of any adjacent-column excess above the
+	// threshold into the lower neighbour, so the pile relaxes into organic slopes
+	// while total settled snow is preserved (rather than a hard slope clamp).
+	const float threshold = SNOW_SMOOTH_THRESHOLD * pDispData->ScaleFactor;
+	for (int x = 1; x < n - 1; ++x)
 	{
-		if (h[x] > h[x - 1] + maxSlope) h[x] = h[x - 1] + maxSlope;
+		const float diff = h[x] - h[x - 1];
+		if (diff > threshold) { const float f = diff * SNOW_SMOOTH_RATE; h[x] -= f; h[x - 1] += f; }
 	}
-	for (int x = n - 2; x >= 0; --x)
+	for (int x = n - 2; x >= 1; --x)
 	{
-		if (h[x] > h[x + 1] + maxSlope) h[x] = h[x + 1] + maxSlope;
+		const float diff = h[x] - h[x + 1];
+		if (diff > threshold) { const float f = diff * SNOW_SMOOTH_RATE; h[x] -= f; h[x + 1] += f; }
 	}
 }
 

@@ -20,8 +20,8 @@ void Splatter::UpdatePosition(const float deltaSeconds)
 	Pos.x += Vel.x * deltaSeconds;
 	Pos.y += Vel.y * deltaSeconds;
 
-	Vel.y += GRAVITY; // Gravity
-	Vel.x *= AIR_RESISTANCE; // Air Resistance
+	Vel.y += GRAVITY * deltaSeconds;            // gravity (per-second; see header)
+	Vel.x *= (1.0f - AIR_DAMP * deltaSeconds);  // horizontal air drag (per-second)
 
 	// Check for bouncing against sides
 	if (Pos.x + Radius > pDisplayData->SceneRect.right || Pos.x - Radius <
