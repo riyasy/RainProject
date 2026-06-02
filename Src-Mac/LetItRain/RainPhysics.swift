@@ -11,18 +11,24 @@ let kVelY: CGFloat          = -900  // fall speed (px/s; negative = down in AppK
 let kTrailMin: CGFloat      = 30    // shortest drop streak (px).
 let kTrailMax: CGFloat      = 100   // longest drop streak (px). ↑ both = longer, comet-like streaks; ↓ stubbier.
 
+// Per-drop trail half-width (px). Each drop draws at a random thickness in this
+// range — like the Windows build's per-drop stroke width — so streaks vary
+// instead of all sharing one weight. Full streak width is twice these values.
+let kDropHalfWidthMin: CGFloat = 0.5   // thinnest trail (≈1.0 px full width).
+let kDropHalfWidthMax: CGFloat = 1.5   // thickest trail (≈3.0 px full width). ↑ bolder streaks; ↓ finer.
+
 
 let kRainDropMultiplier     = 3    // Falling-drop count per intensity unit. 
                                     // ↑ denser rain per intensity step (more drops, more CPU/GPU); ↓ sparser.
 
 let kSplatterCount          = 3     // droplets thrown up per landing. ↑ bushier splash; ↓ sparser.
 let kSplatterSpeed: CGFloat = 210   // splatter launch speed (px/s). ↑ higher & wider splash; ↓ smaller pop.
-let kGravity: CGFloat       = 500   // gravity on splatters (px/s²). ↑ lower/snappier arcs; ↓ floatier, taller.
-let kAirDamp: CGFloat       = 0.60  // horizontal speed bleed-off rate (per s). ↑ splatters lose sideways drift sooner; ↓ skate farther.
-let kBounceDamp: CGFloat    = 0.35  // fraction of vertical speed kept per floor bounce (0–1).
+let kGravity: CGFloat       = 1000   // gravity on splatters (px/s²). ↑ lower/snappier arcs; ↓ floatier, taller.
+let kAirDamp: CGFloat       = 2.00  // horizontal speed bleed-off rate (per s). ↑ splatters lose sideways drift sooner; ↓ skate farther.
+let kBounceDamp: CGFloat    = 0.9  // fraction of vertical speed kept per floor bounce (0–1).
                                     // ↑ toward 1 = bouncier, taller rebounds; ↓ toward 0 = dead, no bounce.
 let kMaxBounces             = 2     // bounces before a splatter dies. ↑ keeps bouncing longer; ↓ settles sooner.
-let kSplatterDuration       = 1.8   // splash burst lifetime (s) before it fades out. ↑ lingers longer; ↓ vanishes quicker.
+let kSplatterDuration       = 0.5   // splash burst lifetime (s) before it fades out. ↑ lingers longer; ↓ vanishes quicker.
 
 // MARK: - Unified floor
 

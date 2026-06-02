@@ -8,6 +8,7 @@ struct RainDrop {
     var pos: CGPoint
     var vel: CGPoint          // var — direction changes are applied live
     let trailLength: CGFloat  // length of the visual streak behind `pos`
+    let halfWidth: CGFloat    // half the streak thickness — random per drop, like the Windows build
     var touchedGround = false // true once landed; then the splatter phase runs
     var isDead = false        // flagged for recycling at the end of the tick
     var splatterTime: Double = 0   // seconds since landing (drives the burst fade)
@@ -21,6 +22,7 @@ struct RainDrop {
     init(screenBounds: CGRect, windX: CGFloat, stagger: Bool = false) {
         self.screenBounds = screenBounds
         trailLength = .random(in: kTrailMin...kTrailMax)
+        halfWidth = .random(in: kDropHalfWidthMin...kDropHalfWidthMax)
         vel = CGPoint(x: windX, y: kVelY)
         pos = RainDrop.randomSpawn(in: screenBounds, stagger: stagger)
     }
