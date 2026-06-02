@@ -49,7 +49,7 @@ void SnowFlake::Spawn()
 	Pos.x = RandomGenerator::GetInstance().GenerateFloat(-SNOW_EDGE_MARGIN * pDisplayData->Width, (1.0f + SNOW_EDGE_MARGIN) * pDisplayData->Width);
 	Pos.y = RandomGenerator::GetInstance().GenerateFloat(-pDisplayData->Height / 2.0f, pDisplayData->Height / 1.0f);
 	Vel.x = 0.0f;
-	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f);
+	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f) * pDisplayData->ScaleFactor;
 
 	Radius = RandomGenerator::GetInstance().GenerateFloat(SNOW_MIN_RADIUS, SNOW_MAX_RADIUS);
 	Rotation = RandomGenerator::GetInstance().GenerateFloat(0.0f, TWO_PI); // Random initial rotation (in radians directly)
@@ -75,7 +75,7 @@ void SnowFlake::ReSpawn()
 	Pos.x = RandomGenerator::GetInstance().GenerateFloat(-SNOW_EDGE_MARGIN * pDisplayData->Width, (1.0f + SNOW_EDGE_MARGIN) * pDisplayData->Width);
 	Pos.y = -5.0f;
 	Vel.x = 0.0f;
-	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f);
+	Vel.y = RandomGenerator::GetInstance().GenerateFloat(5.0f, 10.0f) * pDisplayData->ScaleFactor;
 
 	// Visual properties
 	Radius = RandomGenerator::GetInstance().GenerateFloat(SNOW_MIN_RADIUS, SNOW_MAX_RADIUS);
@@ -104,14 +104,19 @@ void SnowFlake::UpdatePosition(const float deltaSeconds, double clockTime)
 	const float noiseVal = pDisplayData->pNoiseGen->GetNoise(Pos.x, Pos.y, t);
 	const float angle = noiseVal * TWO_PI + PI * 0.5f;
 
-	Vel.x += (std::cos(angle) * NOISE_INTENSITY * deltaSeconds) * 2.0f;
-	Vel.y += std::sin(angle) * NOISE_INTENSITY * deltaSeconds;
+	// Motion magnitudes are px-based, so DPI-scale them to keep the fall speed and
+	// drift resolution-independent (matches how rain scales its velocity).
+	const float scale = pDisplayData->ScaleFactor;
 
-	Vel.y += GRAVITY * deltaSeconds;
+	Vel.x += (std::cos(angle) * NOISE_INTENSITY * scale * deltaSeconds) * 2.0f;
+	Vel.y += std::sin(angle) * NOISE_INTENSITY * scale * deltaSeconds;
 
-	if (Vel.magSq() > MAX_SPEED * MAX_SPEED)
+	Vel.y += GRAVITY * scale * deltaSeconds;
+
+	const float maxSpeed = MAX_SPEED * scale;
+	if (Vel.magSq() > maxSpeed * maxSpeed)
 	{
-		Vel.setMag(MAX_SPEED);
+		Vel.setMag(maxSpeed);
 	}
 
 	// Update rotation
