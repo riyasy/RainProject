@@ -34,13 +34,17 @@ struct SnowSystem {
     mutating func update(dt: CGFloat, time: Double, targetCount: Int) {
         // Reconcile flake count
         if flakes.count < targetCount {
+            flakes.reserveCapacity(targetCount)
             flakes += (flakes.count..<targetCount).map { _ in SnowFlake(screenBounds: screenBounds) }
         } else if flakes.count > targetCount {
             flakes.removeLast(flakes.count - targetCount)
         }
 
+        // The noise field's time axis is the same for every flake this frame —
+        // compute it once instead of per flake inside SnowFlake.update.
+        let noiseZ = SnowFlake.noiseTimeZ(time)
         for i in flakes.indices {
-            switch flakes[i].update(dt: dt, time: time, heightMap: heightMap, screenBounds: screenBounds) {
+            switch flakes[i].update(dt: dt, noiseZ: noiseZ, heightMap: heightMap, screenBounds: screenBounds) {
             case .settled:
                 let col = SnowSystem.column(forX: flakes[i].pos.x,
                                             screenBounds: screenBounds, count: heightMap.count)

@@ -111,10 +111,31 @@ final class RainRenderer {
             var dCnt = 0, sCnt = 0
             let (cr, cg, cb) = color
 
+            // Every still-falling drop this frame shares the same velocity —
+            // AppDelegate.tickRain sets vel.x = wind and vel.y = kVelY on all of
+            // them before drawing — so the unit direction and the NDC perpendicular
+            // are identical for the whole batch. Compute them once here from the
+            // shared velocity (read off the first falling drop) instead of redoing
+            // the sqrt per drop in buildDropQuad. Must be per-frame, never cached at
+            // spawn: the wind slider reassigns vel.x live each frame.
+            var dirX: CGFloat = 0, dirY: CGFloat = 0   // unit fall direction
+            var px: Float = 0, py: Float = 0           // half-width normal, in NDC
+            if let v = drops.first(where: { !$0.touchedGround })?.vel {
+                let mag = (v.x * v.x + v.y * v.y).squareRoot()
+                if mag > 0 {
+                    dirX = v.x / mag
+                    dirY = v.y / mag
+                    let hw = CGFloat(1.5)
+                    px = Float(-v.y / mag * hw / screenBounds.width)
+                    py = Float( v.x / mag * hw / screenBounds.height)
+                }
+            }
+
             for drop in drops {
                 if !drop.touchedGround {
                     buildDropQuad(drop: drop, screenBounds: screenBounds,
-                                  sw: sw, sh: sh, r: cr, g: cg, b: cb,
+                                  sw: sw, sh: sh, dirX: dirX, dirY: dirY,
+                                  px: px, py: py, r: cr, g: cg, b: cb,
                                   into: dPtr, count: &dCnt)
                 } else {
                     buildSplatterQuads(drop: drop, sw: sw, sh: sh,
@@ -196,25 +217,25 @@ final class RainRenderer {
 
     // MARK: Private — vertex building
 
-    /// Append one drop's trail as a 4-vertex quad (head `pos` → `trailTail`),
-    /// given a constant half-width perpendicular to the velocity. Skips the drop
-    /// when fully off-screen or when the buffer is full.
+    /// Append one drop's trail as a 4-vertex quad (head `pos` → tail), using the
+    /// shared unit fall direction `(dirX, dirY)` and the half-width normal `(px, py)`
+    /// the caller computed once for the whole frame. Skips the drop when fully
+    /// off-screen or when the buffer is full.
     private func buildDropQuad(drop: RainDrop, screenBounds: CGRect,
                                 sw: Float, sh: Float,
+                                dirX: CGFloat, dirY: CGFloat,
+                                px: Float, py: Float,
                                 r: Float, g: Float, b: Float,
                                 into ptr: UnsafeMutablePointer<RainVertex>,
                                 count: inout Int) {
-        let h = drop.pos, t = drop.trailTail
+        // Tail steps back from the head along the (shared) unit fall direction —
+        // exactly what RainDrop.trailTail did, minus the per-drop sqrt.
+        let h = drop.pos
+        let t = CGPoint(x: h.x - dirX * drop.trailLength,
+                        y: h.y - dirY * drop.trailLength)
         guard screenBounds.contains(h) || screenBounds.contains(t) else { return }
         guard count + 4 <= RainRenderer.kMaxDropVerts else { return }
 
-        let v = drop.vel
-        let mag = (v.x * v.x + v.y * v.y).squareRoot()
-        let hw = CGFloat(1.5)
-        // (px, py): unit normal to the velocity, scaled to half-width and into NDC,
-        // so the two long edges of the trail quad sit either side of the streak.
-        let px = Float(-v.y / mag * hw / screenBounds.width)
-        let py = Float( v.x / mag * hw / screenBounds.height)
         let hx = Float(h.x) / sw * 2 - 1, hy = Float(h.y) / sh * 2 - 1
         let tx = Float(t.x) / sw * 2 - 1, ty = Float(t.y) / sh * 2 - 1
 

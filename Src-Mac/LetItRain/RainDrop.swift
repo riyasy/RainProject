@@ -25,14 +25,6 @@ struct RainDrop {
         pos = RainDrop.randomSpawn(in: screenBounds, stagger: stagger)
     }
 
-    /// Upstream end of the visual trail (opposite to velocity direction).
-    var trailTail: CGPoint {
-        let mag = (vel.x * vel.x + vel.y * vel.y).squareRoot()
-        guard mag > 0 else { return pos }
-        return CGPoint(x: pos.x - (vel.x / mag) * trailLength,
-                       y: pos.y - (vel.y / mag) * trailLength)
-    }
-
     /// Advances the drop's position and checks for ground contact.
     /// Splatters are updated separately by the caller so they share the
     /// same physicsFloor call with current screenBounds/dockObstacle.

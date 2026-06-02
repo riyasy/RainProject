@@ -225,6 +225,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Grow or shrink the pool to match the current intensity slider.
         if drops.count != target {
             if drops.count < target {
+                drops.reserveCapacity(target)
                 drops += (drops.count..<target).map { _ in RainDrop(screenBounds: screenBounds, windX: wx) }
             } else {
                 drops.removeLast(drops.count - target)

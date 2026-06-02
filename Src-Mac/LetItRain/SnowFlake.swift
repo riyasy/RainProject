@@ -63,10 +63,16 @@ struct SnowFlake {
         pos = CGPoint(x: x, y: y)
     }
 
+    /// The noise field's third (time) axis. Frame-global — identical for every
+    /// flake in a frame — so `SnowSystem` computes it once and passes it in rather
+    /// than redoing `time * kNoiseScale` per flake.
+    static func noiseTimeZ(_ time: Double) -> Double { time * kNoiseScale }
+
     /// Integrate one step and report whether the flake settled, went off-screen,
-    /// or is still falling. `time` advances the noise field's third axis so the
-    /// drift evolves over time; `heightMap` gives the pile height to settle onto.
-    mutating func update(dt: CGFloat, time: Double,
+    /// or is still falling. `noiseZ` is the noise field's third axis (see
+    /// `noiseTimeZ`) so the drift evolves over time; `heightMap` gives the pile
+    /// height to settle onto.
+    mutating func update(dt: CGFloat, noiseZ: Double,
                          heightMap: [CGFloat], screenBounds: CGRect) -> SnowUpdateResult {
         // 3D Perlin noise field drives an *acceleration* (matches the Windows build):
         // velocity accumulates and is only capped, so flakes carry momentum and the
@@ -74,7 +80,7 @@ struct SnowFlake {
         // at different rates instead of all converging on terminal velocity.
         let n = SnowNoise.value(Double(pos.x) * kNoiseScale,
                                 Double(pos.y) * kNoiseScale,
-                                time * kNoiseScale)
+                                noiseZ)
         let angle = n * (2 * .pi) + .pi / 2   // PI/2 bias → baseline push along fall axis
 
         // AppKit Y is up, so "down" is negative — sign-flipped vs the Windows version.
