@@ -10,7 +10,7 @@
   <Identity
     Name="RYFTools.LetItRainFX"
     Publisher="CN=44A50C10-C1BE-4575-B17F-07954C8C2229"
-    Version="2.2.0.0" />
+    Version="2.2.1.0" />
 
   <Properties>
     <DisplayName>Let It Rain FX</DisplayName>
