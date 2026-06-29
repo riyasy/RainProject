@@ -1,19 +1,19 @@
 File Version Upgrade Notes
-	Search for 2.2.0.0 in the code and replace with new version number.
-	Search for 2,2,0,0 and replace with new version number.
 
-	There are version numbers in let-it-rain.rc
-	There are version numbers in the installer project.
+	Version Update Checklist:
+	[ ] let-it-rain\let-it-rain.rc         - dialog label "v X.X.X.X"  (CTEXT near bottom of dialog)
+	[ ] let-it-rain\let-it-rain.rc         - FILEVERSION  X,X,X,X      (numeric form)
+	[ ] let-it-rain\let-it-rain.rc         - PRODUCTVERSION X,X,X,X    (numeric form)
+	[ ] let-it-rain\let-it-rain.rc         - "FileVersion"   "X.X.X.X" (string form)
+	[ ] let-it-rain\let-it-rain.rc         - "ProductVersion" "X.X.X.X" (string form)
+	[ ] LetItRainInstallerMSIX\Package.appxmanifest - Version="X.X.X.X"
+
+	Tip: Search for the current version string (e.g. 2.2.1.0 and 2,2,1,0) to find all occurrences quickly.
 
 
 
 Todo
 	Dynamic addition and removal of Monitors (Very hard to do)
-	FindSceneRect2 - remove it after few days
-	Done - release all created memory.
-	Done - optimize the snow heap drawing. Currenlty very bad performance.
-	Done - when drawing the ellipses on snow and heap, using scale factor.
-
 
 10 Aug
 	Main rain drops are drawn only if both start and end point are inside the drawable rect.
