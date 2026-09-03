@@ -39,7 +39,9 @@
 #pragma comment(lib, "d3d11")
 #pragma comment(lib, "d2d1")
 #pragma comment(lib, "dcomp")
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+// The Common Controls 6 dependency moved to app.manifest, which also carries
+// the DPI and supportedOS declarations. Declaring it in both places would put
+// two copies of the same assemblyIdentity into the merged manifest.
 #pragma comment(lib, "comctl32.lib")
 
 #define WM_TRAYICON (WM_USER + 1)

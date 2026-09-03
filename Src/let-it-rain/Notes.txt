@@ -1,14 +1,20 @@
 File Version Upgrade Notes
 
 	Version Update Checklist:
-	[ ] let-it-rain\let-it-rain.rc         - dialog label "v X.X.X.X"  (CTEXT near bottom of dialog)
-	[ ] let-it-rain\let-it-rain.rc         - FILEVERSION  X,X,X,X      (numeric form)
-	[ ] let-it-rain\let-it-rain.rc         - PRODUCTVERSION X,X,X,X    (numeric form)
-	[ ] let-it-rain\let-it-rain.rc         - "FileVersion"   "X.X.X.X" (string form)
-	[ ] let-it-rain\let-it-rain.rc         - "ProductVersion" "X.X.X.X" (string form)
+	[ ] let-it-rain\version.h              - VER_MAJOR / VER_MINOR / VER_PATCH / VER_BUILD
+	[ ] let-it-rain\version.h              - VER_NUMBER X,X,X,X  (commas, for VERSIONINFO)
+	[ ] let-it-rain\version.h              - VER_STRING  "X.X.X.X"
+	[ ] let-it-rain\version.h              - VER_DISPLAY "v X.X.X.X"  (what the About box shows)
 	[ ] LetItRainInstallerMSIX\Package.appxmanifest - Version="X.X.X.X"
 
-	Tip: Search for the current version string (e.g. 2.2.1.0 and 2,2,1,0) to find all occurrences quickly.
+	let-it-rain.rc no longer carries a version of its own: the VERSIONINFO block
+	and the About dialog's label both read version.h, so the exe's properties
+	sheet and its About box cannot disagree. The appxmanifest is XML and cannot
+	include a C header, so it stays the one place that must be edited by hand.
+
+	If you edit the dialogs in the VS resource editor, check afterwards that the
+	VER_* macros are still macros: the editor may resolve them to literals on
+	save, which quietly reintroduces the drift version.h exists to prevent.
 
 
 

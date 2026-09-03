@@ -12,6 +12,7 @@
 #endif
 
 #include "CPUUsageTracker.h"
+#include "DarkMode.h"
 #include "Global.h"
 #include "MathUtil.h"
 #include "Resource.h"
@@ -50,6 +51,7 @@ enum TIMERS
 
 HINSTANCE DisplayWindow::AppInstance = nullptr;
 OptionsDialog* DisplayWindow::pOptionsDlg;
+AboutDialog* DisplayWindow::pAboutDlg;
 Setting DisplayWindow::GeneralSettings;
 // Register message ID once at startup; same string always returns the same ID
 UINT DisplayWindow::WmTaskbarCreated = RegisterWindowMessage(L"TaskbarCreated");
@@ -93,6 +95,8 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 		                                GeneralSettings.StartWithWindows, GeneralSettings.AllowHide,
 		                                GeneralSettings.SimpleSnowHeap);
 		pOptionsDlg->Create();
+		pAboutDlg = new AboutDialog(AppInstance);
+		pAboutDlg->Create();
 	}
 
 	InitDirect2D(window);
@@ -247,6 +251,9 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 		case ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM:
 			pOptionsDlg->Show();
 			break;
+		case ID_TRAY_ABOUT_CONTEXT_MENU_ITEM:
+			pAboutDlg->Show();
+			break;
 		default: ;
 		}
 		break;
@@ -256,6 +263,22 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 		{
 			DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
 			if (pThis) pThis->HandleTaskBarChange();
+		}
+		// Light/dark switched while we are running. The broadcast reaches every
+		// top-level window in an undefined order, so the two dialogs stay out of
+		// it and we drive them from here — after the colour cache refresh, or
+		// their answer would be the value cached at startup.
+		else if (lParam && lstrcmp(reinterpret_cast<LPCWSTR>(lParam), L"ImmersiveColorSet") == 0)
+		{
+			const DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
+			// Once, not once per monitor: the menu theme and both dialogs are
+			// process-wide, and only the primary display owns them.
+			if (pThis && pThis->MonitorDat.IsPrimaryDisplay)
+			{
+				ReflushMenuTheme();
+				if (pOptionsDlg) pOptionsDlg->ApplyTheme();
+				if (pAboutDlg) pAboutDlg->ApplyTheme();
+			}
 		}
 		break;
 	case WM_WTSSESSION_CHANGE:
@@ -401,38 +424,49 @@ void DisplayWindow::RemoveNotifyIcon(const HWND hWnd)
 	Shell_NotifyIcon(NIM_DELETE, &nid);
 }
 
+// The menu bitmaps are 32bpp premultiplied-alpha DIBs, so LR_CREATEDIBSECTION is
+// load-bearing: plain LoadBitmap converts the resource to a device-dependent
+// bitmap and discards the alpha channel, which is exactly what left the earlier
+// 24bpp pair showing as white squares against a dark menu.
+static HBITMAP LoadMenuBitmap(const HINSTANCE instance, const int resourceId)
+{
+	return static_cast<HBITMAP>(LoadImage(instance, MAKEINTRESOURCE(resourceId), IMAGE_BITMAP,
+	                                      0, 0, LR_CREATEDIBSECTION));
+}
+
+static void SetMenuBitmap(const HMENU menu, const UINT itemId, const HBITMAP bitmap)
+{
+	if (!bitmap) return;
+	MENUITEMINFO mii = {sizeof(MENUITEMINFO)};
+	mii.fMask = MIIM_BITMAP;
+	mii.hbmpItem = bitmap;
+	SetMenuItemInfo(menu, itemId, FALSE, &mii);
+}
+
 void DisplayWindow::ShowContextMenu(const HWND hWnd)
 {
 	POINT pt;
 	GetCursorPos(&pt);
 	const HMENU hMenu = CreatePopupMenu();
 	AppendMenu(hMenu, MF_STRING, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, L"Configure");
+	// Its own item rather than a second tab on the settings dialog — see
+	// AboutDialog.h for why.
+	AppendMenu(hMenu, MF_STRING, ID_TRAY_ABOUT_CONTEXT_MENU_ITEM, L"About");
 	AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, L"Exit");
 
-	// Add bitmaps
-	HBITMAP hSettingsBmp = LoadBitmap(AppInstance, MAKEINTRESOURCE(IDB_SETTINGS_ICON));
-	if (hSettingsBmp)
-	{
-		MENUITEMINFO mii = { sizeof(MENUITEMINFO) };
-		mii.fMask = MIIM_BITMAP;
-		mii.hbmpItem = hSettingsBmp;
-		SetMenuItemInfo(hMenu, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, FALSE, &mii);
-	}
-
-	HBITMAP hExitBmp = LoadBitmap(AppInstance, MAKEINTRESOURCE(IDB_EXIT_ICON));
-	if (hExitBmp)
-	{
-		MENUITEMINFO mii = { sizeof(MENUITEMINFO) };
-		mii.fMask = MIIM_BITMAP;
-		mii.hbmpItem = hExitBmp;
-		SetMenuItemInfo(hMenu, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, FALSE, &mii);
-	}
+	const HBITMAP hSettingsBmp = LoadMenuBitmap(AppInstance, IDB_SETTINGS_ICON);
+	const HBITMAP hAboutBmp = LoadMenuBitmap(AppInstance, IDB_ABOUT_ICON);
+	const HBITMAP hExitBmp = LoadMenuBitmap(AppInstance, IDB_EXIT_ICON);
+	SetMenuBitmap(hMenu, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, hSettingsBmp);
+	SetMenuBitmap(hMenu, ID_TRAY_ABOUT_CONTEXT_MENU_ITEM, hAboutBmp);
+	SetMenuBitmap(hMenu, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, hExitBmp);
 
 	SetForegroundWindow(hWnd);
 	TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, nullptr);
 	DestroyMenu(hMenu);
 
 	if (hSettingsBmp) DeleteObject(hSettingsBmp);
+	if (hAboutBmp) DeleteObject(hAboutBmp);
 	if (hExitBmp) DeleteObject(hExitBmp);
 }
 

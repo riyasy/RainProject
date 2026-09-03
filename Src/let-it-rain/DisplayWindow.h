@@ -14,6 +14,7 @@
 #include <dwrite.h>
 #endif
 #include "RainDrop.h"
+#include "AboutDialog.h"
 #include "CallBackWindow.h"
 #include "OptionDialog.h"
 #include "SettingsManager.h"
@@ -83,7 +84,10 @@ private:
 	HANDLE FrameLatencyWaitable = nullptr;
 
 	static HINSTANCE AppInstance;
+	// Both created once, by the primary display's window, and only hidden on
+	// close — so a tray menu click just shows them again.
 	static OptionsDialog* pOptionsDlg;
+	static AboutDialog* pAboutDlg;
 
 	// Store raindrops by value to improve memory locality and avoid heap fragmentation
 	std::vector<RainDrop> RainDrops;

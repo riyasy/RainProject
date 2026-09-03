@@ -16,6 +16,10 @@ public:
 	static void SubscribeToChange(CallBackWindow* subscriber);
 	bool Create();
 	void Show() const;
+	// Windows switched between light and dark while we were up. Driven from
+	// DisplayWindow's WM_SETTINGCHANGE rather than our own, so the uxtheme
+	// colour cache is refreshed before anything here reads it.
+	void ApplyTheme() const;
 	static LRESULT CALLBACK DialogProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 
 private:

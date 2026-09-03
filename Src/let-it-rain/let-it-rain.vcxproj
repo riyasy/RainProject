@@ -141,7 +141,8 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
+      <!-- No <MinimalRebuild>: /Gm is deprecated, and cl rejects it outright
+           alongside /std:c++20, which is what Debug|Win32 compiles with. -->
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader />
@@ -170,7 +171,10 @@
     </Midl>
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <!-- Static CRT, matching Release|x64 and Release|ARM64. This config used
+           to link MultiThreadedDLL, which made the x86 build the only one that
+           needed a VCRedist on the target machine. -->
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>
@@ -187,6 +191,15 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
+      <!-- /PDBALTPATH: without it the exe carries the full path of the machine
+           that built it (C:\Users\<name>\...\let-it-rain.pdb). That is a privacy
+           leak in a public release and something scanners score against you.
+           %_PDB% stores the file name only.
+           /Brepro: drops the link timestamp, so two builds of the same source
+           produce the same bytes and anyone can rebuild a release and compare.
+           Both are Release-only: a local debug build wants its real PDB path.
+           The %25 are MSBuild-escaped percent signs; the linker gets %_PDB%. -->
+      <AdditionalOptions>/PDBALTPATH:%25_PDB%25 /Brepro %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -199,7 +212,8 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
+      <!-- No <MinimalRebuild>: /Gm is deprecated, and cl rejects it outright
+           alongside /std:c++20, which is what Debug|Win32 compiles with. -->
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader />
@@ -242,6 +256,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX64</TargetMachine>
+      <!-- See the Release|Win32 group above for what these two do and why they
+           are Release-only. -->
+      <AdditionalOptions>/PDBALTPATH:%25_PDB%25 /Brepro %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
@@ -254,7 +271,8 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
+      <!-- No <MinimalRebuild>: /Gm is deprecated, and cl rejects it outright
+           alongside /std:c++20, which is what Debug|Win32 compiles with. -->
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <PrecompiledHeader />
@@ -294,11 +312,16 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineARM64</TargetMachine>
+      <!-- See the Release|Win32 group above for what these two do and why they
+           are Release-only. -->
+      <AdditionalOptions>/PDBALTPATH:%25_PDB%25 /Brepro %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="AboutDialog.h" />
     <ClInclude Include="CallBackWindow.h" />
     <ClInclude Include="CPUUsageTracker.h" />
+    <ClInclude Include="DarkMode.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Global.h" />
     <ClInclude Include="MathUtil.h" />
@@ -313,8 +336,14 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="SettingsManager.h" />
     <ClInclude Include="targetver.h" />
+    <!-- Included by let-it-rain.rc. Listed here so it is reachable from Solution
+         Explorer; the incremental build already picks up changes to it through
+         the RC file tracker. -->
+    <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="AboutDialog.cpp" />
+    <ClCompile Include="DarkMode.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="OptionDialog.cpp" />
     <ClCompile Include="DisplayWindow.cpp" />
@@ -329,7 +358,12 @@
     <ResourceCompile Include="let-it-rain.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Manifest Include="app.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="about.bmp" />
     <Image Include="exit.bmp" />
+    <Image Include="flyphotos.ico" />
     <Image Include="github.ico" />
     <Image Include="let-it-rain.ico" />
     <Image Include="settings.bmp" />

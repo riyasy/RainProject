@@ -2,6 +2,7 @@
 
 #include <d2d1.h>
 
+#include "DarkMode.h"
 #include "Resource.h"
 #include "SettingsManager.h"
 
@@ -66,6 +67,12 @@ bool OptionsDialog::Create()
 void OptionsDialog::Show() const
 {
 	ShowWindow(hDialog, SW_SHOW);
+	SetForegroundWindow(hDialog);
+}
+
+void OptionsDialog::ApplyTheme() const
+{
+	if (hDialog) ThemeDialog(hDialog);
 }
 
 LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, const WPARAM wParam,
@@ -109,12 +116,25 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 			SendMessage(GetDlgItem(hWnd, IDC_CHECK_ALLOW_HIDE), BM_SETCHECK,
 				pThis->AllowHide ? BST_CHECKED : BST_UNCHECKED, 0);
 
-			// Github icon button
-			HICON hGitHubIcon = (HICON)LoadImage(pThis->hInstance, MAKEINTRESOURCE(IDI_GITHUB_ICON), IMAGE_ICON, 24, 24, LR_DEFAULTCOLOR);
-			HWND hButton = GetDlgItem(hWnd, IDC_BUTTON_GITHUB);			
-			SendMessage(hButton, BM_SETIMAGE, IMAGE_ICON, (LPARAM)hGitHubIcon);
+			// Same as the About box: no focus rectangle on whichever control the
+			// dialog manager happens to focus, until the user reaches for Tab.
+			SendMessage(hWnd, WM_UPDATEUISTATE, MAKEWPARAM(UIS_SET, UISF_HIDEFOCUS), 0);
+
+			ThemeDialog(hWnd);
 		}
 		return TRUE;
+	case WM_NOTIFY:
+		{
+			// Check boxes and radio buttons paint their own label and ignore the
+			// colour WM_CTLCOLORSTATIC returns, so in dark mode they come here.
+			LRESULT drawResult = 0;
+			if (DarkModeButtonCustomDraw(lParam, &drawResult))
+			{
+				SetWindowLongPtr(hWnd, DWLP_MSGRESULT, drawResult);
+				return TRUE;
+			}
+			return FALSE;
+		}
 	case WM_HSCROLL:
 		if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER))
 		{
@@ -155,14 +175,6 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 					subscriber->UpdateParticleColor(pThis->ParticleColor);
 				}
 			}
-		}
-		else if (controlId == IDC_BUTTON_GITHUB)
-		{
-			ShellExecute(nullptr, L"open", L"https://github.com/riyasy/RainProject", nullptr, nullptr, SW_SHOWNORMAL);
-		}
-		else if (controlId == IDC_BUTTON_SPONSOR)
-		{
-			ShellExecute(nullptr, L"open", L"https://github.com/sponsors/riyasy", nullptr, nullptr, SW_SHOWNORMAL);
 		}
 		else if (controlId == IDC_RADIO1 && HIWORD(wParam) == BN_CLICKED)
 		{
@@ -208,6 +220,20 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 		}
 		return TRUE;
 	}
+	// Windows themes a control's glyphs once ThemeDialog has named the dark
+	// theme class, but it never paints the surface behind them. That is what
+	// these do. Returning the brush handle from a dialog procedure is the
+	// documented way to set it.
+	case WM_CTLCOLORDLG:
+		return reinterpret_cast<LRESULT>(ThemeBrush());
+	case WM_CTLCOLORSTATIC: // labels, and the text beside a checkbox or radio
+	case WM_CTLCOLORBTN:
+		SetBkMode(reinterpret_cast<HDC>(wParam), TRANSPARENT);
+		// GetSysColor rather than a literal in light mode, so high contrast
+		// themes still come out readable.
+		SetTextColor(reinterpret_cast<HDC>(wParam),
+		             IsDarkMode() ? DARK_FG : GetSysColor(COLOR_WINDOWTEXT));
+		return reinterpret_cast<LRESULT>(ThemeBrush());
 	case WM_CLOSE:
 		ShowWindow(hWnd, SW_HIDE);
 		return TRUE;

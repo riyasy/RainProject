@@ -1,0 +1,29 @@
+// version.h — the version and the binary's identity, in one place.
+//
+// Included by let-it-rain.rc: the VERSIONINFO block that gives the exe its
+// identity, and the "v X.X.X.X" label at the bottom of the settings dialog.
+// A native binary shipping with no company, no product and no version is one
+// of the strongest signals an antivirus heuristic has to work with, so all
+// three must stay filled in — and the properties sheet and the dialog must
+// agree, which is what this file is for.
+//
+// RC only understands #define, so this file must stay free of anything else —
+// no #pragma once, no types, no C++.
+//
+// One place this cannot reach: LetItRainInstallerMSIX\Package.appxmanifest,
+// which is XML and has to be bumped by hand. See Notes.txt.
+
+#define VER_MAJOR       2
+#define VER_MINOR       2
+#define VER_PATCH       1
+#define VER_BUILD       0
+
+#define VER_NUMBER      2,2,1,0             // VERSIONINFO wants commas
+#define VER_STRING      "2.2.1.0"           // and a matching string
+#define VER_DISPLAY     "v 2.2.1.0"         // what a person reads, in the dialog
+
+#define VER_COMPANY     "RYF Tools"
+#define VER_PRODUCT     "Let It Rain FX"
+#define VER_DESCRIPTION "Rain and Snow for Windows desktop"
+#define VER_COPYRIGHT   "Copyright \xA9 2026 RYF Tools"
+#define VER_FILENAME    "let-it-rain.exe"

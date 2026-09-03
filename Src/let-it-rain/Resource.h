@@ -4,6 +4,7 @@
 //
 #define IDC_MYICON                      2
 #define IDD_DIALOGB                     101
+#define IDD_ABOUT                       106
 #define IDD_RAINCPPDXGI_DIALOG          102
 #define IDS_APP_TITLE                   103
 #define IDD_ABOUTBOX                    103
@@ -13,6 +14,7 @@
 #define IDC_RAINCPPDXGI                 109
 #define IDR_MAINFRAME                   128
 #define IDI_GITHUB_ICON                 130
+#define IDI_FLYPHOTOS_ICON              131
 #define IDC_BUTTON_SHOW_COLOR           135
 #define IDC_BUTTON_GITHUB               1000
 #define IDC_RADIO1                      1001
@@ -26,11 +28,26 @@
 #define IDC_STATIC_WIND                 1011
 #define IDC_STATIC_WIND_LEFT            1012
 #define IDC_STATIC_WIND_RIGHT           1013
+// The About dialog.
+#define IDC_ABOUT_TITLE                 1030
+#define IDC_ABOUT_VERSION               1031
+#define IDC_ABOUT_COPYRIGHT             1032
+#define IDC_ABOUT_AWESOME               1033
+#define IDC_ABOUT_FEEDBACK              1034
+#define IDC_ABOUT_MAIL_LINK             1035
+#define IDC_ABOUT_OTHERAPPS             1036
+#define IDC_ABOUT_FLY_ICON              1037
+#define IDC_ABOUT_FLY_NAME              1038
+#define IDC_ABOUT_FLY_BLURB             1039
 #define ID_TRAY_EXIT_CONTEXT_MENU_ITEM  3000
 #define ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM 3001
+#define ID_TRAY_ABOUT_CONTEXT_MENU_ITEM 3002
 #define ID_TRAY_APP_ICON                5000
+// Tray menu bitmaps. 32bpp premultiplied-alpha DIBs — see the BITMAP section of
+// let-it-rain.rc for how they must be made and loaded.
 #define IDB_SETTINGS_ICON               6000
 #define IDB_EXIT_ICON                   6001
+#define IDB_ABOUT_ICON                  6002
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

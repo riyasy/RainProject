@@ -1,4 +1,5 @@
 #include "DisplayWindow.h"
+#include "DarkMode.h"
 #include "Global.h"
 
 
@@ -16,7 +17,13 @@ int WINAPI WinMain(
 	// unlikely event that HeapSetInformation fails.
 	HeapSetInformation(nullptr, HeapEnableTerminationOnCorruption, nullptr, 0);
 
+	// Fallback for the same declaration in app.manifest, which has already
+	// taken effect by the time we get here.
 	SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
+	// Before any window or menu exists: this is what makes the tray context
+	// menu follow the system light/dark setting.
+	InitDarkMode();
 
 	std::vector<MonitorData> monitorDataList;
 	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitorDataList));
