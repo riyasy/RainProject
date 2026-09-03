@@ -32,7 +32,6 @@
 #define IDC_ABOUT_TITLE                 1030
 #define IDC_ABOUT_VERSION               1031
 #define IDC_ABOUT_COPYRIGHT             1032
-#define IDC_ABOUT_AWESOME               1033
 #define IDC_ABOUT_FEEDBACK              1034
 #define IDC_ABOUT_MAIL_LINK             1035
 #define IDC_ABOUT_OTHERAPPS             1036

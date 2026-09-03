@@ -167,15 +167,20 @@ void SnowFlake::UpdatePosition(const float deltaSeconds, const float noiseTime)
 	{
 		if (Pos.x >= 0 && Pos.x < pDisplayData->Width && Pos.y >= pDisplayData->Height)
 		{
-			const int x = Pos.x;
+			// Guarded non-negative just above, so truncation is a floor here.
+			const int x = static_cast<int>(Pos.x);
 			pDisplayData->ScenePixels[x + (pDisplayData->Height - 1) * pDisplayData->Width] = 1; // SNOW_COLOR
 		}
 		ReSpawn();
 	}
 
-	// If any of our neighboring pixels are filled, settle here
-	const int x = Pos.x;
-	const int y = Pos.y;
+	// If any of our neighboring pixels are filled, settle here.
+	// Casts truncate toward zero rather than flooring, so a flake drifting in
+	// the left margin at x in (-1, 0) lands on column 0 instead of being
+	// rejected by the bounds check below. Kept as-is: it is the behaviour this
+	// has always had, and the bias is a single column.
+	const int x = static_cast<int>(Pos.x);
+	const int y = static_cast<int>(Pos.y);
 
 	if (x >= 0 && x < pDisplayData->Width && y >= 0 && y < pDisplayData->Height)
 	{

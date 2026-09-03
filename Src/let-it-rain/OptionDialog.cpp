@@ -138,7 +138,9 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 	case WM_HSCROLL:
 		if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER))
 		{
-			const int pos = SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_GETPOS, 0, 0);
+			// TBM_GETPOS returns the position in an LRESULT; this trackbar's
+			// range is 5..50, so narrowing to int cannot lose anything.
+			const int pos = static_cast<int>(SendMessage(GetDlgItem(hWnd, IDC_SLIDER), TBM_GETPOS, 0, 0));
 			for (CallBackWindow* subscriber : subscribers)
 			{
 				subscriber->UpdateParticleCount(pos);
@@ -146,7 +148,8 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 		}
 		else if (reinterpret_cast<HWND>(lParam) == GetDlgItem(hWnd, IDC_SLIDER2))
 		{
-			const int pos = SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_GETPOS, 0, 0);
+			// Same again; this one's range is -5..5.
+			const int pos = static_cast<int>(SendMessage(GetDlgItem(hWnd, IDC_SLIDER2), TBM_GETPOS, 0, 0));
 			for (CallBackWindow* subscriber : subscribers)
 			{
 				subscriber->UpdateWindDirection(pos);

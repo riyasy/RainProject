@@ -103,7 +103,7 @@ HRESULT DisplayWindow::Initialize(const HINSTANCE hInstance, const MonitorData& 
 	pDisplaySpecificData = std::make_unique<DisplayData>(Dc.Get());
 	pDisplaySpecificData->SetRainColor(GeneralSettings.ParticleColor);
 	pDisplaySpecificData->SimpleSnowHeap = GeneralSettings.SimpleSnowHeap;
-	HandleWindowBoundsChange(window, false);
+	HandleWindowBoundsChange(false);
 
 	// Apply the AllowHide setting from saved configuration
 	if (GeneralSettings.AllowHide)
@@ -226,7 +226,7 @@ LRESULT DisplayWindow::WndProc(const HWND hWnd, const UINT message, const WPARAM
 		if (wParam == DELAY_TIMER)
 		{
 			DisplayWindow* pThis = GetInstanceFromHwnd(hWnd);
-			pThis->HandleWindowBoundsChange(hWnd, true);
+			pThis->HandleWindowBoundsChange(true);
 			KillTimer(hWnd, DELAY_TIMER);
 			timerId = 0;
 		}
@@ -582,7 +582,7 @@ void DisplayWindow::InitDirect2D(const HWND hWnd)
 #endif
 }
 
-void DisplayWindow::HandleWindowBoundsChange(const HWND window, const bool clearDrops)
+void DisplayWindow::HandleWindowBoundsChange(const bool clearDrops)
 {
 	RECT sceneRect;
 	float scaleFactor = 1.0f;
@@ -1014,7 +1014,7 @@ HRESULT DisplayWindow::RecreateDeviceResources(const HWND hWnd)
 		pDisplaySpecificData = std::make_unique<DisplayData>(Dc.Get());
 		pDisplaySpecificData->SetRainColor(GeneralSettings.ParticleColor);
 		pDisplaySpecificData->SimpleSnowHeap = GeneralSettings.SimpleSnowHeap;
-		HandleWindowBoundsChange(hWnd, true);
+		HandleWindowBoundsChange(true);
 		return S_OK;
 	}
 	catch (const ComException&)

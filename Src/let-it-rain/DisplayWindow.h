@@ -128,7 +128,9 @@ private:
 	void ReleaseDeviceResources();
 	HRESULT RecreateDeviceResources(HWND hWnd);
 
-	void HandleWindowBoundsChange(HWND window, bool clearDrops);
+	// Takes no window handle: the scene rect comes from MonitorDat and the
+	// drawable bounds from pDisplaySpecificData, exactly like HandleTaskBarChange.
+	void HandleWindowBoundsChange(bool clearDrops);
 	void HandleTaskBarChange() const;
 	void FindSceneRect2(RECT& sceneRect, float& scaleFactor) const;
 	void FindSceneRect(RECT& sceneRect, float& scaleFactor) const;
