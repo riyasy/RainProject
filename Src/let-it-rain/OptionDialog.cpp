@@ -3,6 +3,7 @@
 #include <d2d1.h>
 
 #include "DarkMode.h"
+#include "loc.h"
 #include "Resource.h"
 #include "SettingsManager.h"
 
@@ -44,6 +45,37 @@ static void SetSnowUiVisible(const HWND hWnd, const bool snow)
 	ShowWindow(GetDlgItem(hWnd, IDC_CHECK_SIMPLE_SNOW), snow ? SW_SHOW : SW_HIDE);
 }
 
+// Every visible string on this dialog, in one place. The English literal is the
+// lookup key (see loc.h), so each one has to match lang\translations.csv
+// character for character — a typo here reads as an untranslated control rather
+// than as an error.
+//
+// The .rc still carries the English, which is what the dialog editor shows and
+// what a machine with no lang folder falls back to.
+static void LocalizeDialog(const HWND hWnd)
+{
+	SetWindowText(hWnd, T(L"Settings - Let It Rain FX"));
+
+	static const struct { int id; const WCHAR* en; } items[] = {
+		{ IDC_RADIO1,                L"Rain" },
+		{ IDC_RADIO2,                L"Snow" },
+		{ IDC_STATIC_INTENSITY,      L"Intensity" },
+		{ IDC_STATIC_INTENSITY_LOW,  L"Low" },
+		{ IDC_STATIC_INTENSITY_HIGH, L"High" },
+		{ IDC_STATIC_WIND,           L"Wind Direction" },
+		{ IDC_STATIC_WIND_LEFT,      L"Left" },
+		{ IDC_STATIC_WIND_RIGHT,     L"Right" },
+		{ IDC_CHECK_SIMPLE_SNOW,     L"Simplified snow heap" },
+		{ IDC_BUTTON_SHOW_COLOR,     L"Change Particle Color" },
+		{ IDC_CHECK_ALLOW_HIDE,      L"Hide behind windows" },
+		{ IDC_CHECK_STARTUP,         L"Start with Windows" },
+	};
+	for (const auto& item : items)
+	{
+		SetDlgItemText(hWnd, item.id, T(item.en));
+	}
+}
+
 void OptionsDialog::SubscribeToChange(CallBackWindow* subscriber)
 {
 	subscribers.push_back(subscriber);
@@ -82,6 +114,9 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 	{
 	case WM_INITDIALOG:
 		{
+			// Before anything measures or paints a control.
+			LocalizeDialog(hWnd);
+
 			// Load and set the window icon (for both title bar and taskbar)
 			HICON hIcon = LoadIcon(pThis->hInstance, MAKEINTRESOURCE(IDI_RAINCPPDXGI));
 			SendMessage(hWnd, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
@@ -200,8 +235,14 @@ LRESULT CALLBACK OptionsDialog::DialogProc(const HWND hWnd, const UINT message, 
 		else if (controlId == IDC_CHECK_STARTUP && HIWORD(wParam) == BN_CLICKED)
 		{
 			const bool isChecked = SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_GETCHECK, 0, 0) == BST_CHECKED;
-			pThis->StartWithWindows = isChecked;
-			SettingsManager::SetStartupEnabled(isChecked);
+			// Windows can veto this (Task Manager > Startup apps), so follow the result, not the click.
+			pThis->StartWithWindows = SettingsManager::SetStartupEnabled(isChecked);
+			if (pThis->StartWithWindows != isChecked)
+			{
+				// ponytail: silent snap-back; add a "Windows is blocking this" prompt if users report confusion.
+				SendMessage(GetDlgItem(hWnd, IDC_CHECK_STARTUP), BM_SETCHECK,
+					pThis->StartWithWindows ? BST_CHECKED : BST_UNCHECKED, 0);
+			}
 		}
 		else if (controlId == IDC_CHECK_ALLOW_HIDE && HIWORD(wParam) == BN_CLICKED)
 		{

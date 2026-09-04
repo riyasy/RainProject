@@ -128,6 +128,16 @@
     <Content Include="Images\Wide310x150Logo.scale-400.png" />
     <None Include="Package.StoreAssociation.xml" />
   </ItemGroup>
+  <!-- The translations. DesktopBridge packages the referenced project's build
+       outputs, not everything sitting in its output folder, so the .ini files
+       the vcxproj copies next to the exe do NOT reach the package on their own
+       and have to be named here. The Link puts them beside the exe, inside
+       let-it-rain\, which is where loc.cpp's FindNearExe looks first. -->
+  <ItemGroup>
+    <Content Include="..\let-it-rain\lang\*.ini">
+      <Link>let-it-rain\lang\%(Filename)%(Extension)</Link>
+    </Content>
+  </ItemGroup>
   <Import Project="$(WapProjPath)\Microsoft.DesktopBridge.targets" />
   <ItemGroup>
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.3233" PrivateAssets="all" />

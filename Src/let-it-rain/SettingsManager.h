@@ -43,12 +43,13 @@ class SettingsManager
 	static std::wstring GetAppDataPath();
 	void CreateINIFile() const;
 	static bool IsStartupEnabled_Pkgd();
-	static void SetStartupEnabled_Pkgd(bool enabled);
+	static bool SetStartupEnabled_Pkgd(bool enabled);
 
 public:
 	static SettingsManager* GetInstance();
 	void ReadSettings(Setting& setting) const;
 	void WriteSettings(const Setting& setting) const;
 	static bool IsStartupEnabled();
-	static void SetStartupEnabled(bool enabled);
+	// Returns the state actually in effect afterwards, which is not always what was asked for.
+	static bool SetStartupEnabled(bool enabled);
 };

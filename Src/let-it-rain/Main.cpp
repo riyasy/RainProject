@@ -1,6 +1,7 @@
 #include "DisplayWindow.h"
 #include "DarkMode.h"
 #include "Global.h"
+#include "loc.h"
 
 
 //
@@ -24,6 +25,10 @@ int WINAPI WinMain(
 	// Before any window or menu exists: this is what makes the tray context
 	// menu follow the system light/dark setting.
 	InitDarkMode();
+
+	// Same reason — every menu item and dialog label is looked up as it is
+	// created, so the language has to be resolved before the first one is.
+	LocInit();
 
 	std::vector<MonitorData> monitorDataList;
 	EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, reinterpret_cast<LPARAM>(&monitorDataList));

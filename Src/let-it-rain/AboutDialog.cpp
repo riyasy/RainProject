@@ -2,8 +2,10 @@
 
 #include <commctrl.h>
 #include <shellapi.h>
+#include <strsafe.h>
 
 #include "DarkMode.h"
+#include "loc.h"
 #include "Resource.h"
 #include "version.h"                     // shared with let-it-rain.rc — see there
 
@@ -38,6 +40,28 @@ AboutDialog::AboutDialog(const HINSTANCE hInstance)
 	pThis = this;
 }
 
+// The three labels this does not touch — title, version and copyright — come
+// from version.h and are the same in every language. Everything else is keyed
+// by its English text; see loc.h.
+static void LocalizeDialog(const HWND hWnd)
+{
+	SetWindowText(hWnd, T(L"About - Let It Rain FX"));
+	SetDlgItemText(hWnd, IDC_ABOUT_FEEDBACK, T(L"Report issues or send feedback to"));
+	SetDlgItemText(hWnd, IDC_ABOUT_OTHERAPPS, T(L"Other apps"));
+	SetDlgItemText(hWnd, IDC_ABOUT_FLY_BLURB,
+	               T(L"Fast, lightweight, and minimalist photo viewer designed for the modern Windows"));
+
+	// The heart is an icon that happens to live in a label, not a word, so it
+	// stays out of the translation file and is pasted back on here. No
+	// translator has to carry an emoji plus its variation selector through an
+	// .ini for it to survive.
+	WCHAR sponsor[96];
+	if (SUCCEEDED(StringCchPrintfW(sponsor, _countof(sponsor), L"\x2764\xFE0F %s", T(L"Support"))))
+	{
+		SetDlgItemText(hWnd, IDC_BUTTON_SPONSOR, sponsor);
+	}
+}
+
 bool AboutDialog::Create()
 {
 	// The SysLink on this dialog is the only comctl32 class asked for by name;
@@ -70,6 +94,9 @@ LRESULT CALLBACK AboutDialog::DialogProc(const HWND hWnd, const UINT message, co
 	{
 	case WM_INITDIALOG:
 		{
+			// Before the fonts below measure anything.
+			LocalizeDialog(hWnd);
+
 			const HICON hIcon = LoadIcon(pThis->hInstance, MAKEINTRESOURCE(IDI_RAINCPPDXGI));
 			SendMessage(hWnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(hIcon));
 			SendMessage(hWnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(hIcon));

@@ -324,6 +324,7 @@
     <ClInclude Include="DarkMode.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Global.h" />
+    <ClInclude Include="loc.h" />
     <ClInclude Include="MathUtil.h" />
     <ClInclude Include="OptionDialog.h" />
     <ClInclude Include="DisplayWindow.h" />
@@ -352,6 +353,7 @@
     <ClCompile Include="Splatter.cpp" />
     <ClCompile Include="Vector2.cpp" />
     <ClCompile Include="DisplayData.cpp" />
+    <ClCompile Include="loc.cpp" />
     <ClCompile Include="SettingsManager.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -374,4 +376,18 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <!-- The translations ship as loose files beside the exe, which is what
+       loc.cpp's FindNearExe looks for. One target rather than six PostBuildEvent
+       blocks, and it covers the MSIX too: the wapproj packages this project's
+       output folder, so anything landing in $(OutDir) is in the package.
+       lang\build.ps1 generates the .ini files; this only copies them. -->
+  <ItemGroup>
+    <LangFile Include="lang\*.ini" />
+  </ItemGroup>
+  <Target Name="CopyLangFiles" AfterTargets="Build"
+          Inputs="@(LangFile)"
+          Outputs="@(LangFile->'$(OutDir)lang\%(Filename)%(Extension)')">
+    <Copy SourceFiles="@(LangFile)" DestinationFolder="$(OutDir)lang"
+          SkipUnchangedFiles="true" />
+  </Target>
 </Project>

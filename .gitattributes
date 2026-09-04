@@ -1,0 +1,10 @@
+# The translation files are UTF-16LE with a BOM, because that is the only
+# encoding the Win32 profile APIs read as Unicode (loc.cpp). Any line-ending
+# normalisation corrupts them, so they are binary as far as git is concerned.
+# Git already infers this from the NUL bytes; saying it means a later
+# `* text=auto` cannot quietly undo it.
+Src/let-it-rain/lang/*.ini binary
+
+# The resource script is UTF-16LE too, and for the same reason must never be
+# normalised. Git already treats it as binary; this pins that down.
+Src/let-it-rain/*.rc binary

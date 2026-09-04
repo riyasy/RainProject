@@ -28,6 +28,11 @@
 #define IDC_STATIC_WIND                 1011
 #define IDC_STATIC_WIND_LEFT            1012
 #define IDC_STATIC_WIND_RIGHT           1013
+// The Intensity group. These three were IDC_STATIC (-1) until the UI was
+// localized; SetDlgItemText needs a distinct id per control to reach them.
+#define IDC_STATIC_INTENSITY            1014
+#define IDC_STATIC_INTENSITY_LOW        1015
+#define IDC_STATIC_INTENSITY_HIGH       1016
 // The About dialog.
 #define IDC_ABOUT_TITLE                 1030
 #define IDC_ABOUT_VERSION               1031

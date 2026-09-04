@@ -130,14 +130,13 @@ bool SettingsManager::IsStartupEnabled()
 	return false;
 }
 
-void SettingsManager::SetStartupEnabled(const bool enabled)
+bool SettingsManager::SetStartupEnabled(const bool enabled)
 {
 	UINT32 length = 0;
 	if (GetCurrentPackageFullName(&length, nullptr) == ERROR_INSUFFICIENT_BUFFER)
 	{
 		// OutputDebugString(L"[LetItRain] SetStartupEnabled: Running as packaged app\n");
-		SetStartupEnabled_Pkgd(enabled);
-		return;
+		return SetStartupEnabled_Pkgd(enabled);
 	}
 	// OutputDebugString(L"[LetItRain] SetStartupEnabled: Running as plain exe\n");
 	
@@ -167,6 +166,8 @@ void SettingsManager::SetStartupEnabled(const bool enabled)
 			RegCloseKey(hKey);
 		}
 	}
+	// Either RegOpenKeyEx above can fail, so report what the key really says.
+	return IsStartupEnabled();
 }
 
 bool SettingsManager::IsStartupEnabled_Pkgd()
@@ -182,21 +183,22 @@ bool SettingsManager::IsStartupEnabled_Pkgd()
 	}
 }
 
-void SettingsManager::SetStartupEnabled_Pkgd(const bool enabled)
+bool SettingsManager::SetStartupEnabled_Pkgd(const bool enabled)
 {
 	try
 	{
 		auto startupTask = winrt::Windows::ApplicationModel::StartupTask::GetAsync(L"LetItRainStartup").get();
-		if (enabled)
-		{
-			startupTask.RequestEnableAsync().get();
-		}
-		else
+		if (!enabled)
 		{
 			startupTask.Disable();
+			return false;
 		}
+		// Once the user switches the app off in Task Manager the state sticks at DisabledByUser
+		// and this request is a silent no-op, so trust the returned state over the request.
+		return startupTask.RequestEnableAsync().get() == winrt::Windows::ApplicationModel::StartupTaskState::Enabled;
 	}
 	catch (...)
 	{
+		return false;
 	}
 }

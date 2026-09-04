@@ -14,6 +14,7 @@
 #include "CPUUsageTracker.h"
 #include "DarkMode.h"
 #include "Global.h"
+#include "loc.h"
 #include "MathUtil.h"
 #include "Resource.h"
 #include "SettingsManager.h"
@@ -448,11 +449,11 @@ void DisplayWindow::ShowContextMenu(const HWND hWnd)
 	POINT pt;
 	GetCursorPos(&pt);
 	const HMENU hMenu = CreatePopupMenu();
-	AppendMenu(hMenu, MF_STRING, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, L"Configure");
+	AppendMenu(hMenu, MF_STRING, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, T(L"Configure"));
 	// Its own item rather than a second tab on the settings dialog — see
 	// AboutDialog.h for why.
-	AppendMenu(hMenu, MF_STRING, ID_TRAY_ABOUT_CONTEXT_MENU_ITEM, L"About");
-	AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, L"Exit");
+	AppendMenu(hMenu, MF_STRING, ID_TRAY_ABOUT_CONTEXT_MENU_ITEM, T(L"About"));
+	AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, T(L"Exit"));
 
 	const HBITMAP hSettingsBmp = LoadMenuBitmap(AppInstance, IDB_SETTINGS_ICON);
 	const HBITMAP hAboutBmp = LoadMenuBitmap(AppInstance, IDB_ABOUT_ICON);
@@ -462,7 +463,8 @@ void DisplayWindow::ShowContextMenu(const HWND hWnd)
 	SetMenuBitmap(hMenu, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, hExitBmp);
 
 	SetForegroundWindow(hWnd);
-	TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hWnd, nullptr);
+	TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN | (LocIsRTL() ? TPM_LAYOUTRTL : 0),
+	               pt.x, pt.y, 0, hWnd, nullptr);
 	DestroyMenu(hMenu);
 
 	if (hSettingsBmp) DeleteObject(hSettingsBmp);
