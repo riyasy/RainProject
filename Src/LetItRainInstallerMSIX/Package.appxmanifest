@@ -23,8 +23,34 @@
     <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.14393.0" MaxVersionTested="10.0.14393.0" />
   </Dependencies>
 
+  <!-- The languages the UI is actually translated into, which is what the Store
+       lists under "Supported languages". This does NOT drive language selection
+       at runtime: loc.cpp resolves GetUserPreferredUILanguages against the loose
+       lang\*.ini files itself, and MRT never sees them. It has to be an explicit
+       list rather than x-generate for exactly that reason — x-generate infers
+       the set from MRT resources, finds only en-US, and advertises the app as
+       English-only. Keep in step with Src\let-it-rain\lang\. -->
   <Resources>
-    <Resource Language="x-generate"/>
+    <Resource Language="en-US"/>
+    <Resource Language="ar-SA"/>
+    <Resource Language="de-DE"/>
+    <Resource Language="es-ES"/>
+    <Resource Language="fi-FI"/>
+    <Resource Language="fr-FR"/>
+    <Resource Language="hu-HU"/>
+    <Resource Language="it-IT"/>
+    <Resource Language="ja-JP"/>
+    <Resource Language="ko-KR"/>
+    <Resource Language="ml-IN"/>
+    <Resource Language="nl-NL"/>
+    <Resource Language="pl-PL"/>
+    <Resource Language="pt-BR"/>
+    <Resource Language="pt-PT"/>
+    <Resource Language="ru-RU"/>
+    <Resource Language="sv-SE"/>
+    <Resource Language="uk-UA"/>
+    <Resource Language="zh-CN"/>
+    <Resource Language="zh-TW"/>
   </Resources>
 
   <Applications>
