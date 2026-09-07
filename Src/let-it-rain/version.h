@@ -25,5 +25,11 @@
 #define VER_COMPANY     "RYF Tools"
 #define VER_PRODUCT     "Let It Rain FX"
 #define VER_DESCRIPTION "Rain and Snow for Windows desktop"
-#define VER_COPYRIGHT   "Copyright \xA9 2026 RYF Tools"
+// The exe's properties sheet, and the English fallback for the About dialog's
+// copyright line in let-it-rain.rc. The dialog itself builds the same sentence
+// at runtime from VER_COMPANY plus a translated "All rights reserved." — the
+// holder must not go through a translator, and this whole string as one key
+// would make nineteen of them retype it. VERSIONINFO stays US English on
+// purpose, so this stays as it is.
+#define VER_COPYRIGHT   "\xA9 RYF Tools. All rights reserved."
 #define VER_FILENAME    "let-it-rain.exe"

@@ -66,12 +66,32 @@ AboutDialog::AboutDialog(const HINSTANCE hInstance)
 	pThis = this;
 }
 
-// The three labels this does not touch — title, version and copyright — come
-// from version.h and are the same in every language. Everything else is keyed
-// by its English text; see loc.h.
+// The two labels this does not touch — title and version — come from version.h
+// and are the same in every language. Everything else is keyed by its English
+// text; see loc.h.
 static void LocalizeDialog(const HWND hWnd)
 {
 	SetWindowText(hWnd, T(L"About - Let It Rain FX"));
+
+	// Assembled from three pieces rather than drawn from VER_COPYRIGHT whole,
+	// because only the last piece is prose. The sign and the holder are
+	// identity: hand a translator "© RYF Tools. All rights reserved." as one
+	// key and every one of them has to retype the holder inside their value,
+	// where a typo is a wrong copyright notice — and rebranding would silently
+	// drop all of the translations at once, the key having changed. So the
+	// holder comes from VER_COMPANY untranslated and only the sentence goes
+	// through T().
+	//
+	// ©, not the \xA9 version.h uses: this is a wide literal, and the
+	// universal character name is the escape the compiler resolves whatever
+	// the file's encoding.
+	WCHAR copyright[160];
+	if (SUCCEEDED(StringCchPrintfW(copyright, _countof(copyright), L"\u00A9 %s. %s",
+	                               _CRT_WIDE(VER_COMPANY), T(L"All rights reserved."))))
+	{
+		SetDlgItemText(hWnd, IDC_ABOUT_COPYRIGHT, copyright);
+	}
+
 	SetDlgItemText(hWnd, IDC_ABOUT_FEEDBACK, T(L"Report issues or send feedback to"));
 	SetDlgItemText(hWnd, IDC_ABOUT_OTHERAPPS, T(L"Other apps"));
 	SetDlgItemText(hWnd, IDC_ABOUT_FLY_BLURB,
