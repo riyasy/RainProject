@@ -365,6 +365,7 @@
   <ItemGroup>
     <Image Include="about.bmp" />
     <Image Include="exit.bmp" />
+    <Image Include="desktick.ico" />
     <Image Include="flyphotos.ico" />
     <Image Include="github.ico" />
     <Image Include="let-it-rain.ico" />

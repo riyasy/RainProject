@@ -15,6 +15,7 @@
 #define IDR_MAINFRAME                   128
 #define IDI_GITHUB_ICON                 130
 #define IDI_FLYPHOTOS_ICON              131
+#define IDI_DESKTICK_ICON               132
 #define IDC_BUTTON_SHOW_COLOR           135
 #define IDC_BUTTON_GITHUB               1000
 #define IDC_RADIO1                      1001
@@ -43,6 +44,9 @@
 #define IDC_ABOUT_FLY_ICON              1037
 #define IDC_ABOUT_FLY_NAME              1038
 #define IDC_ABOUT_FLY_BLURB             1039
+#define IDC_ABOUT_TICK_ICON             1040
+#define IDC_ABOUT_TICK_NAME             1041
+#define IDC_ABOUT_TICK_BLURB            1042
 #define ID_TRAY_EXIT_CONTEXT_MENU_ITEM  3000
 #define ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM 3001
 #define ID_TRAY_ABOUT_CONTEXT_MENU_ITEM 3002
@@ -59,7 +63,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        131
+#define _APS_NEXT_RESOURCE_VALUE        133
 #define _APS_NEXT_COMMAND_VALUE         32771
 #define _APS_NEXT_CONTROL_VALUE         1002
 #define _APS_NEXT_SYMED_VALUE           110

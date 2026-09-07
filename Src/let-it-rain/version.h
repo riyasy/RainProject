@@ -15,12 +15,12 @@
 
 #define VER_MAJOR       2
 #define VER_MINOR       2
-#define VER_PATCH       2
+#define VER_PATCH       3
 #define VER_BUILD       0
 
-#define VER_NUMBER      2,2,2,0             // VERSIONINFO wants commas
-#define VER_STRING      "2.2.2.0"           // and a matching string
-#define VER_DISPLAY     "v 2.2.2.0"         // what a person reads, in the dialog
+#define VER_NUMBER      2,2,3,0             // VERSIONINFO wants commas
+#define VER_STRING      "2.2.3.0"           // and a matching string
+#define VER_DISPLAY     "v 2.2.3.0"         // what a person reads, in the dialog
 
 #define VER_COMPANY     "RYF Tools"
 #define VER_PRODUCT     "Let It Rain FX"

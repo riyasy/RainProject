@@ -27,12 +27,38 @@ static const WCHAR* FLYPHOTOS_STORE =
 	L"ms-windows-store://pdp/?productid=9PMSK128V1QT&cid=LetItRainAbout";
 static const WCHAR* FLYPHOTOS_WEB =
 	L"https://apps.microsoft.com/detail/9pmsk128v1qt?cid=LetItRainAbout&mode=full";
+static const WCHAR* DESKTICK_STORE =
+	L"ms-windows-store://pdp/?productid=9NQGFVNBX4WJ&cid=LetItRainAbout";
+static const WCHAR* DESKTICK_WEB =
+	L"https://apps.microsoft.com/detail/9nqgfvnbx4wj?cid=LetItRainAbout&mode=full";
+
+// ShellExecute returns <= 32 when nothing claims the scheme, which is the only
+// way to find out — so try the Store app first, then the web page.
+static void OpenStorePage(const HWND hWnd, const WCHAR* store, const WCHAR* web)
+{
+	if (reinterpret_cast<INT_PTR>(ShellExecute(hWnd, L"open", store, nullptr, nullptr, SW_SHOWNORMAL)) <= 32)
+	{
+		ShellExecute(hWnd, L"open", web, nullptr, nullptr, SW_SHOWNORMAL);
+	}
+}
 
 // Derived from the dialog's own font rather than naming a family, so the box
 // follows whatever Windows is set to — including a user's larger text. Process
 // lifetime: the dialog is created once at startup and only hidden on close, so
 // there is nothing to free them at.
 static HFONT s_titleFont, s_headFont;
+
+// Load at the control's own size rather than letting the static stretch a fixed
+// frame, which it would do far more coarsely.
+static void SetRowIcon(const HWND hWnd, const int controlId, const int iconId, const HINSTANCE hInstance)
+{
+	const HWND hControl = GetDlgItem(hWnd, controlId);
+	RECT iconRect;
+	GetClientRect(hControl, &iconRect);
+	const HICON hIcon = static_cast<HICON>(LoadImage(hInstance, MAKEINTRESOURCE(iconId), IMAGE_ICON,
+	                                                 iconRect.right, iconRect.bottom, LR_DEFAULTCOLOR));
+	SendMessage(hControl, STM_SETICON, reinterpret_cast<WPARAM>(hIcon), 0);
+}
 
 AboutDialog::AboutDialog(const HINSTANCE hInstance)
 	: hInstance(hInstance), hDialog(nullptr)
@@ -50,6 +76,8 @@ static void LocalizeDialog(const HWND hWnd)
 	SetDlgItemText(hWnd, IDC_ABOUT_OTHERAPPS, T(L"Other apps"));
 	SetDlgItemText(hWnd, IDC_ABOUT_FLY_BLURB,
 	               T(L"Fast, lightweight, and minimalist photo viewer designed for the modern Windows"));
+	SetDlgItemText(hWnd, IDC_ABOUT_TICK_BLURB,
+	               T(L"Minimal, transparent desktop clock widget for Windows"));
 
 	// The heart is an icon that happens to live in a label, not a word, so it
 	// stays out of the translation file and is pasted back on here. No
@@ -117,17 +145,11 @@ LRESULT CALLBACK AboutDialog::DialogProc(const HWND hWnd, const UINT message, co
 				SendMessage(GetDlgItem(hWnd, IDC_ABOUT_TITLE), WM_SETFONT, (WPARAM)s_titleFont, TRUE);
 				SendMessage(GetDlgItem(hWnd, IDC_ABOUT_OTHERAPPS), WM_SETFONT, (WPARAM)s_headFont, TRUE);
 				SendMessage(GetDlgItem(hWnd, IDC_ABOUT_FLY_NAME), WM_SETFONT, (WPARAM)s_headFont, TRUE);
+				SendMessage(GetDlgItem(hWnd, IDC_ABOUT_TICK_NAME), WM_SETFONT, (WPARAM)s_headFont, TRUE);
 			}
 
-			// Load at the control's own size rather than letting the static
-			// stretch a fixed frame, which it would do far more coarsely.
-			RECT iconRect;
-			GetClientRect(GetDlgItem(hWnd, IDC_ABOUT_FLY_ICON), &iconRect);
-			const HICON hFlyIcon = static_cast<HICON>(LoadImage(
-				pThis->hInstance, MAKEINTRESOURCE(IDI_FLYPHOTOS_ICON), IMAGE_ICON,
-				iconRect.right, iconRect.bottom, LR_DEFAULTCOLOR));
-			SendMessage(GetDlgItem(hWnd, IDC_ABOUT_FLY_ICON), STM_SETICON,
-			            reinterpret_cast<WPARAM>(hFlyIcon), 0);
+			SetRowIcon(hWnd, IDC_ABOUT_FLY_ICON, IDI_FLYPHOTOS_ICON, pThis->hInstance);
+			SetRowIcon(hWnd, IDC_ABOUT_TICK_ICON, IDI_DESKTICK_ICON, pThis->hInstance);
 
 			// Github icon button
 			const HICON hGitHubIcon = static_cast<HICON>(LoadImage(
@@ -164,10 +186,11 @@ LRESULT CALLBACK AboutDialog::DialogProc(const HWND hWnd, const UINT message, co
 	case WM_SETCURSOR:
 		{
 			// A child's WM_SETCURSOR reaches us through its DefWindowProc, so the
-			// hand cursor for both halves of the FlyPhotos row is one handler
+			// hand cursor for both halves of each "Other apps" row is one handler
 			// rather than a subclass each.
 			const int id = GetDlgCtrlID(reinterpret_cast<HWND>(wParam));
-			if (id == IDC_ABOUT_FLY_ICON || id == IDC_ABOUT_FLY_NAME)
+			if (id == IDC_ABOUT_FLY_ICON || id == IDC_ABOUT_FLY_NAME
+				|| id == IDC_ABOUT_TICK_ICON || id == IDC_ABOUT_TICK_NAME)
 			{
 				SetCursor(LoadCursor(nullptr, IDC_HAND));
 				SetWindowLongPtr(hWnd, DWLP_MSGRESULT, TRUE);
@@ -188,17 +211,16 @@ LRESULT CALLBACK AboutDialog::DialogProc(const HWND hWnd, const UINT message, co
 				ShellExecute(nullptr, L"open", L"https://github.com/sponsors/riyasy",
 				             nullptr, nullptr, SW_SHOWNORMAL);
 			}
+			// The icon and the name open the same page.
 			else if ((controlId == IDC_ABOUT_FLY_ICON || controlId == IDC_ABOUT_FLY_NAME)
 				&& HIWORD(wParam) == STN_CLICKED)
 			{
-				// The icon and the name open the same page. ShellExecute returns
-				// <= 32 when nothing claims the scheme, which is the only way to
-				// find out — so try the Store app first, then the web page.
-				if (reinterpret_cast<INT_PTR>(ShellExecute(hWnd, L"open", FLYPHOTOS_STORE,
-				                                           nullptr, nullptr, SW_SHOWNORMAL)) <= 32)
-				{
-					ShellExecute(hWnd, L"open", FLYPHOTOS_WEB, nullptr, nullptr, SW_SHOWNORMAL);
-				}
+				OpenStorePage(hWnd, FLYPHOTOS_STORE, FLYPHOTOS_WEB);
+			}
+			else if ((controlId == IDC_ABOUT_TICK_ICON || controlId == IDC_ABOUT_TICK_NAME)
+				&& HIWORD(wParam) == STN_CLICKED)
+			{
+				OpenStorePage(hWnd, DESKTICK_STORE, DESKTICK_WEB);
 			}
 			else if (controlId == IDCANCEL)         // Escape
 			{
