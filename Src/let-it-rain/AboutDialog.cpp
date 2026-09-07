@@ -77,7 +77,7 @@ static void LocalizeDialog(const HWND hWnd)
 	SetDlgItemText(hWnd, IDC_ABOUT_FLY_BLURB,
 	               T(L"Fast, lightweight, and minimalist photo viewer designed for the modern Windows"));
 	SetDlgItemText(hWnd, IDC_ABOUT_TICK_BLURB,
-	               T(L"Minimal, transparent desktop clock widget for Windows"));
+	               T(L"Customizable, minimal, transparent desktop clock widgets for Windows"));
 
 	// The heart is an icon that happens to live in a label, not a word, so it
 	// stays out of the translation file and is pasted back on here. No
