@@ -2,8 +2,10 @@
 #
 # translations.csv is the master: one row per UI string, an "id" column that
 # becomes the IDS_ name, one column per locale (en-US included), plus a
-# "context" column that exists only for human reviewers. Both outputs are
-# generated, so never hand-edit either - edit the CSV and re-run this.
+# "context" column that exists only for human reviewers. The locales are the
+# CSV's own columns, so adding a language is a column and nothing here. Both
+# outputs are generated, so never hand-edit either - edit the CSV and re-run
+# this.
 #
 # strings.rc holds one STRINGTABLE per language, tagged with that language's
 # LANGUAGE statement, and is compiled into the exe; loc.cpp picks the block.
@@ -14,8 +16,10 @@ $ErrorActionPreference = 'Stop'
 $dir = $PSScriptRoot
 $rows = @(Import-Csv (Join-Path $dir 'translations.csv') -Encoding UTF8)
 
-$locales = @('en-US','ar-SA','de-DE','es-ES','fi-FI','fr-FR','hu-HU','it-IT','ja-JP','ko-KR',
-             'ml-IN','nl-NL','pl-PL','pt-BR','pt-PT','ru-RU','sv-SE','uk-UA','zh-CN','zh-TW')
+# Read from the header rather than listed here: a hand-kept list silently
+# dropped any column it did not name, and a column it named that the CSV lacked
+# shipped as English. en-US first, so it is always a block.
+$locales = @('en-US') + @($rows[0].PSObject.Properties.Name | Where-Object { $_ -notin 'id', 'en-US', 'context' })
 
 # The first id sits on a 16-string boundary, so the strings fill RT_STRING
 # bundles from their first slot. Nothing depends on that; it just keeps the
@@ -26,7 +30,7 @@ $base = 1024
 # blank cell, so both are checked before anything is written.
 $seen = @{}
 foreach ($r in $rows) {
-    if ($r.id -notmatch '^IDS_[A-Z0-9_]+$') { throw "bad id '$($r.id)'" }
+    if ($r.id -cnotmatch '^IDS_[A-Z0-9_]+$') { throw "bad id '$($r.id)'" }
     if ($seen[$r.id]) { throw "duplicate id $($r.id)" }
     $seen[$r.id] = $true
     if (-not $r.'en-US') { throw "$($r.id) has no English" }
