@@ -25,7 +25,7 @@ https://github.com/user-attachments/assets/54660767-922e-4aad-8db0-5d1ee6a2291e
 
 ## 📥 Download
 
-<a href="https://apps.microsoft.com/detail/9p1h1vcjhjzp?referrer=appbadge&mode=full" target="_blank" rel="noopener noreferrer">
+<a href="https://apps.microsoft.com/detail/9p1h1vcjhjzp?referrer=appbadge&mode=full&cid=from_github" target="_blank" rel="noopener noreferrer">
   <img src="https://get.microsoft.com/images/en-us%20light.svg" width="200"/>
 </a>
 
@@ -44,7 +44,7 @@ https://github.com/user-attachments/assets/54660767-922e-4aad-8db0-5d1ee6a2291e
 
 ## 🚀 Installation
 
-- Option 1 : [**Install from Microsoft Store**](https://apps.microsoft.com/detail/9p1h1vcjhjzp?launch=true&cid=GitHubRelease&mode=full)
+- Option 1 : [**Install from Microsoft Store**](https://apps.microsoft.com/detail/9p1h1vcjhjzp?launch=true&cid=GitHubRelease&mode=full&&cid=from_github)
 - Option 2 : Download and install MSI from Github [**Releases Page**](https://github.com/riyasy/RainProject/releases)
 
 ---
