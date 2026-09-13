@@ -2,22 +2,22 @@
 
 #include <windows.h>
 
+#include "Localization/strings.h"
+
 // The UI language. Ported from MinClock's loc.cpp, minus its date half — this
 // app draws no dates, so it needs only the "which words" job.
 
-// Reads the user's display language and loads lang\<locale>.ini over it. Call
-// once, before any window or menu is built. Silent on failure: no folder, no
-// matching file and a malformed file all leave the UI in English.
+// Reads the user's display language and picks the matching STRINGTABLE built
+// into the exe from Localization\strings.rc. Call once, before any window or
+// menu is built. Silent on failure: a display language with no block, or none
+// at all, leaves the UI in English.
 void LocInit();
 
-// English in, translated out. Never returns null and never fails — an unknown
-// key, a blank value or a language that was never loaded all give back `en`
-// unchanged, which is what makes a half-translated file a working file.
-//
-// The English literal at the call site IS the key, so editing one silently
-// drops its translations. Change the string here and in lang\translations.csv
-// together, then re-run lang\build.ps1.
-const WCHAR* T(const WCHAR* en);
+// The string for an IDS_ id from Localization\strings.h, in the chosen
+// language. Never returns null. The pointer is into the exe's own resources,
+// null-terminated (strings.rc is compiled with /n) and valid for the life of
+// the process.
+const WCHAR* T(UINT id);
 
 // True when the UI language reads right-to-left. Only the tray menu uses this,
 // via TPM_LAYOUTRTL, which TrackPopupMenu applies as the popup is built.

@@ -1,23 +1,17 @@
 // loc.cpp — which words the UI uses. Ported from MinClock, which carries the
 // same file with a second half for dates that this app has no use for.
 //
-// The English string is the key. No numeric ids, no entry in Resource.h,
-// nothing to keep in sync, and no way for an id and a string to drift apart; a
-// missing key answers itself, so a half-translated file is a working file and
-// English is the fallback for free. The cost is that the English literal at
-// each call site is now an identifier — editing one drops its translations.
+// Storage is one STRINGTABLE per language in Localization\strings.rc,
+// generated from Localization\translations.csv and compiled into the exe, so
+// the exe ships as a single file. A blank translation is filled with the
+// English at generation time, so every language block carries every id and a
+// half-translated language is a working one.
 //
-// Storage is lang\<locale>.ini, read with GetPrivateProfileSectionW: one call
-// returns the whole [Strings] section as a double-null-terminated block of
-// key=value, which is a parser we then do not write. It is the same profile API
-// SettingsManager already uses for let-it-rain.ini, so this adds no dependency.
-//
-// **The files must be UTF-16LE with a BOM.** The profile APIs decide the
-// encoding from the BOM alone; without one they read the file in the system
-// codepage and every Malayalam, CJK and Arabic string arrives as mojibake —
-// silently, with the source looking perfectly correct. lang\build.ps1 generates
-// the files and then verifies exactly this through the same API. Nothing here
-// ever writes to them, so the API cannot rewrite one as ANSI behind us.
+// LoadStringW is not used because it takes no language: it answers in the
+// thread's UI language, and SetThreadUILanguage to steer it would also change
+// which language system UI on this thread loads (the colour picker, for one),
+// with a fallback order that is not ours. Instead the language is chosen once
+// here and T() reads that block directly.
 //
 // The UI language and the region are different Windows settings and this file
 // reads the UI one:
@@ -32,96 +26,35 @@
 
 #include <strsafe.h>
 
-// One block holds every string, keys included. The UI is 21 short strings and
-// the largest file is under 1 KB, so 8192 WCHARs is roughly eight times what is
-// needed. Worth knowing if that ever stops being true: GetPrivateProfileSectionW
-// does not fail on overflow, it truncates and returns cch-2, which would show up
-// as the last few strings quietly reverting to English.
-static WCHAR s_strings[8192];
-static bool  s_rtl;
+// RT_STRING resources are bundles of 16: ids n*16 .. n*16+15 live in bundle n+1.
+static LPCWSTR Bundle(UINT id) { return MAKEINTRESOURCEW((id >> 4) + 1); }
+
+static LANGID s_lang = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
+static bool   s_rtl;
 
 // ------------------------------------------------------------------
-// Loading
+// Choosing the language
 // ------------------------------------------------------------------
 
-// Look for `name` next to the exe, then walking up a few levels — which covers
-// running out of let-it-rain\x64\Release with the folder in let-it-rain\.
-//
-// StringCchPrintfW rather than wsprintfW: this joins a MAX_PATH directory and a
-// name into a MAX_PATH buffer, which is the one case wsprintfW's missing size
-// argument gets wrong.
-static bool FindNearExe(const WCHAR* name, WCHAR* out, size_t cch)
-{
-	WCHAR dir[MAX_PATH];
-	if (!GetModuleFileNameW(nullptr, dir, MAX_PATH)) return false;
-	for (int up = 0; up < 4; up++)
-	{
-		WCHAR* slash = wcsrchr(dir, L'\\');
-		if (!slash) break;
-		*slash = 0;                                  // strip file / last dir
-		WCHAR probe[MAX_PATH];
-		if (FAILED(StringCchPrintfW(probe, _countof(probe), L"%s\\%s", dir, name)))
-			continue;
-		const DWORD a = GetFileAttributesW(probe);
-		if (a != INVALID_FILE_ATTRIBUTES && (a & FILE_ATTRIBUTE_DIRECTORY))
-			return SUCCEEDED(StringCchCopyW(out, cch, probe));
-	}
-	return false;
-}
+// The languages strings.rc was built with, read back from the exe rather than
+// listed again here — the same-language tier below needs the whole list, not
+// a yes or no per LANGID.
+struct Shipped { LANGID id[32]; UINT n; };
 
-// Try one lang\<name>.ini. False if it isn't there or holds no [Strings].
-static bool LoadLang(const WCHAR* dir, const WCHAR* name)
+static BOOL CALLBACK CollectLang(HMODULE, LPCWSTR, LPCWSTR, WORD lang, LONG_PTR param)
 {
-	WCHAR path[MAX_PATH];
-	if (FAILED(StringCchPrintfW(path, _countof(path), L"%s\\%s.ini", dir, name)))
-		return false;
-	if (GetFileAttributesW(path) == INVALID_FILE_ATTRIBUTES) return false;
-	// Returns the number of characters copied, not counting the final null.
-	// Zero means no such section, or an empty one — either way, nothing to use.
-	const DWORD n = GetPrivateProfileSectionW(L"Strings", s_strings, _countof(s_strings), path);
-	if (n == 0) { s_strings[0] = 0; return false; }
-	return true;
-}
-
-// Last resort for one language: any lang\<prefix>-*.ini at all. This is what
-// serves the regional variants nobody ships a file for — es-MX, es-AR and es-CO
-// all land on es-ES.ini, de-AT and de-CH on de-DE.ini. Without it every one of
-// those users would get English while a translation of their own language sat
-// unread in the folder, and Spanish alone has twenty variants of which we ship
-// exactly one.
-//
-// It resolves by directory order, which picks the *language* right and can pick
-// the *flavour* wrong: zh-HK takes zh-CN.ini — Simplified, where Hong Kong
-// writes Traditional — because zh-CN sorts ahead of zh-TW, and pt-AO takes
-// pt-BR.ini for the same reason. The fix is one file and no code: the exact
-// name is tried before this is reached at all, so dropping in a zh-HK.ini
-// overrides it.
-static bool LoadLangByPrefix(const WCHAR* dir, const WCHAR* prefix)
-{
-	WCHAR pat[MAX_PATH];
-	if (FAILED(StringCchPrintfW(pat, _countof(pat), L"%s\\%s-*.ini", dir, prefix)))
-		return false;
-	WIN32_FIND_DATAW fd;
-	const HANDLE h = FindFirstFileW(pat, &fd);
-	if (h == INVALID_HANDLE_VALUE) return false;
-	bool ok = false;
-	do {
-		if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) continue;
-		WCHAR* dot = wcsrchr(fd.cFileName, L'.');
-		if (dot) *dot = 0;                           // LoadLang appends .ini itself
-		ok = LoadLang(dir, fd.cFileName);
-	} while (!ok && FindNextFileW(h, &fd));
-	FindClose(h);
-	return ok;
+	auto* s = reinterpret_cast<Shipped*>(param);
+	if (s->n < _countof(s->id)) s->id[s->n++] = lang;
+	return TRUE;
 }
 
 void LocInit()
 {
 	// The display language chain, most preferred first. The chain matters as
 	// much as the name: Windows answers e.g. "de-AT" -> "de" -> "de-DE", and
-	// following it is how a language pack we have no exact file for still
+	// following it is how a language pack we have no exact block for still
 	// resolves to one we do. 512 WCHARs is dozens of languages; a chain that
-	// overflows it leaves us in English, the same answer as no folder at all.
+	// overflows it leaves us in English.
 	WCHAR langs[512] = { 0 };
 	ULONG count = 0, cch = _countof(langs);
 	if (!GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &count, langs, &cch))
@@ -129,7 +62,7 @@ void LocInit()
 
 	// Mirroring follows the language the UI is *written in*, so it reads from
 	// the same chain — an Arabic display language on a US region still wants
-	// mirrored windows, with or without an ar-SA.ini behind them. A null name is
+	// mirrored windows, translated or not. A null name is
 	// LOCALE_NAME_USER_DEFAULT, the documented fallback for an empty chain.
 	DWORD layout = 0;
 	if (GetLocaleInfoEx(langs[0] ? langs : nullptr,
@@ -137,26 +70,47 @@ void LocInit()
 	                    reinterpret_cast<WCHAR*>(&layout), sizeof(layout) / sizeof(WCHAR)))
 		s_rtl = (layout == 1);                       // 1 = RTL, reading LTR lines
 
-	WCHAR dir[MAX_PATH];
-	if (!FindNearExe(L"lang", dir, _countof(dir))) return;   // English, then
+	Shipped shipped{};
+	EnumResourceLanguagesW(nullptr, RT_STRING, Bundle(IDS_LOC_FIRST), CollectLang,
+	                       reinterpret_cast<LONG_PTR>(&shipped));
 
-	// Every tier for one language before moving to the next, which is the whole
-	// point of a preference order: a de-AT primary must reach de-DE.ini before
-	// an en-US secondary is even considered.
-	//
-	// Full name first, and that matters rather than being tidy: pt-PT/pt-BR and
-	// zh-CN/zh-TW are different files, and going straight to the "pt" or "zh"
-	// prefix would hand half of those users the other half's translation.
+	// Both tiers for one language before moving to the next, which is the whole
+	// point of a preference order: a de-AT primary must reach de-DE before an
+	// en-US secondary is even considered.
 	for (const WCHAR* p = langs; *p; p += lstrlenW(p) + 1)
 	{
-		WCHAR name[LOCALE_NAME_MAX_LENGTH];
-		if (FAILED(StringCchCopyW(name, _countof(name), p))) continue;
-		if (LoadLang(dir, name)) return;                     // de-DE.ini
-		WCHAR* dash = wcschr(name, L'-');
-		if (!dash) continue;
-		*dash = 0;
-		if (LoadLang(dir, name)) return;                     // de.ini
-		if (LoadLangByPrefix(dir, name)) return;             // de-AT -> de-DE.ini
+		// Plenty of real locales have no LCID of their own — pt-AO maps to a
+		// transient one with primary language 0 — so those retry with
+		// just the language part, which does have one ("pt" -> 0x16) and is all
+		// the same-language tier needs. 0 after that is a name Windows cannot
+		// place at all: next.
+		LANGID want = LANGIDFROMLCID(LocaleNameToLCID(p, 0));
+		if (PRIMARYLANGID(want) == LANG_NEUTRAL)
+		{
+			WCHAR lang[LOCALE_NAME_MAX_LENGTH];
+			if (FAILED(StringCchCopyW(lang, _countof(lang), p))) continue;
+			if (WCHAR* dash = wcschr(lang, L'-')) *dash = 0;
+			want = LANGIDFROMLCID(LocaleNameToLCID(lang, LOCALE_ALLOW_NEUTRAL_NAMES));
+			if (PRIMARYLANGID(want) == LANG_NEUTRAL) continue;
+		}
+
+		// Exact first, and that matters rather than being tidy: pt-PT/pt-BR and
+		// zh-CN/zh-TW are different blocks, and going straight to the primary
+		// language would hand half of those users the other half's translation.
+		for (UINT i = 0; i < shipped.n; i++)
+			if (shipped.id[i] == want) { s_lang = want; return; }
+
+		// Then any block of the same language. This serves the regional variants
+		// nobody ships a block for — es-MX takes es-ES, de-AT and de-CH take
+		// de-DE — and also the neutral "de" entries in the chain.
+		//
+		// It resolves by enumeration order, which is LANGID order: the language
+		// is right, the flavour can be wrong. zh-HK takes zh-TW (0x0404, before
+		// zh-CN's 0x0804), which is right for Hong Kong; zh-SG takes it too,
+		// which is not, as Singapore writes Simplified. pt-AO takes pt-BR. The
+		// fix is a column in translations.csv, never code: an exact block wins.
+		for (UINT i = 0; i < shipped.n; i++)
+			if (PRIMARYLANGID(shipped.id[i]) == PRIMARYLANGID(want)) { s_lang = shipped.id[i]; return; }
 	}
 }
 
@@ -164,24 +118,20 @@ void LocInit()
 // Lookup
 // ------------------------------------------------------------------
 
-const WCHAR* T(const WCHAR* en)
+const WCHAR* T(UINT id)
 {
-	if (!en || !s_strings[0]) return en;
-	// Linear scan of the double-null-terminated block. 21 entries, walked a
-	// couple of dozen times when a dialog or the tray menu is built, and never
-	// per frame — an index would cost more code than it saves.
-	for (const WCHAR* p = s_strings; *p; p += lstrlenW(p) + 1)
-	{
-		const WCHAR* eq = wcschr(p, L'=');
-		if (!eq || eq == p) continue;                // no key, or no value: skip
-		// Compare only the key half, without copying it out.
-		if (CompareStringOrdinal(p, static_cast<int>(eq - p), en, -1, TRUE) != CSTR_EQUAL)
-			continue;
-		// An empty value is a string a translator has not filled in yet. That is
-		// a normal state of a shipped file, and it means English.
-		return eq[1] ? eq + 1 : en;
-	}
-	return en;
+	// s_lang is always a language EnumResourceLanguagesW reported, so this finds
+	// that exact block. A bundle holds 16 entries back to back, each a WORD
+	// length and then that many WCHARs. /n on strings.rc appends a null to
+	// every string and counts it in the length, so the walk below steps over it
+	// and the pointer can be handed out as is. An unused slot has length 0.
+	// Walked when a dialog or the tray menu is built, never per frame.
+	const HRSRC res = FindResourceExW(nullptr, RT_STRING, Bundle(id), s_lang);
+	const HGLOBAL mem = res ? LoadResource(nullptr, res) : nullptr;
+	const WCHAR* p = mem ? static_cast<const WCHAR*>(LockResource(mem)) : nullptr;
+	if (!p) return L"";
+	for (UINT i = id & 0xF; i; i--) p += 1 + *p;
+	return *p ? p + 1 : L"";                         // length 0: no such id
 }
 
 bool LocIsRTL()

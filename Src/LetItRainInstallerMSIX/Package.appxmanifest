@@ -10,7 +10,7 @@
   <Identity
     Name="RYFTools.LetItRainFX"
     Publisher="CN=44A50C10-C1BE-4575-B17F-07954C8C2229"
-    Version="2.2.3.0" />
+    Version="2.2.4.0" />
 
   <Properties>
     <DisplayName>Let It Rain FX</DisplayName>
@@ -25,11 +25,12 @@
 
   <!-- The languages the UI is actually translated into, which is what the Store
        lists under "Supported languages". This does NOT drive language selection
-       at runtime: loc.cpp resolves GetUserPreferredUILanguages against the loose
-       lang\*.ini files itself, and MRT never sees them. It has to be an explicit
-       list rather than x-generate for exactly that reason — x-generate infers
+       at runtime: loc.cpp resolves GetUserPreferredUILanguages against the
+       STRINGTABLEs in the exe itself, and MRT never sees them. It has to be an
+       explicit list rather than x-generate for exactly that reason — x-generate infers
        the set from MRT resources, finds only en-US, and advertises the app as
-       English-only. Keep in step with Src\let-it-rain\lang\. -->
+       English-only. Keep in step with the locale columns of
+       Src\let-it-rain\Localization\translations.csv. -->
   <Resources>
     <Resource Language="en-US"/>
     <Resource Language="ar-SA"/>

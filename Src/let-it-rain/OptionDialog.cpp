@@ -45,34 +45,31 @@ static void SetSnowUiVisible(const HWND hWnd, const bool snow)
 	ShowWindow(GetDlgItem(hWnd, IDC_CHECK_SIMPLE_SNOW), snow ? SW_SHOW : SW_HIDE);
 }
 
-// Every visible string on this dialog, in one place. The English literal is the
-// lookup key (see loc.h), so each one has to match lang\translations.csv
-// character for character — a typo here reads as an untranslated control rather
-// than as an error.
+// Every visible string on this dialog, in one place. The strings themselves
+// live in Localization\translations.csv; see loc.h.
 //
-// The .rc still carries the English, which is what the dialog editor shows and
-// what a machine with no lang folder falls back to.
+// The .rc still carries the English, which is what the dialog editor shows.
 static void LocalizeDialog(const HWND hWnd)
 {
-	SetWindowText(hWnd, T(L"Settings - Let It Rain FX"));
+	SetWindowText(hWnd, T(IDS_SETTINGS_TITLE));
 
-	static const struct { int id; const WCHAR* en; } items[] = {
-		{ IDC_RADIO1,                L"Rain" },
-		{ IDC_RADIO2,                L"Snow" },
-		{ IDC_STATIC_INTENSITY,      L"Intensity" },
-		{ IDC_STATIC_INTENSITY_LOW,  L"Low" },
-		{ IDC_STATIC_INTENSITY_HIGH, L"High" },
-		{ IDC_STATIC_WIND,           L"Wind Direction" },
-		{ IDC_STATIC_WIND_LEFT,      L"Left" },
-		{ IDC_STATIC_WIND_RIGHT,     L"Right" },
-		{ IDC_CHECK_SIMPLE_SNOW,     L"Simplified snow heap" },
-		{ IDC_BUTTON_SHOW_COLOR,     L"Change Particle Color" },
-		{ IDC_CHECK_ALLOW_HIDE,      L"Hide behind windows" },
-		{ IDC_CHECK_STARTUP,         L"Start with Windows" },
+	static const struct { int ctrl; UINT ids; } items[] = {
+		{ IDC_RADIO1,                IDS_RAIN },
+		{ IDC_RADIO2,                IDS_SNOW },
+		{ IDC_STATIC_INTENSITY,      IDS_INTENSITY },
+		{ IDC_STATIC_INTENSITY_LOW,  IDS_INTENSITY_LOW },
+		{ IDC_STATIC_INTENSITY_HIGH, IDS_INTENSITY_HIGH },
+		{ IDC_STATIC_WIND,           IDS_WIND },
+		{ IDC_STATIC_WIND_LEFT,      IDS_WIND_LEFT },
+		{ IDC_STATIC_WIND_RIGHT,     IDS_WIND_RIGHT },
+		{ IDC_CHECK_SIMPLE_SNOW,     IDS_SIMPLE_SNOW },
+		{ IDC_BUTTON_SHOW_COLOR,     IDS_CHANGE_COLOR },
+		{ IDC_CHECK_ALLOW_HIDE,      IDS_ALLOW_HIDE },
+		{ IDC_CHECK_STARTUP,         IDS_STARTUP },
 	};
 	for (const auto& item : items)
 	{
-		SetDlgItemText(hWnd, item.id, T(item.en));
+		SetDlgItemText(hWnd, item.ctrl, T(item.ids));
 	}
 }
 

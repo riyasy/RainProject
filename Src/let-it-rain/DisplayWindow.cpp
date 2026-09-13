@@ -449,11 +449,11 @@ void DisplayWindow::ShowContextMenu(const HWND hWnd)
 	POINT pt;
 	GetCursorPos(&pt);
 	const HMENU hMenu = CreatePopupMenu();
-	AppendMenu(hMenu, MF_STRING, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, T(L"Configure"));
+	AppendMenu(hMenu, MF_STRING, ID_TRAY_CONFIGURE_CONTEXT_MENU_ITEM, T(IDS_MENU_CONFIGURE));
 	// Its own item rather than a second tab on the settings dialog — see
 	// AboutDialog.h for why.
-	AppendMenu(hMenu, MF_STRING, ID_TRAY_ABOUT_CONTEXT_MENU_ITEM, T(L"About"));
-	AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, T(L"Exit"));
+	AppendMenu(hMenu, MF_STRING, ID_TRAY_ABOUT_CONTEXT_MENU_ITEM, T(IDS_MENU_ABOUT));
+	AppendMenu(hMenu, MF_STRING, ID_TRAY_EXIT_CONTEXT_MENU_ITEM, T(IDS_MENU_EXIT));
 
 	const HBITMAP hSettingsBmp = LoadMenuBitmap(AppInstance, IDB_SETTINGS_ICON);
 	const HBITMAP hAboutBmp = LoadMenuBitmap(AppInstance, IDB_ABOUT_ICON);
