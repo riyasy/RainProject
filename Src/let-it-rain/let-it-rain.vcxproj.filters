@@ -132,6 +132,9 @@
     <Image Include="Assets\about.bmp">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="Assets\deskflip.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
     <Image Include="Assets\desktick.ico">
       <Filter>Resource Files</Filter>
     </Image>
@@ -145,6 +148,9 @@
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="Assets\let-it-rain.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="Assets\wtick.ico">
       <Filter>Resource Files</Filter>
     </Image>
     <Image Include="Assets\settings.bmp">

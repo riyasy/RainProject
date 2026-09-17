@@ -373,11 +373,13 @@
   <ItemGroup>
     <Image Include="Assets\about.bmp" />
     <Image Include="Assets\exit.bmp" />
+    <Image Include="Assets\deskflip.ico" />
     <Image Include="Assets\desktick.ico" />
     <Image Include="Assets\flyphotos.ico" />
     <Image Include="Assets\github.ico" />
     <Image Include="Assets\let-it-rain.ico" />
     <Image Include="Assets\settings.bmp" />
+    <Image Include="Assets\wtick.ico" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Notes.txt" />

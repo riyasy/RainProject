@@ -22,15 +22,47 @@ AboutDialog* AboutDialog::pThis;
 //
 // cid is the campaign id Partner Center attributes installs to. Same value on
 // both routes, and named for the surface it sits on, matching the convention
-// MinClock's About box uses.
-static const WCHAR* FLYPHOTOS_STORE =
-	L"ms-windows-store://pdp/?productid=9PMSK128V1QT&cid=LetItRainAbout";
-static const WCHAR* FLYPHOTOS_WEB =
-	L"https://apps.microsoft.com/detail/9pmsk128v1qt?cid=LetItRainAbout&mode=full";
-static const WCHAR* DESKTICK_STORE =
-	L"ms-windows-store://pdp/?productid=9NQGFVNBX4WJ&cid=LetItRainAbout";
-static const WCHAR* DESKTICK_WEB =
-	L"https://apps.microsoft.com/detail/9nqgfvnbx4wj?cid=LetItRainAbout&mode=full";
+// DeskTick's About box uses.
+//
+// Every app lists the others in one order — FlyPhotos, Let It Rain, WTick,
+// DeskTick, DeskFlip, less itself — with the same blurb wording, so keep this
+// table in step with the other four apps' About boxes. The rows' controls are
+// in let-it-rain.rc, in the same order.
+struct OtherApp
+{
+	int iconCtl, nameCtl, blurbCtl; // the row's three controls; icon and name both click
+	int iconRes;
+	UINT blurb;
+	const WCHAR* store; // ms-windows-store: opens the Store app
+	const WCHAR* web;   // https: used only if that scheme is dead
+};
+
+static const OtherApp OTHER_APPS[] = {
+	{ IDC_ABOUT_FLY_ICON, IDC_ABOUT_FLY_NAME, IDC_ABOUT_FLY_BLURB, IDI_FLYPHOTOS_ICON, IDS_FLYPHOTOS_BLURB,
+	  L"ms-windows-store://pdp/?productid=9PMSK128V1QT&cid=LetItRainAbout",
+	  L"https://apps.microsoft.com/detail/9pmsk128v1qt?cid=LetItRainAbout&mode=full" },
+	{ IDC_ABOUT_WTICK_ICON, IDC_ABOUT_WTICK_NAME, IDC_ABOUT_WTICK_BLURB, IDI_WTICK_ICON, IDS_WTICK_BLURB,
+	  L"ms-windows-store://pdp/?productid=9P039TR9SW9S&cid=LetItRainAbout",
+	  L"https://apps.microsoft.com/detail/9p039tr9sw9s?cid=LetItRainAbout&mode=full" },
+	{ IDC_ABOUT_TICK_ICON, IDC_ABOUT_TICK_NAME, IDC_ABOUT_TICK_BLURB, IDI_DESKTICK_ICON, IDS_DESKTICK_BLURB,
+	  L"ms-windows-store://pdp/?productid=9NQGFVNBX4WJ&cid=LetItRainAbout",
+	  L"https://apps.microsoft.com/detail/9nqgfvnbx4wj?cid=LetItRainAbout&mode=full" },
+	{ IDC_ABOUT_FLIP_ICON, IDC_ABOUT_FLIP_NAME, IDC_ABOUT_FLIP_BLURB, IDI_DESKFLIP_ICON, IDS_DESKFLIP_BLURB,
+	  L"ms-windows-store://pdp/?productid=9MSXBKV3295F&cid=LetItRainAbout",
+	  L"https://apps.microsoft.com/detail/9msxbkv3295f?cid=LetItRainAbout&mode=full" },
+};
+
+static constexpr UINT WM_APP_LAYOUT = WM_APP + 1;
+
+// The row whose icon or name has this control id, or null.
+static const OtherApp* AppForControl(const int id)
+{
+	for (const OtherApp& app : OTHER_APPS)
+	{
+		if (id == app.iconCtl || id == app.nameCtl) return &app;
+	}
+	return nullptr;
+}
 
 // ShellExecute returns <= 32 when nothing claims the scheme, which is the only
 // way to find out — so try the Store app first, then the web page.
@@ -58,6 +90,66 @@ static void SetRowIcon(const HWND hWnd, const int controlId, const int iconId, c
 	const HICON hIcon = static_cast<HICON>(LoadImage(hInstance, MAKEINTRESOURCE(iconId), IMAGE_ICON,
 	                                                 iconRect.right, iconRect.bottom, LR_DEFAULTCOLOR));
 	SendMessage(hControl, STM_SETICON, reinterpret_cast<WPARAM>(hIcon), 0);
+}
+
+// Control rect in the dialog's client coordinates.
+static RECT ChildRect(const HWND hWnd, const HWND hChild)
+{
+	RECT r;
+	GetWindowRect(hChild, &r);
+	MapWindowPoints(nullptr, hWnd, reinterpret_cast<POINT*>(&r), 2);
+	return r;
+}
+
+// Stack the "Other apps" rows under their heading, each blurb as tall as its
+// text actually measures, and fit the dialog to the last one. The template's
+// fixed 30-unit blurb boxes would clip a translation that wraps to a fourth
+// line, and leave slack under every one that doesn't. DT_CALCRECT with the
+// control's own font and width is what the STATIC itself will do, so the
+// measurement and the drawing cannot disagree.
+static void LayoutOtherApps(const HWND hWnd)
+{
+	RECT du = { 0, 0, 2, 8 }; // 2 DLUs between name and blurb, 8 between rows
+	MapDialogRect(hWnd, &du);
+	RECT margin = { 0, 0, 0, 10 }; // below the last row
+	MapDialogRect(hWnd, &margin);
+
+	int y = ChildRect(hWnd, GetDlgItem(hWnd, IDC_ABOUT_OTHERAPPS)).bottom + du.bottom;
+	for (const OtherApp& app : OTHER_APPS)
+	{
+		const HWND hIcon = GetDlgItem(hWnd, app.iconCtl);
+		const HWND hName = GetDlgItem(hWnd, app.nameCtl);
+		const HWND hBlurb = GetDlgItem(hWnd, app.blurbCtl);
+		const RECT ri = ChildRect(hWnd, hIcon);
+		const RECT rn = ChildRect(hWnd, hName);
+		const RECT rb = ChildRect(hWnd, hBlurb);
+
+		WCHAR text[512];
+		GetWindowText(hBlurb, text, _countof(text));
+		const HDC dc = GetDC(hBlurb);
+		const HGDIOBJ old = SelectObject(dc, reinterpret_cast<HFONT>(SendMessage(hBlurb, WM_GETFONT, 0, 0)));
+		RECT m = { 0, 0, rb.right - rb.left, 0 };
+		DrawText(dc, text, -1, &m, DT_CALCRECT | DT_WORDBREAK | DT_LEFT);
+		SelectObject(dc, old);
+		ReleaseDC(hBlurb, dc);
+
+		const int nameH = rn.bottom - rn.top;
+		const int blurbY = y + nameH + du.right;
+		SetWindowPos(hIcon, nullptr, ri.left, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+		SetWindowPos(hName, nullptr, rn.left, y, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+		SetWindowPos(hBlurb, nullptr, rb.left, blurbY, rb.right - rb.left, m.bottom,
+		             SWP_NOZORDER | SWP_NOACTIVATE);
+		// At least as tall as the icon, so the next row clears it.
+		y = max(blurbY + m.bottom, y + (ri.bottom - ri.top)) + du.bottom;
+	}
+
+	RECT client;
+	GetClientRect(hWnd, &client);
+	RECT wr = { 0, 0, client.right, y - du.bottom + margin.bottom };
+	AdjustWindowRectExForDpi(&wr, static_cast<DWORD>(GetWindowLongPtr(hWnd, GWL_STYLE)), FALSE,
+	                         static_cast<DWORD>(GetWindowLongPtr(hWnd, GWL_EXSTYLE)), GetDpiForWindow(hWnd));
+	SetWindowPos(hWnd, nullptr, 0, 0, wr.right - wr.left, wr.bottom - wr.top,
+	             SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 }
 
 AboutDialog::AboutDialog(const HINSTANCE hInstance)
@@ -93,8 +185,10 @@ static void LocalizeDialog(const HWND hWnd)
 
 	SetDlgItemText(hWnd, IDC_ABOUT_FEEDBACK, T(IDS_FEEDBACK));
 	SetDlgItemText(hWnd, IDC_ABOUT_OTHERAPPS, T(IDS_OTHER_APPS));
-	SetDlgItemText(hWnd, IDC_ABOUT_FLY_BLURB, T(IDS_FLYPHOTOS_BLURB));
-	SetDlgItemText(hWnd, IDC_ABOUT_TICK_BLURB, T(IDS_DESKTICK_BLURB));
+	for (const OtherApp& app : OTHER_APPS)
+	{
+		SetDlgItemText(hWnd, app.blurbCtl, T(app.blurb));
+	}
 
 	// The heart is an icon that happens to live in a label, not a word, so it
 	// stays out of the translation file and is pasted back on here. No
@@ -161,12 +255,17 @@ LRESULT CALLBACK AboutDialog::DialogProc(const HWND hWnd, const UINT message, co
 				s_headFont = CreateFontIndirect(&mid);
 				SendMessage(GetDlgItem(hWnd, IDC_ABOUT_TITLE), WM_SETFONT, (WPARAM)s_titleFont, TRUE);
 				SendMessage(GetDlgItem(hWnd, IDC_ABOUT_OTHERAPPS), WM_SETFONT, (WPARAM)s_headFont, TRUE);
-				SendMessage(GetDlgItem(hWnd, IDC_ABOUT_FLY_NAME), WM_SETFONT, (WPARAM)s_headFont, TRUE);
-				SendMessage(GetDlgItem(hWnd, IDC_ABOUT_TICK_NAME), WM_SETFONT, (WPARAM)s_headFont, TRUE);
+				for (const OtherApp& app : OTHER_APPS)
+				{
+					SendMessage(GetDlgItem(hWnd, app.nameCtl), WM_SETFONT, (WPARAM)s_headFont, TRUE);
+				}
 			}
 
-			SetRowIcon(hWnd, IDC_ABOUT_FLY_ICON, IDI_FLYPHOTOS_ICON, pThis->hInstance);
-			SetRowIcon(hWnd, IDC_ABOUT_TICK_ICON, IDI_DESKTICK_ICON, pThis->hInstance);
+			for (const OtherApp& app : OTHER_APPS)
+			{
+				SetRowIcon(hWnd, app.iconCtl, app.iconRes, pThis->hInstance);
+			}
+			LayoutOtherApps(hWnd);
 
 			// Github icon button
 			const HICON hGitHubIcon = static_cast<HICON>(LoadImage(
@@ -205,9 +304,7 @@ LRESULT CALLBACK AboutDialog::DialogProc(const HWND hWnd, const UINT message, co
 			// A child's WM_SETCURSOR reaches us through its DefWindowProc, so the
 			// hand cursor for both halves of each "Other apps" row is one handler
 			// rather than a subclass each.
-			const int id = GetDlgCtrlID(reinterpret_cast<HWND>(wParam));
-			if (id == IDC_ABOUT_FLY_ICON || id == IDC_ABOUT_FLY_NAME
-				|| id == IDC_ABOUT_TICK_ICON || id == IDC_ABOUT_TICK_NAME)
+			if (AppForControl(GetDlgCtrlID(reinterpret_cast<HWND>(wParam))))
 			{
 				SetCursor(LoadCursor(nullptr, IDC_HAND));
 				SetWindowLongPtr(hWnd, DWLP_MSGRESULT, TRUE);
@@ -229,15 +326,9 @@ LRESULT CALLBACK AboutDialog::DialogProc(const HWND hWnd, const UINT message, co
 				             nullptr, nullptr, SW_SHOWNORMAL);
 			}
 			// The icon and the name open the same page.
-			else if ((controlId == IDC_ABOUT_FLY_ICON || controlId == IDC_ABOUT_FLY_NAME)
-				&& HIWORD(wParam) == STN_CLICKED)
+			else if (const OtherApp* app = AppForControl(controlId); app && HIWORD(wParam) == STN_CLICKED)
 			{
-				OpenStorePage(hWnd, FLYPHOTOS_STORE, FLYPHOTOS_WEB);
-			}
-			else if ((controlId == IDC_ABOUT_TICK_ICON || controlId == IDC_ABOUT_TICK_NAME)
-				&& HIWORD(wParam) == STN_CLICKED)
-			{
-				OpenStorePage(hWnd, DESKTICK_STORE, DESKTICK_WEB);
+				OpenStorePage(hWnd, app->store, app->web);
 			}
 			else if (controlId == IDCANCEL)         // Escape
 			{
@@ -259,6 +350,14 @@ LRESULT CALLBACK AboutDialog::DialogProc(const HWND hWnd, const UINT message, co
 		SetTextColor(reinterpret_cast<HDC>(wParam),
 		             IsDarkMode() ? DARK_FG : GetSysColor(COLOR_WINDOWTEXT));
 		return reinterpret_cast<LRESULT>(ThemeBrush());
+	// Windows rescales a PerMonitorV2 dialog itself when it changes monitor, so
+	// let that run and re-stack the rows once it has.
+	case WM_DPICHANGED:
+		PostMessage(hWnd, WM_APP_LAYOUT, 0, 0);
+		return FALSE;
+	case WM_APP_LAYOUT:
+		LayoutOtherApps(hWnd);
+		return TRUE;
 	case WM_CLOSE:
 		ShowWindow(hWnd, SW_HIDE);
 		return TRUE;

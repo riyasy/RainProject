@@ -21,7 +21,9 @@
 #define IDS_SUPPORT              1040
 #define IDS_OTHER_APPS           1041
 #define IDS_FLYPHOTOS_BLURB      1042
-#define IDS_DESKTICK_BLURB       1043
-#define IDS_MENU_CONFIGURE       1044
-#define IDS_MENU_ABOUT           1045
-#define IDS_MENU_EXIT            1046
+#define IDS_WTICK_BLURB          1043
+#define IDS_DESKTICK_BLURB       1044
+#define IDS_DESKFLIP_BLURB       1045
+#define IDS_MENU_CONFIGURE       1046
+#define IDS_MENU_ABOUT           1047
+#define IDS_MENU_EXIT            1048
