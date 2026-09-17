@@ -21,6 +21,9 @@ Win32/
 *.resinclude
 AppPackages
 BundleArtifacts
+*.aps
+*.assets.cache
+docs/
 
 ################################################################################
 # macOS
